@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenSSL Performance Analysis</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 20px; background: #f8f9fa; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        h1 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { margin-top: 40px; color: #444; font-size: 1.5rem; }
+        .chart-container { position: relative; margin-bottom: 50px; }
+        .tooltip { position: absolute; background: white; border: 1px solid #ddd; padding: 10px; border-radius: 4px; pointer-events: none; opacity: 0; transition: opacity 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-size: 13px; z-index: 100; }
+        .controls { display: flex; gap: 20px; background: #f1f3f5; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        label { font-weight: 500; font-size: 14px; }
+        select { padding: 4px 8px; border-radius: 4px; border: 1px solid #ced4da; }
+        .legend { font-size: 12px; display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-color { width: 12px; height: 12px; border-radius: 2px; }
+        
+        /* Grid styling */
+        .grid line { stroke: #e9ecef; }
+        .grid path { stroke: none; }
+        .axis text { fill: #666; font-size: 12px; }
+        .axis path, .axis line { stroke: #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>OpenSSL Performance Analysis</h1>
+    <p>Visualizing regressions and improvements across OpenSSL versions 1.1.1 through 3.x.</p>
+
+    <!-- Controls -->
+    <div class="controls">
+        <div>
+            <label for="y-metric">Y-Axis (Performance):</label>
+            <select id="y-metric">
+                <option value="handshakes_new_per_sec">TLS Handshake (New Conn/sec)</option>
+                <option value="handshakes_resume_per_sec">TLS Handshake (Resumed Conn/sec)</option>
+                <option value="aes_256_gcm_8k_kbs">AES-256-GCM Throughput (KB/s)</option>
+                <option value="sha256_8k_kbs">SHA256 Throughput (KB/s)</option>
+            </select>
+        </div>
+        <div>
+            <label for="normalize">View Mode:</label>
+            <select id="normalize">
+                <option value="raw">Raw Values</option>
+                <option value="pct">Percent vs Baseline (1.1.1w)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Chart 1: Tradeoff Scatter -->
+    <h2>1. The "Bang for Buck" Tradeoff</h2>
+    <p style="color: #666; font-size: 0.9em;">
+        This scatter plot reveals the efficiency frontier. 
+        <strong>Top-Right is better.</strong> 
+        <br>X-Axis: Raw Encryption Speed (Throughput) vs Y-Axis: Connection Setup Speed (Handshake).
+    </p>
+    <div id="scatter-chart" class="chart-container"></div>
+
+    <!-- Chart 2: Timeline -->
+    <h2>2. Performance History</h2>
+    <p style="color: #666; font-size: 0.9em;">Tracking the metric selected above across versions.</p>
+    <div id="timeline-chart" class="chart-container"></div>
+</div>
+
+<script>
+    // 1. Data Injection
+    const data = [
+  {
+    "version": "OpenSSL 1.1.1w  11 Sep 2023",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 5901582.13,
+      "aes_256_gcm_8k_kbs": 5856720.49,
+      "sha256_1k_kbs": 2788660.02,
+      "sha256_8k_kbs": 3332688.28,
+      "handshakes_new_per_sec": 19557,
+      "handshakes_resume_per_sec": 20580
+    },
+    "config": {
+      "version": "1.1.1w",
+      "url": "https://www.openssl.org/source/openssl-1.1.1w.tar.gz",
+      "series": "1.1.1"
+    },
+    "timestamp": "2025-12-30T21:39:23.109Z"
+  },
+  {
+    "version": "OpenSSL 3.0.15 3 Sep 2024 (Library: OpenSSL 3.0.15 3 Sep 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7604872.4,
+      "aes_256_gcm_8k_kbs": 8336787.05,
+      "sha256_1k_kbs": 2775479.5,
+      "sha256_8k_kbs": 3352901.22,
+      "handshakes_new_per_sec": 16719,
+      "handshakes_resume_per_sec": 17178
+    },
+    "config": {
+      "version": "3.0.15",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.0.15/openssl-3.0.15.tar.gz",
+      "series": "3.0"
+    },
+    "timestamp": "2025-12-30T21:41:48.107Z"
+  },
+  {
+    "version": "OpenSSL 3.1.7 3 Sep 2024 (Library: OpenSSL 3.1.7 3 Sep 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7489533.24,
+      "aes_256_gcm_8k_kbs": 8061890.56,
+      "sha256_1k_kbs": 2744398.95,
+      "sha256_8k_kbs": 3319216.54,
+      "handshakes_new_per_sec": 17150,
+      "handshakes_resume_per_sec": 17984
+    },
+    "config": {
+      "version": "3.1.7",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.1.7/openssl-3.1.7.tar.gz",
+      "series": "3.1"
+    },
+    "timestamp": "2025-12-30T21:44:13.122Z"
+  },
+  {
+    "version": "OpenSSL 3.2.3 3 Sep 2024 (Library: OpenSSL 3.2.3 3 Sep 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7508891.55,
+      "aes_256_gcm_8k_kbs": 8093207.76,
+      "sha256_1k_kbs": 2857657.75,
+      "sha256_8k_kbs": 3345648.03,
+      "handshakes_new_per_sec": 17892,
+      "handshakes_resume_per_sec": 18345
+    },
+    "config": {
+      "version": "3.2.3",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.2.3/openssl-3.2.3.tar.gz",
+      "series": "3.2"
+    },
+    "timestamp": "2025-12-30T21:46:38.101Z"
+  },
+  {
+    "version": "OpenSSL 3.3.2 3 Sep 2024 (Library: OpenSSL 3.3.2 3 Sep 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7488583.37,
+      "aes_256_gcm_8k_kbs": 8296687.21,
+      "sha256_1k_kbs": 2753770.7,
+      "sha256_8k_kbs": 3321158.86,
+      "handshakes_new_per_sec": 17107,
+      "handshakes_resume_per_sec": 18022
+    },
+    "config": {
+      "version": "3.3.2",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.3.2/openssl-3.3.2.tar.gz",
+      "series": "3.3"
+    },
+    "timestamp": "2025-12-30T21:49:03.096Z"
+  },
+  {
+    "version": "OpenSSL 3.4.0 22 Oct 2024 (Library: OpenSSL 3.4.0 22 Oct 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7578335.95,
+      "aes_256_gcm_8k_kbs": 8235013.73,
+      "sha256_1k_kbs": 2853076.68,
+      "sha256_8k_kbs": 3334941.9,
+      "handshakes_new_per_sec": 18806,
+      "handshakes_resume_per_sec": 19355
+    },
+    "config": {
+      "version": "3.4.0",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.4.0/openssl-3.4.0.tar.gz",
+      "series": "3.4"
+    },
+    "timestamp": "2025-12-30T21:51:28.100Z"
+  },
+  {
+    "version": "OpenSSL 3.5.3 16 Sep 2025 (Library: OpenSSL 3.5.3 16 Sep 2025)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 3975862.17,
+      "aes_256_gcm_8k_kbs": 7414004.94,
+      "sha256_1k_kbs": 2904702.57,
+      "sha256_8k_kbs": 3337351.17,
+      "handshakes_new_per_sec": 16300,
+      "handshakes_resume_per_sec": 17284
+    },
+    "config": {
+      "version": "3.5.3",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.5.3/openssl-3.5.3.tar.gz",
+      "series": "3.5"
+    },
+    "timestamp": "2025-12-30T21:53:53.108Z"
+  }
+];
+
+    // 2. Setup & Config
+    const margin = {top: 20, right: 30, bottom: 40, left: 60};
+    const width = 1100 - margin.left - margin.right;
+    const height = 500 - margin.top - margin.bottom;
+    
+    // Sort data
+    data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, { numeric: true }));
+
+    // Baseline finding (1.1.1w)
+    const baseline = data.find(d => d.config.version === '1.1.1w') || data[0];
+
+    // Colors
+    const colorScale = d3.scaleOrdinal()
+        .domain(['1.1.1', '3.0', '3.1', '3.2', '3.3', '3.4', '3.5'])
+        .range(['#228be6', '#fa5252', '#fd7e14', '#fab005', '#40c057', '#15aabf', '#7950f2']);
+
+    const getSeries = (ver) => {
+        if (ver.startsWith('1.1.1')) return '1.1.1';
+        return ver.split('.').slice(0, 2).join('.');
+    };
+
+    // Tooltip
+    const tooltip = d3.select("body").append("div").attr("class", "tooltip");
+
+    // --- Chart 1: Scatter Plot (Tradeoff) ---
+    function renderScatter() {
+        d3.select("#scatter-chart").html("");
+        const svg = d3.select("#scatter-chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Metrics for Scatter:
+        // X = AES-GCM Throughput (Bulk Speed)
+        // Y = New Handshakes (Setup Speed)
+        const xMetric = 'aes_256_gcm_8k_kbs';
+        const yMetric = 'handshakes_new_per_sec';
+
+        const x = d3.scaleLinear()
+            .domain([0, d3.max(data, d => d.metrics[xMetric]) * 1.1])
+            .range([0, width]);
+
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(data, d => d.metrics[yMetric]) * 1.1])
+            .range([height, 0]);
+
+        // Grid
+        svg.append("g").attr("class", "grid")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x).tickSize(-height).tickFormat(""));
+        svg.append("g").attr("class", "grid")
+            .call(d3.axisLeft(y).tickSize(-width).tickFormat(""));
+
+        // Axes
+        svg.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .attr("class", "axis")
+            .call(d3.axisBottom(x).ticks(5).tickFormat(d => (d/1024/1024).toFixed(1) + ' GB/s'));
+        
+        svg.append("g")
+            .attr("class", "axis")
+            .call(d3.axisLeft(y).ticks(5));
+
+        // Labels
+        svg.append("text")
+            .attr("x", width/2)
+            .attr("y", height + 35)
+            .style("text-anchor", "middle")
+            .style("font-size", "12px")
+            .text("Bulk Encryption Speed (AES-256-GCM)");
+
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -height/2)
+            .attr("y", -45)
+            .style("text-anchor", "middle")
+            .style("font-size", "12px")
+            .text("Handshakes per Second (New)");
+
+        // Points
+        const dots = svg.selectAll(".dot")
+            .data(data)
+            .enter().append("g")
+            .attr("class", "dot-group");
+
+        dots.append("circle")
+            .attr("cx", d => x(d.metrics[xMetric]))
+            .attr("cy", d => y(d.metrics[yMetric]))
+            .attr("r", 8)
+            .style("fill", d => colorScale(getSeries(d.config.version)))
+            .style("opacity", 0.8)
+            .style("stroke", "#fff")
+            .style("stroke-width", 2)
+            .on("mouseover", function(event, d) {
+                d3.select(this).attr("r", 12).style("opacity", 1);
+                tooltip.transition().duration(200).style("opacity", .9);
+                tooltip.html(`<strong>Version ${d.config.version}</strong><br/>
+                    Series: ${getSeries(d.config.version)}<br/>
+                    Handshakes: ${Math.round(d.metrics[yMetric]).toLocaleString()}/sec<br/>
+                    Throughput: ${(d.metrics[xMetric]/1024/1024).toFixed(2)} GB/s`)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function(d) {
+                d3.select(this).attr("r", 8).style("opacity", 0.8);
+                tooltip.transition().duration(500).style("opacity", 0);
+            });
+
+        // Labels on dots
+        dots.append("text")
+            .attr("x", d => x(d.metrics[xMetric]) + 12)
+            .attr("y", d => y(d.metrics[yMetric]) + 4)
+            .text(d => d.config.version)
+            .style("font-size", "11px")
+            .style("fill", "#555")
+            .style("pointer-events", "none");
+            
+        // Quadrant Lines (based on baseline)
+        const baseX = baseline.metrics[xMetric];
+        const baseY = baseline.metrics[yMetric];
+        
+        svg.append("line")
+            .attr("x1", x(baseX))
+            .attr("x2", x(baseX))
+            .attr("y1", 0)
+            .attr("y2", height)
+            .style("stroke", "#999")
+            .style("stroke-dasharray", "3,3")
+            .style("opacity", 0.5);
+            
+        svg.append("line")
+            .attr("x1", 0)
+            .attr("x2", width)
+            .attr("y1", y(baseY))
+            .attr("y2", y(baseY))
+            .style("stroke", "#999")
+            .style("stroke-dasharray", "3,3")
+            .style("opacity", 0.5);
+
+        svg.append("text")
+            .attr("x", x(baseX) + 5)
+            .attr("y", 10)
+            .text("Baseline Throughput (1.1.1w)")
+            .style("font-size", "10px")
+            .style("fill", "#999");
+    }
+
+
+    // --- Chart 2: Timeline Bar Chart ---
+    function renderTimeline() {
+        const metricKey = document.getElementById('y-metric').value;
+        const normalize = document.getElementById('normalize').value === 'pct';
+        
+        d3.select("#timeline-chart").html("");
+        const svg = d3.select("#timeline-chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Y Value calculation
+        const getYVal = (d) => {
+            const raw = d.metrics[metricKey];
+            if (!normalize) return raw;
+            const base = baseline.metrics[metricKey];
+            return ((raw - base) / base) * 100;
+        };
+
+        const x = d3.scaleBand()
+            .domain(data.map(d => d.config.version))
+            .range([0, width])
+            .padding(0.3);
+
+        const yDomain = d3.extent(data, getYVal);
+        // Ensure 0 is included if not normalized, or balance if normalized
+        let yMin = yDomain[0];
+        let yMax = yDomain[1];
+        if (!normalize) yMin = 0;
+        else {
+            // Add some padding for negative values
+            yMin = Math.min(yMin, -10); 
+            yMax = Math.max(yMax, 10);
+        }
+
+        const y = d3.scaleLinear()
+            .domain([yMin, yMax * 1.1])
+            .range([height, 0]);
+
+        // Axis
+        svg.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .attr("class", "axis")
+            .call(d3.axisBottom(x));
+
+        svg.append("g")
+            .attr("class", "axis")
+            .call(d3.axisLeft(y).tickFormat(d => normalize ? d + "%" : d.toLocaleString()));
+
+        // Zero line for normalized view
+        if (normalize || yMin < 0) {
+            svg.append("line")
+                .attr("x1", 0)
+                .attr("x2", width)
+                .attr("y1", y(0))
+                .attr("y2", y(0))
+                .style("stroke", "#333")
+                .style("stroke-width", 1);
+        }
+
+        // Bars
+        svg.selectAll(".bar")
+            .data(data)
+            .enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", d => x(d.config.version))
+            .attr("width", x.bandwidth())
+            .attr("y", d => {
+                const val = getYVal(d);
+                return val >= 0 ? y(val) : y(0);
+            })
+            .attr("height", d => {
+                const val = getYVal(d);
+                return Math.abs(y(val) - y(0));
+            })
+            .style("fill", d => {
+                const val = getYVal(d);
+                // If normalized: Green for improvement, Red for regression
+                if (normalize) return val >= 0 ? "#40c057" : "#fa5252";
+                return colorScale(getSeries(d.config.version));
+            })
+            .on("mouseover", function(event, d) {
+                const val = getYVal(d);
+                d3.select(this).style("opacity", 0.7);
+                tooltip.transition().duration(200).style("opacity", .9);
+                tooltip.html(`<strong>Version ${d.config.version}</strong><br/>
+                    Value: ${normalize ? val.toFixed(2) + '%' : Math.round(val).toLocaleString()}<br/>
+                    Metric: ${metricKey}`)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function() {
+                d3.select(this).style("opacity", 1);
+                tooltip.transition().duration(500).style("opacity", 0);
+            });
+            
+        // Value Labels on bars
+        svg.selectAll(".label")
+            .data(data)
+            .enter().append("text")
+            .attr("x", d => x(d.config.version) + x.bandwidth()/2)
+            .attr("y", d => {
+                const val = getYVal(d);
+                // Position above if positive, below if negative
+                return val >= 0 ? y(val) - 5 : y(val) + 15;
+            })
+            .text(d => {
+                const val = getYVal(d);
+                return normalize ? (val > 0 ? '+' : '') + val.toFixed(1) + '%' : "";
+            })
+            .style("text-anchor", "middle")
+            .style("font-size", "11px")
+            .style("fill", "#333");
+    }
+
+    // Init
+    renderScatter();
+    renderTimeline();
+
+    // Listeners
+    document.getElementById('y-metric').addEventListener('change', renderTimeline);
+    document.getElementById('normalize').addEventListener('change', renderTimeline);
+
+</script>
+</body>
+</html>

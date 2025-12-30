@@ -1,0 +1,17 @@
+{
+  "version": "OpenSSL 3.5.3 16 Sep 2025 (Library: OpenSSL 3.5.3 16 Sep 2025)",
+  "metrics": {
+    "aes_256_gcm_1k_kbs": 3975862.17,
+    "aes_256_gcm_8k_kbs": 7414004.94,
+    "sha256_1k_kbs": 2904702.57,
+    "sha256_8k_kbs": 3337351.17,
+    "handshakes_new_per_sec": 16300,
+    "handshakes_resume_per_sec": 17284
+  },
+  "config": {
+    "version": "3.5.3",
+    "url": "https://github.com/openssl/openssl/releases/download/openssl-3.5.3/openssl-3.5.3.tar.gz",
+    "series": "3.5"
+  },
+  "timestamp": "2025-12-30T21:53:53.108Z"
+}

@@ -1,0 +1,17 @@
+{
+  "version": "OpenSSL 3.4.0 22 Oct 2024 (Library: OpenSSL 3.4.0 22 Oct 2024)",
+  "metrics": {
+    "aes_256_gcm_1k_kbs": 7578335.95,
+    "aes_256_gcm_8k_kbs": 8235013.73,
+    "sha256_1k_kbs": 2853076.68,
+    "sha256_8k_kbs": 3334941.9,
+    "handshakes_new_per_sec": 18806,
+    "handshakes_resume_per_sec": 19355
+  },
+  "config": {
+    "version": "3.4.0",
+    "url": "https://github.com/openssl/openssl/releases/download/openssl-3.4.0/openssl-3.4.0.tar.gz",
+    "series": "3.4"
+  },
+  "timestamp": "2025-12-30T21:51:28.100Z"
+}

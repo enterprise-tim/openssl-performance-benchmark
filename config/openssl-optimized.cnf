@@ -1,0 +1,40 @@
+# OpenSSL Performance-Optimized Configuration
+# Based on Tomáš Mráz's recommendations from:
+# https://www.youtube.com/watch?v=Cv-43gJJFIs
+#
+# This configuration minimizes Provider overhead by:
+# 1. Loading only the default provider (no legacy, no FIPS)
+# 2. Setting explicit algorithm properties to avoid property queries
+# 3. Disabling unnecessary features
+
+# Home directory for OpenSSL files
+openssl_conf = openssl_init
+
+[openssl_init]
+providers = provider_sect
+alg_section = algorithm_sect
+
+[provider_sect]
+# Only load the default provider - no FIPS, no legacy
+# This avoids the overhead of loading multiple providers
+default = default_sect
+
+[default_sect]
+# Activate the default provider
+activate = 1
+
+[algorithm_sect]
+# Set default properties to avoid property queries at runtime
+# This tells OpenSSL to use the default provider without querying
+default_properties = provider=default
+
+# SSL/TLS settings optimized for performance
+[ssl_sect]
+# Disable client-initiated renegotiation (security + performance)
+Options = NO_RENEGOTIATION
+
+# System default settings
+[system_default_sect]
+# Use system's entropy source directly
+RANDFILE = /dev/urandom
+

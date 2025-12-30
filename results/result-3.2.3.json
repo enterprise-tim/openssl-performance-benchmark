@@ -1,0 +1,17 @@
+{
+  "version": "OpenSSL 3.2.3 3 Sep 2024 (Library: OpenSSL 3.2.3 3 Sep 2024)",
+  "metrics": {
+    "aes_256_gcm_1k_kbs": 7508891.55,
+    "aes_256_gcm_8k_kbs": 8093207.76,
+    "sha256_1k_kbs": 2857657.75,
+    "sha256_8k_kbs": 3345648.03,
+    "handshakes_new_per_sec": 17892,
+    "handshakes_resume_per_sec": 18345
+  },
+  "config": {
+    "version": "3.2.3",
+    "url": "https://github.com/openssl/openssl/releases/download/openssl-3.2.3/openssl-3.2.3.tar.gz",
+    "series": "3.2"
+  },
+  "timestamp": "2025-12-30T21:46:38.101Z"
+}

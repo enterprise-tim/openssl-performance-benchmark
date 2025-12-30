@@ -1,0 +1,12 @@
+{
+  "name": "openssl-performance-benchmark",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "benchmark": "node scripts/run-benchmark.js",
+    "generate-report": "node scripts/generate-report.js",
+    "generate-viz": "node scripts/generate-viz.js",
+    "report": "npm run generate-report && npm run generate-viz"
+  },
+  "dependencies": {}
+}
