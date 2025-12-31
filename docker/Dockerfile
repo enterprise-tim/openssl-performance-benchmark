@@ -23,7 +23,7 @@ RUN echo "Downloading OpenSSL ${OPENSSL_VERSION} from ${OPENSSL_URL}" && \
     curl -L -o openssl.tar.gz "${OPENSSL_URL}" && \
     tar -xf openssl.tar.gz && \
     cd openssl-${OPENSSL_VERSION} && \
-    ./config --prefix=/opt/openssl --openssldir=/opt/openssl/ssl -Wl,-rpath,/opt/openssl/lib64 -Wl,-rpath,/opt/openssl/lib && \
+    ./config --prefix=/opt/openssl --openssldir=/opt/openssl/ssl enable-ktls enable-ec_nistp_64_gcc_128 -Wl,-rpath,/opt/openssl/lib64 -Wl,-rpath,/opt/openssl/lib && \
     make -j$(nproc) && \
     make install
 

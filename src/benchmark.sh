@@ -324,50 +324,69 @@ echo "Schmatz algorithm tests complete." >&2
 # We also just try to run the speed command on ml-kem-768 to be sure.
 echo "Checking for PQC (ML-KEM) support..." >&2
 
-# Debug: List algorithms to see what is available
-# echo "DEBUG: Available public key algorithms:" >&2
-# openssl list -public-key-algorithms 2>/dev/null | head -n 20 >&2
+# Enable detailed debug output for PQC detection
+echo "DEBUG: OpenSSL Version: $OPENSSL_VERSION_OUTPUT" >&2
+echo "DEBUG: Available public key algorithms:" >&2
+openssl list -public-key-algorithms 2>/dev/null | grep -i "kem" >&2 || echo "  (No KEM algorithms found)" >&2
 
 IS_PQC=false
 if openssl list -public-key-algorithms 2>/dev/null | grep -i "ml-kem" >/dev/null; then
     IS_PQC=true
+    echo "DEBUG: ML-KEM found via 'list -public-key-algorithms'" >&2
 elif openssl speed -help 2>&1 | grep -i "ml-kem" >/dev/null; then
     IS_PQC=true
+    echo "DEBUG: ML-KEM found via 'speed -help'" >&2
+else
+    # Try direct test - OpenSSL 3.5+ might support it even if not listed
+    echo "DEBUG: Attempting direct ML-KEM-768 test..." >&2
+    if openssl speed -seconds 1 ml-kem-768 2>&1 | grep -i "ml-kem-768" >/dev/null; then
+        IS_PQC=true
+        echo "DEBUG: ML-KEM-768 works directly!" >&2
+    fi
 fi
 
 if [ "$IS_PQC" = true ]; then
     echo "PQC detected. Running ML-KEM-768 speed test..." >&2
     
     # Run speed test. capture output.
-    PQC_OUT=$(openssl speed -seconds 5 -evp ml-kem-768 2>&1)
+    # Try both -evp and without -evp (KEM might not be EVP-based)
+    PQC_OUT=$(openssl speed -seconds 5 ml-kem-768 2>&1)
     
-    # Debug PQC output
-    # echo "DEBUG PQC OUT:" >&2
-    # echo "$PQC_OUT" | head -n 5 >&2
+    echo "DEBUG PQC OUT (first 10 lines):" >&2
+    echo "$PQC_OUT" | head -n 10 >&2
+    echo "DEBUG PQC OUT (last 5 lines):" >&2
+    echo "$PQC_OUT" | tail -n 5 >&2
 
     # Parse the output.
-    # Typical output for KEM speed test (format may vary slightly):
+    # Typical output for KEM speed test (format may vary):
     # ml-kem-768 :  1234.5 op/s
-    # or a table.
+    # OR table format like other speed tests
     
-    # Let's try to grab the last line which usually contains the results
-    PQC_LINE=$(echo "$PQC_OUT" | grep -i "^ml-kem-768")
+    # Try multiple parsing strategies
+    PQC_LINE=$(echo "$PQC_OUT" | grep -i "ml-kem-768" | tail -1)
     
     if [ ! -z "$PQC_LINE" ]; then
        # Extract the last column as a proxy for "operations per second"
        PQC_OPS=$(echo "$PQC_LINE" | awk '{print $NF}')
-       RESULTS=$(echo "$RESULTS" | jq --arg v "${PQC_OPS:-0}" '.metrics.ml_kem_768_ops_sec = ($v | tonumber)')
-       echo "  Captured ML-KEM-768: $PQC_OPS ops/sec" >&2
+       
+       # Validate it's a number
+       if [[ "$PQC_OPS" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+           RESULTS=$(echo "$RESULTS" | jq --arg v "${PQC_OPS}" '.metrics.ml_kem_768_ops_sec = ($v | tonumber)')
+           echo "  ✓ Captured ML-KEM-768: $PQC_OPS ops/sec" >&2
+       else
+           echo "WARNING: Could not extract numeric value from: $PQC_OPS" >&2
+           RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_kem_768_ops_sec = 0')
+       fi
     else
        echo "WARNING: Could not parse ML-KEM output." >&2
-       echo "Raw Output:" >&2
+       echo "Full Raw Output:" >&2
        echo "$PQC_OUT" >&2
        RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_kem_768_ops_sec = 0')
     fi
 else
     echo "PQC (ML-KEM) not detected in this OpenSSL build." >&2
-    # Debug: why not?
-    # openssl version -a >&2
+    echo "DEBUG: Checking OpenSSL capabilities:" >&2
+    openssl version -a 2>&1 | head -n 5 >&2
 fi
 
 # =============================================================================
@@ -388,7 +407,7 @@ echo "========================================" >&2
 # Also redirect output to a log file for debugging
 openssl s_server -cert rsa_cert.pem -key rsa_key.pem -www -accept 4433 -quiet > s_server_rsa.log 2>&1 &
 RSA_SERVER_PID=$!
-sleep 2
+sleep 5
 
 # Check if server is running
 if ! kill -0 $RSA_SERVER_PID 2>/dev/null; then
@@ -446,7 +465,7 @@ echo "========================================" >&2
 # Start ECDSA server on port 4434
 openssl s_server -cert ec_cert.pem -key ec_key.pem -www -accept 4434 -quiet >/dev/null 2>&1 &
 EC_SERVER_PID=$!
-sleep 2
+sleep 5
 
 # --- TLS 1.3 with ECDSA Certificate ---
 echo "TLS 1.3 ECDSA: New Connections..." >&2
@@ -506,7 +525,7 @@ if echo "$OPENSSL_VERSION_OUTPUT" | grep -E "^OpenSSL\s+3" >/dev/null; then
         # Start RSA server with optimized config
         OPENSSL_CONF="$OPTIMIZED_CONF" openssl s_server -cert rsa_cert.pem -key rsa_key.pem -www -accept 4435 -quiet > s_server_opt.log 2>&1 &
         OPT_SERVER_PID=$!
-        sleep 2
+        sleep 5
         
         # Check if server is running
         if ! kill -0 $OPT_SERVER_PID 2>/dev/null; then

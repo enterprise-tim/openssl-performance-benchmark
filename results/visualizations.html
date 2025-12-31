@@ -181,7 +181,127 @@
 </div>
 
 <script>
-    const data = [];
+    const data = [
+  {
+    "version": "OpenSSL 1.1.1w  11 Sep 2023",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 5901582.13,
+      "aes_256_gcm_8k_kbs": 5856720.49,
+      "sha256_1k_kbs": 2788660.02,
+      "sha256_8k_kbs": 3332688.28,
+      "handshakes_new_per_sec": 19557,
+      "handshakes_resume_per_sec": 20580
+    },
+    "config": {
+      "version": "1.1.1w",
+      "url": "https://www.openssl.org/source/openssl-1.1.1w.tar.gz",
+      "series": "1.1.1"
+    },
+    "timestamp": "2025-12-30T21:39:23.109Z"
+  },
+  {
+    "version": "OpenSSL 3.0.15 3 Sep 2024 (Library: OpenSSL 3.0.15 3 Sep 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7604872.4,
+      "aes_256_gcm_8k_kbs": 8336787.05,
+      "sha256_1k_kbs": 2775479.5,
+      "sha256_8k_kbs": 3352901.22,
+      "handshakes_new_per_sec": 16719,
+      "handshakes_resume_per_sec": 17178
+    },
+    "config": {
+      "version": "3.0.15",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.0.15/openssl-3.0.15.tar.gz",
+      "series": "3.0"
+    },
+    "timestamp": "2025-12-30T21:41:48.107Z"
+  },
+  {
+    "version": "OpenSSL 3.1.7 3 Sep 2024 (Library: OpenSSL 3.1.7 3 Sep 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7489533.24,
+      "aes_256_gcm_8k_kbs": 8061890.56,
+      "sha256_1k_kbs": 2744398.95,
+      "sha256_8k_kbs": 3319216.54,
+      "handshakes_new_per_sec": 17150,
+      "handshakes_resume_per_sec": 17984
+    },
+    "config": {
+      "version": "3.1.7",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.1.7/openssl-3.1.7.tar.gz",
+      "series": "3.1"
+    },
+    "timestamp": "2025-12-30T21:44:13.122Z"
+  },
+  {
+    "version": "OpenSSL 3.2.3 3 Sep 2024 (Library: OpenSSL 3.2.3 3 Sep 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7508891.55,
+      "aes_256_gcm_8k_kbs": 8093207.76,
+      "sha256_1k_kbs": 2857657.75,
+      "sha256_8k_kbs": 3345648.03,
+      "handshakes_new_per_sec": 17892,
+      "handshakes_resume_per_sec": 18345
+    },
+    "config": {
+      "version": "3.2.3",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.2.3/openssl-3.2.3.tar.gz",
+      "series": "3.2"
+    },
+    "timestamp": "2025-12-30T21:46:38.101Z"
+  },
+  {
+    "version": "OpenSSL 3.3.2 3 Sep 2024 (Library: OpenSSL 3.3.2 3 Sep 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7488583.37,
+      "aes_256_gcm_8k_kbs": 8296687.21,
+      "sha256_1k_kbs": 2753770.7,
+      "sha256_8k_kbs": 3321158.86,
+      "handshakes_new_per_sec": 17107,
+      "handshakes_resume_per_sec": 18022
+    },
+    "config": {
+      "version": "3.3.2",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.3.2/openssl-3.3.2.tar.gz",
+      "series": "3.3"
+    },
+    "timestamp": "2025-12-30T21:49:03.096Z"
+  },
+  {
+    "version": "OpenSSL 3.4.0 22 Oct 2024 (Library: OpenSSL 3.4.0 22 Oct 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7578335.95,
+      "aes_256_gcm_8k_kbs": 8235013.73,
+      "sha256_1k_kbs": 2853076.68,
+      "sha256_8k_kbs": 3334941.9,
+      "handshakes_new_per_sec": 18806,
+      "handshakes_resume_per_sec": 19355
+    },
+    "config": {
+      "version": "3.4.0",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.4.0/openssl-3.4.0.tar.gz",
+      "series": "3.4"
+    },
+    "timestamp": "2025-12-30T21:51:28.100Z"
+  },
+  {
+    "version": "OpenSSL 3.5.3 16 Sep 2025 (Library: OpenSSL 3.5.3 16 Sep 2025)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 3975862.17,
+      "aes_256_gcm_8k_kbs": 7414004.94,
+      "sha256_1k_kbs": 2904702.57,
+      "sha256_8k_kbs": 3337351.17,
+      "handshakes_new_per_sec": 16300,
+      "handshakes_resume_per_sec": 17284
+    },
+    "config": {
+      "version": "3.5.3",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.5.3/openssl-3.5.3.tar.gz",
+      "series": "3.5"
+    },
+    "timestamp": "2025-12-30T21:53:53.108Z"
+  }
+];
     
     // Sort data: 1.1.1 first, then numeric sort
     data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, { numeric: true }));
@@ -199,10 +319,19 @@
 
     const tooltip = d3.select("body").append("div").attr("class", "tooltip");
 
+    // Helper to get a reasonable width even if the tab was hidden (fallbacks to parent/window)
+    function getWidth(container, pad = 60, minWidth = 320) {
+        const rect = container.node().getBoundingClientRect();
+        const parentRect = container.node().parentNode ? container.node().parentNode.getBoundingClientRect() : { width: window.innerWidth };
+        const rawWidth = Math.max(rect.width, parentRect.width, window.innerWidth);
+        return Math.max(rawWidth - pad, minWidth);
+    }
+
     // --- CHART 1: SCATTER (Zoomed) ---
     function renderScatter() {
         const container = d3.select("#scatter-chart");
-        const width = container.node().getBoundingClientRect().width - 80;
+        container.html("");
+        const width = getWidth(container, 80);
         const height = 460;
         const margin = {top: 20, right: 100, bottom: 50, left: 60};
 
@@ -258,16 +387,33 @@
             .on("mouseover", (e, d) => showTooltip(e, `<strong>${d.config.version}</strong><br>TP: ${(xVal(d)/1024/1024).toFixed(2)} GB/s<br>HS: ${yVal(d).toLocaleString()}`))
             .on("mouseout", hideTooltip);
 
-        // Labels
-        svg.selectAll(".lbl").data(data).enter().append("text")
-            .attr("x", d => x(xVal(d)) + 14).attr("y", d => y(yVal(d)) + 4)
-            .text(d => d.config.version).style("font-size", "11px").style("font-weight", "bold").style("fill", "#495057");
+        // Smart Label Positioning (Force Simulation to avoid overlap)
+        const labels = data.map(d => ({
+            x: x(xVal(d)) + 14,
+            y: y(yVal(d)) + 4,
+            originalY: y(yVal(d)) + 4,
+            version: d.config.version
+        }));
+
+        const simulation = d3.forceSimulation(labels)
+            .force("x", d3.forceX(d => d.x).strength(1))
+            .force("y", d3.forceY(d => d.originalY).strength(0.1))
+            .force("collide", d3.forceCollide(12)) // Radius for text height/spacing
+            .stop();
+
+        for (let i = 0; i < 100; ++i) simulation.tick();
+
+        svg.selectAll(".lbl").data(labels).enter().append("text")
+            .attr("x", d => d.x)
+            .attr("y", d => d.y)
+            .text(d => d.version).style("font-size", "11px").style("font-weight", "bold").style("fill", "#495057");
     }
 
     // --- CHART 2: TLS 1.2 vs 1.3 (Grouped Bar) ---
     function renderTlsChart() {
         const container = d3.select("#tls-chart");
-        const width = container.node().getBoundingClientRect().width - 60;
+        container.html("");
+        const width = getWidth(container, 60);
         const height = 450;
         const margin = {top: 20, right: 20, bottom: 40, left: 50};
 
@@ -319,7 +465,8 @@
     // --- CHART 3: BELLINGRATH RSA vs ECDSA ---
     function renderBellingrathRsaEcdsa() {
         const container = d3.select("#rsa-vs-ecdsa-chart");
-        const width = container.node().getBoundingClientRect().width - 60;
+        container.html("");
+        const width = getWidth(container, 60);
         const height = 420;
         const margin = {top: 20, right: 120, bottom: 40, left: 60};
 
@@ -367,7 +514,8 @@
 
     function renderBellingrathResume() {
         const container = d3.select("#resume-chart");
-        const width = container.node().getBoundingClientRect().width - 60;
+        container.html("");
+        const width = getWidth(container, 60);
         const height = 360;
         const margin = {top: 20, right: 120, bottom: 40, left: 60};
 
@@ -416,7 +564,8 @@
     // --- CHART 4: SCHMATZ RSA COMPARISON ---
     function renderRsaChart() {
         const container = d3.select("#rsa-chart");
-        const width = container.node().getBoundingClientRect().width - 60;
+        container.html("");
+        const width = getWidth(container, 60);
         const height = 360;
         const margin = {top: 20, right: 150, bottom: 40, left: 60};
 
@@ -464,7 +613,8 @@
 
     function renderEcdsaChart() {
         const container = d3.select("#ecdsa-chart");
-        const width = container.node().getBoundingClientRect().width - 60;
+        container.html("");
+        const width = getWidth(container, 60);
         const height = 360;
         const margin = {top: 20, right: 140, bottom: 40, left: 60};
 
@@ -514,7 +664,8 @@
 
     function renderBlockSizeChart() {
         const container = d3.select("#blocksize-chart");
-        const width = container.node().getBoundingClientRect().width - 60;
+        container.html("");
+        const width = getWidth(container, 60);
         const height = 320;
         const margin = {top: 20, right: 120, bottom: 40, left: 70};
 
@@ -582,6 +733,7 @@
     // --- CHART 5: MRÁZ OPTIMIZATION COMPARISON ---
     function renderMrazChart() {
         const container = d3.select("#mraz-chart");
+        container.html("");
         
         // Filter to only 3.x versions with optimized data
         const mrazData = data.filter(d => d.metrics.optimized_tls1_3_rsa_new_cps > 0);
@@ -591,7 +743,7 @@
             return;
         }
 
-        const width = container.node().getBoundingClientRect().width - 60;
+        const width = getWidth(container, 60);
         const height = 420;
         const margin = {top: 20, right: 120, bottom: 40, left: 60};
 
@@ -639,6 +791,7 @@
 
     function renderMrazImprovement() {
         const container = d3.select("#mraz-improvement-chart");
+        container.html("");
         
         // Filter to only 3.x versions with optimized data
         const mrazData = data.filter(d => d.metrics.optimized_tls1_3_rsa_new_cps > 0);
@@ -648,7 +801,7 @@
             return;
         }
 
-        const width = container.node().getBoundingClientRect().width - 60;
+        const width = getWidth(container, 60);
         const height = 320;
         const margin = {top: 20, right: 20, bottom: 40, left: 60};
 
@@ -705,7 +858,8 @@
     // --- CHART 5: SMALL MULTIPLES (Normalized) ---
     function renderSmallMultiple(divId, metricKey) {
         const container = d3.select(divId);
-        const width = container.node().getBoundingClientRect().width - 50;
+        container.html("");
+        const width = getWidth(container, 50, 260);
         const height = 220;
         const margin = {top: 20, right: 10, bottom: 30, left: 40};
 
@@ -756,13 +910,14 @@
     function renderPqc() {
         const pqcData = data.filter(d => d.metrics.ml_kem_768_ops_sec > 0);
         const container = d3.select("#pqc-chart");
+        container.html("");
         
         if (pqcData.length === 0) {
             container.html("<div style='padding:40px; text-align:center; color:#999'>No Post-Quantum Data Available (requires OpenSSL 3.5+)</div>");
             return;
         }
 
-        const width = container.node().getBoundingClientRect().width - 60;
+        const width = getWidth(container, 60);
         const height = 350;
         const margin = {top: 20, right: 20, bottom: 40, left: 60};
 
@@ -807,6 +962,21 @@
         tooltip.transition().duration(500).style("opacity", 0);
     }
 
+    function renderForTab(tabId) {
+        // Use requestAnimationFrame to allow the browser to perform layout (display: block) before measuring width
+        const run = () => {
+            if (tabId === 'overview') renderScatter();
+            if (tabId === 'tls') renderTlsChart();
+            if (tabId === 'bellingrath') { renderBellingrathRsaEcdsa(); renderBellingrathResume(); }
+            if (tabId === 'schmatz') { renderRsaChart(); renderEcdsaChart(); renderBlockSizeChart(); }
+            if (tabId === 'mraz') { renderMrazChart(); renderMrazImprovement(); }
+            if (tabId === 'multiples') renderMultiples();
+            if (tabId === 'pqc') renderPqc();
+        };
+        // Double rAF to ensure styles/layout are applied before measuring widths
+        requestAnimationFrame(() => requestAnimationFrame(run));
+    }
+
     // Tab Switcher
     window.switchTab = function(tabId) {
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -814,20 +984,20 @@
         
         document.getElementById(tabId).classList.add('active');
         document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+
+        renderForTab(tabId);
     };
 
-    // Init Charts
-    renderScatter();
-    renderTlsChart();
-    renderBellingrathRsaEcdsa();
-    renderBellingrathResume();
-    renderRsaChart();
-    renderEcdsaChart();
-    renderBlockSizeChart();
-    renderMrazChart();
-    renderMrazImprovement();
-    renderMultiples();
-    renderPqc();
+    // Re-render active tab on window resize to pick up new widths
+    window.addEventListener('resize', () => {
+        const active = document.querySelector('.view-section.active');
+        if (active) {
+            renderForTab(active.id);
+        }
+    });
+
+    // Init Charts (Overview is active by default)
+    renderForTab('overview');
 
 </script>
 </body>

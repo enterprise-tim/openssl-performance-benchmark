@@ -1,1 +1,121 @@
-[]
+[
+  {
+    "version": "OpenSSL 1.1.1w  11 Sep 2023",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 5901582.13,
+      "aes_256_gcm_8k_kbs": 5856720.49,
+      "sha256_1k_kbs": 2788660.02,
+      "sha256_8k_kbs": 3332688.28,
+      "handshakes_new_per_sec": 19557,
+      "handshakes_resume_per_sec": 20580
+    },
+    "config": {
+      "version": "1.1.1w",
+      "url": "https://www.openssl.org/source/openssl-1.1.1w.tar.gz",
+      "series": "1.1.1"
+    },
+    "timestamp": "2025-12-30T21:39:23.109Z"
+  },
+  {
+    "version": "OpenSSL 3.0.15 3 Sep 2024 (Library: OpenSSL 3.0.15 3 Sep 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7604872.4,
+      "aes_256_gcm_8k_kbs": 8336787.05,
+      "sha256_1k_kbs": 2775479.5,
+      "sha256_8k_kbs": 3352901.22,
+      "handshakes_new_per_sec": 16719,
+      "handshakes_resume_per_sec": 17178
+    },
+    "config": {
+      "version": "3.0.15",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.0.15/openssl-3.0.15.tar.gz",
+      "series": "3.0"
+    },
+    "timestamp": "2025-12-30T21:41:48.107Z"
+  },
+  {
+    "version": "OpenSSL 3.1.7 3 Sep 2024 (Library: OpenSSL 3.1.7 3 Sep 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7489533.24,
+      "aes_256_gcm_8k_kbs": 8061890.56,
+      "sha256_1k_kbs": 2744398.95,
+      "sha256_8k_kbs": 3319216.54,
+      "handshakes_new_per_sec": 17150,
+      "handshakes_resume_per_sec": 17984
+    },
+    "config": {
+      "version": "3.1.7",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.1.7/openssl-3.1.7.tar.gz",
+      "series": "3.1"
+    },
+    "timestamp": "2025-12-30T21:44:13.122Z"
+  },
+  {
+    "version": "OpenSSL 3.2.3 3 Sep 2024 (Library: OpenSSL 3.2.3 3 Sep 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7508891.55,
+      "aes_256_gcm_8k_kbs": 8093207.76,
+      "sha256_1k_kbs": 2857657.75,
+      "sha256_8k_kbs": 3345648.03,
+      "handshakes_new_per_sec": 17892,
+      "handshakes_resume_per_sec": 18345
+    },
+    "config": {
+      "version": "3.2.3",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.2.3/openssl-3.2.3.tar.gz",
+      "series": "3.2"
+    },
+    "timestamp": "2025-12-30T21:46:38.101Z"
+  },
+  {
+    "version": "OpenSSL 3.3.2 3 Sep 2024 (Library: OpenSSL 3.3.2 3 Sep 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7488583.37,
+      "aes_256_gcm_8k_kbs": 8296687.21,
+      "sha256_1k_kbs": 2753770.7,
+      "sha256_8k_kbs": 3321158.86,
+      "handshakes_new_per_sec": 17107,
+      "handshakes_resume_per_sec": 18022
+    },
+    "config": {
+      "version": "3.3.2",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.3.2/openssl-3.3.2.tar.gz",
+      "series": "3.3"
+    },
+    "timestamp": "2025-12-30T21:49:03.096Z"
+  },
+  {
+    "version": "OpenSSL 3.4.0 22 Oct 2024 (Library: OpenSSL 3.4.0 22 Oct 2024)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7578335.95,
+      "aes_256_gcm_8k_kbs": 8235013.73,
+      "sha256_1k_kbs": 2853076.68,
+      "sha256_8k_kbs": 3334941.9,
+      "handshakes_new_per_sec": 18806,
+      "handshakes_resume_per_sec": 19355
+    },
+    "config": {
+      "version": "3.4.0",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.4.0/openssl-3.4.0.tar.gz",
+      "series": "3.4"
+    },
+    "timestamp": "2025-12-30T21:51:28.100Z"
+  },
+  {
+    "version": "OpenSSL 3.5.3 16 Sep 2025 (Library: OpenSSL 3.5.3 16 Sep 2025)",
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 3975862.17,
+      "aes_256_gcm_8k_kbs": 7414004.94,
+      "sha256_1k_kbs": 2904702.57,
+      "sha256_8k_kbs": 3337351.17,
+      "handshakes_new_per_sec": 16300,
+      "handshakes_resume_per_sec": 17284
+    },
+    "config": {
+      "version": "3.5.3",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.5.3/openssl-3.5.3.tar.gz",
+      "series": "3.5"
+    },
+    "timestamp": "2025-12-30T21:53:53.108Z"
+  }
+]
