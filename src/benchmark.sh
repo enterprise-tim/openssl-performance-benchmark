@@ -137,14 +137,16 @@ echo "Running Multi-threaded AES-256-GCM speed test..." >&2
 # Detect cores (default to 4 if detection fails)
 CORES=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 # Run speed test with -multi
-MULTI_OUT=$(openssl speed -seconds 10 -multi $CORES -evp aes-256-gcm 2>/dev/null)
+# Removing 2>/dev/null to capture potential errors in logs
+MULTI_OUT=$(openssl speed -seconds 10 -multi $CORES -evp aes-256-gcm 2>&1)
 
 # Parse output. The format for -multi usually looks like:
 # evp             486665.51k  1298888.79k ...
 # It sums the throughput.
 # We look for the line starting with 'evp' (since -evp was used) or the algorithm name depending on version.
 # OpenSSL 3.x with -multi often prints 'evp' at the start of the line.
-MULTI_LINE=$(echo "$MULTI_OUT" | grep -E "^(evp|aes-256-gcm)")
+# UPDATED: grep -E "^\s*(evp|aes-256-gcm)" to handle potential leading whitespace
+MULTI_LINE=$(echo "$MULTI_OUT" | grep -E "^\s*(evp|aes-256-gcm)" | tail -1)
 
 # Extract 1K and 8K columns (same indices as single thread: 5 and 6)
 if [ ! -z "$MULTI_LINE" ]; then
@@ -154,6 +156,11 @@ if [ ! -z "$MULTI_LINE" ]; then
     RESULTS=$(echo "$RESULTS" | jq --arg v "${MULTI_8K:-0}" '.metrics.aes_256_gcm_multi_8k_kbs = ($v | tonumber)')
     RESULTS=$(echo "$RESULTS" | jq --arg v "${CORES}" '.config.cores_used = ($v | tonumber)')
 else
+    echo "WARNING: Could not parse multi-threaded output." >&2
+    echo "Raw Output Start:" >&2
+    echo "$MULTI_OUT" | head -n 10 >&2
+    echo "Raw Output End:" >&2
+    echo "$MULTI_OUT" | tail -n 5 >&2
     RESULTS=$(echo "$RESULTS" | jq '.metrics.aes_256_gcm_multi_1k_kbs = 0 | .metrics.aes_256_gcm_multi_8k_kbs = 0')
 fi
 
