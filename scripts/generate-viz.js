@@ -850,7 +850,7 @@ async function main() {
     const rawData = await fs.readFile(summaryPath, 'utf8');
     const finalHtml = HTML_TEMPLATE(rawData);
     await fs.writeFile(outputPath, finalHtml);
-    console.log(\`📊 Visualization dashboard generated at: \${outputPath}\`);
+    console.log(`📊 Visualization dashboard generated at: ${outputPath}`);
   } catch (error) {
     console.error('❌ Failed to generate visual report:', error.message);
   }
