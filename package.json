@@ -23,11 +23,12 @@
     "test:docker": "bash scripts/test-docker-build.sh quick",
     "test:docker:full": "bash scripts/test-docker-build.sh full",
     "test:docker:version": "bash scripts/test-docker-build.sh quick",
+    "lint:yaml": "bash scripts/lint-yaml.sh",
     "validate": "npm test && npm run test:docker",
     "validate:full": "npm run test:coverage && npm run test:docker:full",
     "pretest": "echo '🧪 Running test suite with Vitest...'",
     "prepublishOnly": "npm test",
-    "precommit": "npm test"
+    "precommit": "npm run lint:yaml && npm test"
   },
   "devDependencies": {
     "vitest": "^1.1.0",
