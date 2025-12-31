@@ -315,6 +315,7 @@ jobs:
         </body>
         </html>
         EOF
+        fi
 
         echo "✅ Created index.html"
         echo "📁 GitHub Pages content:"
