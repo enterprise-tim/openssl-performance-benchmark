@@ -187,10 +187,27 @@ parse_asymmetric() {
     # Find line matching the algorithm
     # We grep -v "^Doing" to avoid matching the status lines like "Doing 256 bits..."
     # We use tail -1 to get the last match (usually the summary table)
+    # UPDATED: grep -E to handle potential leading whitespace and ensure we match the right line
+    # For RSA, input is "rsa 2048", output line starts with "rsa  2048" (note spaces)
+    # So we should be flexible with spaces.
     local line
-    line=$(echo "$output" | grep -i "$algo" | grep -v "^Doing" | tail -1)
+    
+    # Try flexible whitespace matching
+    # Normalize spaces in algo input for grep regex
+    local algo_regex
+    algo_regex=$(echo "$algo" | sed 's/ /\\s\+/g')
+    
+    line=$(echo "$output" | grep -E "^\s*$algo_regex" | grep -v "^Doing" | tail -1)
     
     if [ -z "$line" ]; then
+        # Try a broader search if specific match failed (sometimes version changes header format)
+        # e.g. OpenSSL 3.x summary might just say "rsa2048" without spaces?
+        # Let's log warning and return 0
+        echo "WARNING: Could not find output line for '$algo' using regex '^\s*$algo_regex'" >&2
+        echo "Raw Output Start:" >&2
+        echo "$output" | head -n 5 >&2
+        echo "Raw Output End:" >&2
+        echo "$output" | tail -n 5 >&2
         echo "0 0"
         return
     fi
