@@ -23,7 +23,14 @@ RUN echo "Downloading OpenSSL ${OPENSSL_VERSION} from ${OPENSSL_URL}" && \
     curl -L -o openssl.tar.gz "${OPENSSL_URL}" && \
     tar -xf openssl.tar.gz && \
     cd openssl-${OPENSSL_VERSION} && \
-    ./config --prefix=/opt/openssl --openssldir=/opt/openssl/ssl enable-ktls enable-ec_nistp_64_gcc_128 -Wl,-rpath,/opt/openssl/lib64 -Wl,-rpath,/opt/openssl/lib && \
+    # Determine config options based on version (ktls only supported in 3.0+) \
+    if echo "${OPENSSL_VERSION}" | grep -q "^1\."; then \
+        CONFIG_OPTS="enable-ec_nistp_64_gcc_128"; \
+    else \
+        CONFIG_OPTS="enable-ktls enable-ec_nistp_64_gcc_128"; \
+    fi && \
+    echo "Building with options: $CONFIG_OPTS" && \
+    ./config --prefix=/opt/openssl --openssldir=/opt/openssl/ssl $CONFIG_OPTS -Wl,-rpath,/opt/openssl/lib64 -Wl,-rpath,/opt/openssl/lib && \
     make -j$(nproc) && \
     make install
 
