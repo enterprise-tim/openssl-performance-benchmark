@@ -137,14 +137,16 @@ echo "Running Multi-threaded AES-256-GCM speed test..." >&2
 # Detect cores (default to 4 if detection fails)
 CORES=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 # Run speed test with -multi
-MULTI_OUT=$(openssl speed -seconds 10 -multi $CORES -evp aes-256-gcm 2>/dev/null)
+# Removing 2>/dev/null to capture potential errors in logs
+MULTI_OUT=$(openssl speed -seconds 10 -multi $CORES -evp aes-256-gcm 2>&1)
 
 # Parse output. The format for -multi usually looks like:
 # evp             486665.51k  1298888.79k ...
 # It sums the throughput.
 # We look for the line starting with 'evp' (since -evp was used) or the algorithm name depending on version.
 # OpenSSL 3.x with -multi often prints 'evp' at the start of the line.
-MULTI_LINE=$(echo "$MULTI_OUT" | grep -E "^(evp|aes-256-gcm)")
+# UPDATED: grep -E "^\s*(evp|aes-256-gcm)" to handle potential leading whitespace
+MULTI_LINE=$(echo "$MULTI_OUT" | grep -E "^\s*(evp|aes-256-gcm)" | tail -1)
 
 # Extract 1K and 8K columns (same indices as single thread: 5 and 6)
 if [ ! -z "$MULTI_LINE" ]; then
@@ -154,6 +156,11 @@ if [ ! -z "$MULTI_LINE" ]; then
     RESULTS=$(echo "$RESULTS" | jq --arg v "${MULTI_8K:-0}" '.metrics.aes_256_gcm_multi_8k_kbs = ($v | tonumber)')
     RESULTS=$(echo "$RESULTS" | jq --arg v "${CORES}" '.config.cores_used = ($v | tonumber)')
 else
+    echo "WARNING: Could not parse multi-threaded output." >&2
+    echo "Raw Output Start:" >&2
+    echo "$MULTI_OUT" | head -n 10 >&2
+    echo "Raw Output End:" >&2
+    echo "$MULTI_OUT" | tail -n 5 >&2
     RESULTS=$(echo "$RESULTS" | jq '.metrics.aes_256_gcm_multi_1k_kbs = 0 | .metrics.aes_256_gcm_multi_8k_kbs = 0')
 fi
 
@@ -180,10 +187,27 @@ parse_asymmetric() {
     # Find line matching the algorithm
     # We grep -v "^Doing" to avoid matching the status lines like "Doing 256 bits..."
     # We use tail -1 to get the last match (usually the summary table)
+    # UPDATED: grep -E to handle potential leading whitespace and ensure we match the right line
+    # For RSA, input is "rsa 2048", output line starts with "rsa  2048" (note spaces)
+    # So we should be flexible with spaces.
     local line
-    line=$(echo "$output" | grep -i "$algo" | grep -v "^Doing" | tail -1)
+    
+    # Try flexible whitespace matching
+    # Normalize spaces in algo input for grep regex
+    local algo_regex
+    algo_regex=$(echo "$algo" | sed 's/ /\\s\+/g')
+    
+    line=$(echo "$output" | grep -E "^\s*$algo_regex" | grep -v "^Doing" | tail -1)
     
     if [ -z "$line" ]; then
+        # Try a broader search if specific match failed (sometimes version changes header format)
+        # e.g. OpenSSL 3.x summary might just say "rsa2048" without spaces?
+        # Let's log warning and return 0
+        echo "WARNING: Could not find output line for '$algo' using regex '^\s*$algo_regex'" >&2
+        echo "Raw Output Start:" >&2
+        echo "$output" | head -n 5 >&2
+        echo "Raw Output End:" >&2
+        echo "$output" | tail -n 5 >&2
         echo "0 0"
         return
     fi
@@ -296,52 +320,54 @@ echo "Schmatz algorithm tests complete." >&2
 
 # --- PQC Tests (OpenSSL 3.5+) ---
 # Try to detect if ML-KEM is available
-# We use a broad grep because the name might be 'ml-kem-768' or similar
+# We check with 'list -public-key-algorithms' OR 'list -kem-algorithms' (if 3.x introduced it)
+# We also just try to run the speed command on ml-kem-768 to be sure.
+echo "Checking for PQC (ML-KEM) support..." >&2
+
+# Debug: List algorithms to see what is available
+# echo "DEBUG: Available public key algorithms:" >&2
+# openssl list -public-key-algorithms 2>/dev/null | head -n 20 >&2
+
+IS_PQC=false
 if openssl list -public-key-algorithms 2>/dev/null | grep -i "ml-kem" >/dev/null; then
+    IS_PQC=true
+elif openssl speed -help 2>&1 | grep -i "ml-kem" >/dev/null; then
+    IS_PQC=true
+fi
+
+if [ "$IS_PQC" = true ]; then
     echo "PQC detected. Running ML-KEM-768 speed test..." >&2
-    # Note: speed command for KEM might differ. usually 'speed -evp ml-kem-768' works for keygen/encaps/decaps
-    # But 'speed' output format for public key algos is different (ops/sec), not throughput (bytes/sec)
-    # We will try to capture the 1024 byte column if it exists, or just ops/sec? 
-    # Actually, for PQC, 'ops/sec' is the standard metric, not 'throughput'.
-    # But our existing 'parse_speed' expects columns.
-    # Let's try to just run it and see if it outputs standard columns. If not, we skip for now to avoid breaking JSON.
-    # OpenSSL 3.5 speed test for KEM usually outputs 'ops/sec'.
-    # We will implement a simplified check:
     
     # Run speed test. capture output.
-    PQC_OUT=$(openssl speed -seconds 5 -evp ml-kem-768 2>/dev/null)
+    PQC_OUT=$(openssl speed -seconds 5 -evp ml-kem-768 2>&1)
     
+    # Debug PQC output
+    # echo "DEBUG PQC OUT:" >&2
+    # echo "$PQC_OUT" | head -n 5 >&2
+
     # Parse the output.
     # Typical output for KEM speed test (format may vary slightly):
     # ml-kem-768 :  1234.5 op/s
     # or a table.
-    # Let's assume standard 'openssl speed' table format for asymmetric algos.
-    # Columns usually: keygen, encaps, decaps
-    # We will try to extract the numbers.
-    # Because parsing 'speed' output can be brittle across versions, we'll try a regex approach.
     
     # Let's try to grab the last line which usually contains the results
-    # The output usually looks like:
-    #                              sign    verify    sign/s verify/s
-    # ml-kem-768                      0.000s   0.000s      1234.5   1234.5
-    # (Note: for KEM it is keygen/encap/decap, so columns might differ)
-    
-    # To be safe and robust, we'll just try to grep for the numbers on the line starting with "ml-kem-768"
-    # and assume the columns match the standard order.
-    # For KEMs in 3.x, it might actually just test keygen if we don't specify prop?
-    # Let's capture the raw line first.
     PQC_LINE=$(echo "$PQC_OUT" | grep -i "^ml-kem-768")
     
     if [ ! -z "$PQC_LINE" ]; then
        # Extract the last column as a proxy for "operations per second"
-       # This is a simplification but gives us *a* number to compare.
-       # A better approach is usually to look at the 'encap' column.
        PQC_OPS=$(echo "$PQC_LINE" | awk '{print $NF}')
        RESULTS=$(echo "$RESULTS" | jq --arg v "${PQC_OPS:-0}" '.metrics.ml_kem_768_ops_sec = ($v | tonumber)')
        echo "  Captured ML-KEM-768: $PQC_OPS ops/sec" >&2
     else
+       echo "WARNING: Could not parse ML-KEM output." >&2
+       echo "Raw Output:" >&2
+       echo "$PQC_OUT" >&2
        RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_kem_768_ops_sec = 0')
     fi
+else
+    echo "PQC (ML-KEM) not detected in this OpenSSL build." >&2
+    # Debug: why not?
+    # openssl version -a >&2
 fi
 
 # =============================================================================
@@ -358,13 +384,30 @@ echo "HANDSHAKE TESTS (RSA Certificate)" >&2
 echo "========================================" >&2
 
 # Start RSA server on port 4433
-openssl s_server -cert rsa_cert.pem -key rsa_key.pem -www -accept 4433 -quiet >/dev/null 2>&1 &
+# Remove 2>/dev/null to see potential startup errors
+# Also redirect output to a log file for debugging
+openssl s_server -cert rsa_cert.pem -key rsa_key.pem -www -accept 4433 -quiet > s_server_rsa.log 2>&1 &
 RSA_SERVER_PID=$!
 sleep 2
+
+# Check if server is running
+if ! kill -0 $RSA_SERVER_PID 2>/dev/null; then
+    echo "ERROR: RSA s_server failed to start." >&2
+    echo "Server Log:" >&2
+    cat s_server_rsa.log >&2
+fi
 
 # --- TLS 1.3 with RSA Certificate ---
 echo "TLS 1.3 RSA: New Connections..." >&2
 HS_TLS13_RSA_NEW=$(openssl s_time -connect localhost:4433 -new -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+
+if [ -z "$HS_TLS13_RSA_NEW" ] || [ "$HS_TLS13_RSA_NEW" == "0" ]; then
+    echo "WARNING: TLS 1.3 RSA New Connections returned 0 or empty." >&2
+    # Run a quick check without grep to see output
+    echo "Raw output sample:" >&2
+    openssl s_time -connect localhost:4433 -new -tls1_3 -time 2 2>&1 | head -n 10 >&2
+fi
+
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_NEW:-0}" '.metrics.tls1_3_rsa_new_cps = ($v | tonumber)')
 
 echo "TLS 1.3 RSA: Resumed Connections..." >&2
@@ -447,7 +490,8 @@ RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_RSA:-0}" '.metrics.hand
 # =============================================================================
 
 # Check if this is OpenSSL 3.x
-if echo "$VERSION" | grep -q "^OpenSSL 3"; then
+# Use -E for extended regex to handle multiple spaces if any
+if echo "$VERSION" | grep -E "^OpenSSL\s+3" >/dev/null; then
     echo "" >&2
     echo "========================================" >&2
     echo "OPTIMIZED TESTS (Mráz Configuration)" >&2
@@ -460,9 +504,16 @@ if echo "$VERSION" | grep -q "^OpenSSL 3"; then
         echo "Using optimized config: $OPTIMIZED_CONF" >&2
         
         # Start RSA server with optimized config
-        OPENSSL_CONF="$OPTIMIZED_CONF" openssl s_server -cert rsa_cert.pem -key rsa_key.pem -www -accept 4435 -quiet >/dev/null 2>&1 &
+        OPENSSL_CONF="$OPTIMIZED_CONF" openssl s_server -cert rsa_cert.pem -key rsa_key.pem -www -accept 4435 -quiet > s_server_opt.log 2>&1 &
         OPT_SERVER_PID=$!
         sleep 2
+        
+        # Check if server is running
+        if ! kill -0 $OPT_SERVER_PID 2>/dev/null; then
+            echo "ERROR: Optimized s_server failed to start." >&2
+            echo "Server Log:" >&2
+            cat s_server_opt.log >&2
+        fi
         
         # --- Optimized TLS 1.3 Handshake ---
         echo "OPTIMIZED TLS 1.3 RSA: New Connections..." >&2
@@ -498,7 +549,7 @@ if echo "$VERSION" | grep -q "^OpenSSL 3"; then
         RESULTS=$(echo "$RESULTS" | jq '.config.optimized_config_applied = false')
     fi
 else
-    echo "OpenSSL 1.x detected - skipping optimization tests (not applicable)" >&2
+    echo "OpenSSL 1.x detected (Version: '$VERSION') - skipping optimization tests (not applicable)" >&2
     RESULTS=$(echo "$RESULTS" | jq '.config.optimized_config_applied = false')
 fi
 
