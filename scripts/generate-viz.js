@@ -41,12 +41,18 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
         /* Tooltip */
         .tooltip { position: absolute; background: rgba(33, 37, 41, 0.95); color: white; padding: 8px 12px; border-radius: 4px; pointer-events: none; opacity: 0; font-size: 12px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
+        /* View Toggle Buttons */
+        .view-toggle { padding: 6px 14px; border: 1px solid #dee2e6; background: white; border-radius: 4px; cursor: pointer; font-size: 13px; color: #495057; transition: all 0.2s; font-weight: 500; }
+        .view-toggle:hover { background: #f8f9fa; border-color: #228be6; color: #228be6; }
+        .view-toggle.active { background: #228be6; color: white; border-color: #228be6; }
+        
         /* D3 Styling */
         .grid line { stroke: #f1f3f5; }
         .grid path { stroke: none; }
         .axis text { fill: #868e96; font-size: 11px; }
         .axis path, .axis line { stroke: #dee2e6; }
         .baseline-line { stroke: #333; stroke-dasharray: 4,4; stroke-width: 1.5; opacity: 0.5; }
+        .zero-line { stroke: #868e96; stroke-dasharray: 2,2; stroke-width: 1; opacity: 0.7; }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -55,8 +61,21 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
 
 <div class="header">
     <h1>OpenSSL Performance Benchmark</h1>
-    <div style="font-size: 0.9rem; color: #868e96;">Generated: ${new Date().toISOString().split('T')[0]}</div>
+    <div style="font-size: 0.9rem; color: #868e96;">
+        Generated: ${new Date().toISOString().split('T')[0]}
+        <span id="iterations-note" style="margin-left: 20px;"></span>
+    </div>
 </div>
+
+<script type="text/javascript">
+    // This will be populated after data is loaded
+    const dataForHeader = ${dataJson};
+    const iterCount = dataForHeader[0]?.config?.iterations_count || 1;
+    if (iterCount > 1) {
+        document.getElementById('iterations-note').innerHTML = 
+            '<strong style="color: #40c057;">● ' + iterCount + ' iterations per version</strong> (mean ± stddev shown)';
+    }
+</script>
 
 <div class="container">
     <div class="tabs">
@@ -86,46 +105,78 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
     <div id="tls" class="view-section">
         <div class="card">
             <h2>Protocol Battle: TLS 1.2 vs 1.3</h2>
-            <div class="card-desc">Comparison of connection setup capacity (connections/sec) for legacy vs modern protocols.</div>
-            <div id="tls-chart" style="height: 500px; width: 100%;"></div>
+            <div class="card-desc">
+                Interactive slope chart comparing connection setup capacity (connections/sec) between legacy and modern protocols. 
+                Each line represents an OpenSSL version, connecting its TLS 1.2 performance (left) to TLS 1.3 performance (right).
+                <strong>Upward slopes</strong> indicate TLS 1.3 is faster, while <strong>downward slopes</strong> show TLS 1.2 leading. 
+                The percentage change is shown on the right side.
+            </div>
+            <div id="tls-chart" style="height: 580px; width: 100%;"></div>
         </div>
     </div>
 
     <!-- VIEW 3: BELLINGRATH MATRIX -->
     <div id="bellingrath" class="view-section">
         <div class="card">
-            <h2>Bellingrath Test Matrix: RSA vs ECDSA Certificates</h2>
-            <div class="card-desc">
-                Aligned with <a href="https://www.youtube.com/watch?v=b01y5FDx-ao" target="_blank">W. Bellingrath's OpenSSL 3.x presentation</a> (Juniper Networks). 
-                Shows handshake performance for both RSA-2048 and ECDSA P-256 certificates.
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <h2 style="margin: 0; padding-bottom: 10px;">Bellingrath Test Matrix: RSA vs ECDSA Certificates</h2>
+                    <div class="card-desc" style="margin-bottom: 0;">
+                        Aligned with <a href="https://www.youtube.com/watch?v=b01y5FDx-ao" target="_blank">W. Bellingrath's OpenSSL 3.x presentation</a> (Juniper Networks). 
+                        Shows handshake performance for both RSA-2048 and ECDSA P-256 certificates.
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button id="btn-absolute" class="view-toggle active" onclick="toggleBellingrathView('absolute')">Absolute</button>
+                    <button id="btn-relative" class="view-toggle" onclick="toggleBellingrathView('relative')">% vs 1.1.1w</button>
+                </div>
             </div>
             <div id="rsa-vs-ecdsa-chart" style="height: 450px; width: 100%;"></div>
         </div>
         <div class="card">
             <h2>Session Resumption Performance</h2>
             <div class="card-desc">
-                New connections require full cryptographic handshake. Resumed connections reuse session keys (3-10x faster). This was part of Bellingrath's test matrix.
+                <p><strong>New connections</strong> require a full cryptographic handshake with all asymmetric operations (key exchange, certificate verification, signing). <strong>Resumed connections</strong> reuse cached session parameters, achieving significantly faster connection setup. This test was part of Bellingrath's test matrix.</p>
+                
+                <p><strong>Key Observations:</strong> Session resumption is consistently faster than new connections, but the speedup varies by OpenSSL version. The chart shows the actual measured performance for TLS 1.3 connections (the default in modern OpenSSL). Note that TLS 1.2 session resumption typically achieves even higher throughput (30-40K+ connections/sec) than TLS 1.3 (6-7K connections/sec shown here) because TLS 1.2's resumption completely bypasses asymmetric cryptography, while TLS 1.3's PSK-based resumption still performs HKDF key derivation and potentially ephemeral Diffie-Hellman operations for enhanced forward secrecy.</p>
+                
+                <p><strong>Performance Impact of OpenSSL 3.x:</strong> The Provider architecture introduced in OpenSSL 3.0 adds per-operation overhead that affects handshake performance more than bulk encryption. This explains why even resumed connections show some regression compared to 1.1.1w, though the relative benefit of resumption over new connections remains significant.</p>
             </div>
-            <div id="resume-chart" style="height: 400px; width: 100%;"></div>
+            <div id="resume-chart" style="height: 450px; width: 100%;"></div>
         </div>
     </div>
 
     <!-- VIEW 4: SCHMATZ ALGORITHM BENCHMARKS -->
     <div id="schmatz" class="view-section">
         <div class="card">
-            <h2>RSA Key Size Impact: Sign vs Verify</h2>
+            <h2>RSA Sign Performance (Server-Side)</h2>
             <div class="card-desc">
                 Based on <a href="https://www.youtube.com/watch?v=69gUVhOEaVM" target="_blank">Martin Schmatz's (IBM) methodology</a>. 
-                RSA signing is slow (private key), verification is fast (public key). Larger keys = slower operations.
+                RSA signing uses the <strong>private key</strong> and is computationally expensive. Larger keys = significantly slower operations.
             </div>
-            <div id="rsa-chart" style="height: 400px; width: 100%;"></div>
+            <div id="rsa-sign-chart" style="height: 400px; width: 100%;"></div>
         </div>
         <div class="card">
-            <h2>ECDSA Curve Comparison</h2>
+            <h2>RSA Verify Performance (Client-Side)</h2>
             <div class="card-desc">
-                P-256 is fastest and most common. P-384/P-521 offer more security at significant performance cost.
+                RSA verification uses the <strong>public key</strong> and is much faster than signing. 
+                Note the different scale: verification can be 10-50x faster than signing operations.
             </div>
-            <div id="ecdsa-chart" style="height: 400px; width: 100%;"></div>
+            <div id="rsa-verify-chart" style="height: 400px; width: 100%;"></div>
+        </div>
+        <div class="card">
+            <h2>ECDSA Sign Performance (Server-Side)</h2>
+            <div class="card-desc">
+                ECDSA signing with different curve sizes. P-256 is fastest and most common. P-384/P-521 offer more security at significant performance cost.
+            </div>
+            <div id="ecdsa-sign-chart" style="height: 400px; width: 100%;"></div>
+        </div>
+        <div class="card">
+            <h2>ECDSA Verify Performance (Client-Side)</h2>
+            <div class="card-desc">
+                ECDSA verification is generally faster than signing, with P-256 offering the best performance.
+            </div>
+            <div id="ecdsa-verify-chart" style="height: 400px; width: 100%;"></div>
         </div>
         <div class="card">
             <h2>Block Size Sensitivity: AES-256-GCM</h2>
@@ -146,6 +197,76 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
                 Shows handshake performance with default config vs. optimized config (minimal provider loading, explicit properties).
                 <br><strong>Note:</strong> Only applies to OpenSSL 3.x versions.
             </div>
+
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #228be6;">
+                <h3 style="margin-top: 0; color: #495057; font-size: 1.1rem;">📋 Optimization Configuration Details</h3>
+                
+                <p style="margin-bottom: 15px; color: #495057;">
+                    The <strong>"Optimized"</strong> configuration applies the following tuning parameters to minimize Provider overhead in OpenSSL 3.x:
+                </p>
+
+                <div style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <h4 style="margin-top: 0; color: #228be6; font-size: 1rem;">1. Minimal Provider Loading</h4>
+                    <ul style="margin: 10px 0; padding-left: 25px; color: #495057;">
+                        <li><strong>Only default provider loaded</strong> – FIPS provider disabled, legacy provider disabled</li>
+                        <li>Reduces initialization overhead and memory footprint</li>
+                        <li>Configuration: <code>providers = default_sect</code> in <code>openssl.cnf</code></li>
+                    </ul>
+                </div>
+
+                <div style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <h4 style="margin-top: 0; color: #228be6; font-size: 1rem;">2. Explicit Algorithm Properties</h4>
+                    <ul style="margin: 10px 0; padding-left: 25px; color: #495057;">
+                        <li><strong>Property queries eliminated</strong> – Algorithms explicitly specify <code>provider=default</code></li>
+                        <li>Avoids expensive property string parsing and provider searches</li>
+                        <li>Configuration: <code>default_properties = provider=default</code></li>
+                    </ul>
+                </div>
+
+                <div style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <h4 style="margin-top: 0; color: #228be6; font-size: 1rem;">3. Runtime Optimizations</h4>
+                    <ul style="margin: 10px 0; padding-left: 25px; color: #495057;">
+                        <li><strong>Client renegotiation disabled</strong> – Security + performance benefit</li>
+                        <li><strong>Direct entropy source</strong> – Uses <code>/dev/urandom</code> without overhead</li>
+                        <li>Configuration applied via <code>OPENSSL_CONF</code> environment variable</li>
+                    </ul>
+                </div>
+
+                <div style="background: #fff3bf; padding: 12px; border-radius: 6px; border-left: 3px solid #fab005;">
+                    <p style="margin: 0; color: #495057; font-size: 0.95rem;">
+                        <strong>💡 Key Insight:</strong> The Provider architecture in OpenSSL 3.x introduces abstraction layers that add CPU overhead. 
+                        These optimizations reduce that overhead by "short-circuiting" unnecessary lookups and loading only what's needed.
+                    </p>
+                </div>
+            </div>
+
+            <div style="background: #e7f5ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #1971c2;">
+                <h3 style="margin-top: 0; color: #1971c2; font-size: 1.1rem;">📊 How to Read This Chart</h3>
+                
+                <div style="margin-bottom: 12px;">
+                    <strong style="color: #1971c2;">Blue Bars (Default):</strong> 
+                    <span style="color: #495057;">Performance with standard OpenSSL 3.x configuration (out-of-the-box)</span>
+                </div>
+                
+                <div style="margin-bottom: 12px;">
+                    <strong style="color: #40c057;">Green Bars (Optimized):</strong> 
+                    <span style="color: #495057;">Performance with Mráz tuning applied (minimal providers, explicit properties)</span>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <strong style="color: #495057;">Height Difference:</strong> 
+                    <span style="color: #495057;">Larger green bars indicate successful optimization. The gap shows recoverable performance.</span>
+                </div>
+
+                <div style="background: white; padding: 12px; border-radius: 6px; margin-top: 15px;">
+                    <p style="margin: 0; color: #495057; font-size: 0.95rem;">
+                        <strong>Expected Results:</strong> OpenSSL 3.0-3.2 typically show 10-25% improvement. 
+                        OpenSSL 3.3+ has internal optimizations that reduce the default overhead, so gains may be smaller (5-15%).
+                        If green bars are shorter than blue, the optimization config may not be loading correctly.
+                    </p>
+                </div>
+            </div>
+
             <div id="mraz-chart" style="height: 450px; width: 100%;"></div>
         </div>
         <div class="card">
@@ -153,6 +274,52 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             <div class="card-desc">
                 Shows the percentage improvement from applying Mráz's recommendations. Green bars = positive improvement.
             </div>
+
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #495057; font-size: 1.1rem;">📈 Understanding the Improvement Chart</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div style="background: white; padding: 15px; border-radius: 6px; border-top: 3px solid #40c057;">
+                        <strong style="color: #40c057;">✅ Positive % (Green)</strong>
+                        <p style="margin: 8px 0 0 0; color: #495057; font-size: 0.9rem;">
+                            Optimization improved performance. Higher percentages indicate more Provider overhead was eliminated.
+                        </p>
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 6px; border-top: 3px solid #fa5252;">
+                        <strong style="color: #fa5252;">❌ Negative % (Red)</strong>
+                        <p style="margin: 8px 0 0 0; color: #495057; font-size: 0.9rem;">
+                            Optimization decreased performance (unusual). May indicate config loading issues or measurement variance.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="background: white; padding: 15px; border-radius: 6px;">
+                    <h4 style="margin-top: 0; color: #228be6; font-size: 1rem;">What the Numbers Mean</h4>
+                    <ul style="margin: 10px 0; padding-left: 25px; color: #495057; line-height: 1.6;">
+                        <li><strong>0-5% improvement:</strong> Minimal overhead in default config, or already optimized internally</li>
+                        <li><strong>5-15% improvement:</strong> Moderate Provider overhead; typical for OpenSSL 3.3+ with internal optimizations</li>
+                        <li><strong>15-25% improvement:</strong> Significant Provider overhead; common in OpenSSL 3.0-3.2</li>
+                        <li><strong>25%+ improvement:</strong> Substantial overhead recovery; indicates heavy property query costs</li>
+                    </ul>
+                </div>
+
+                <div style="background: #d3f9d8; padding: 12px; border-radius: 6px; margin-top: 15px; border-left: 3px solid #40c057;">
+                    <p style="margin: 0; color: #495057; font-size: 0.95rem;">
+                        <strong>🎯 Production Recommendation:</strong> If you see 10%+ improvement here, you should implement these 
+                        configuration changes in production. The settings are safe, well-supported, and provide measurable performance gains.
+                    </p>
+                </div>
+
+                <div style="background: #fff3bf; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 3px solid #fab005;">
+                    <p style="margin: 0; color: #495057; font-size: 0.95rem;">
+                        <strong>⚠️ Beyond Configuration:</strong> For even more gains, consider build-time optimizations like 
+                        <code>enable-ec_nistp_64_gcc_128</code>, disabling unused modules (<code>no-engines</code>, <code>no-dh</code>), 
+                        and ensuring assembly optimizations are enabled. See the full 
+                        <a href="https://www.youtube.com/watch?v=Cv-43gJJFIs" target="_blank">Mráz talk</a> for details.
+                    </p>
+                </div>
+            </div>
+
             <div id="mraz-improvement-chart" style="height: 350px; width: 100%;"></div>
         </div>
     </div>
@@ -195,6 +362,13 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
     // Sort data: 1.1.1 first, then numeric sort
     data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, { numeric: true }));
     const baseline = data.find(d => d.config.version === '1.1.1w') || data[0];
+    
+    // Check if we have statistical data (multiple iterations)
+    const hasStats = data.length > 0 && data[0].config && data[0].config.iterations_count > 1;
+    const iterationCount = data[0]?.config?.iterations_count || 1;
+    
+    // View state for Bellingrath chart
+    let bellingrathViewMode = 'absolute';
 
     // Colors
     const colorScale = d3.scaleOrdinal()
@@ -208,11 +382,12 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
 
     const tooltip = d3.select("body").append("div").attr("class", "tooltip");
 
-    // Helper to get a reasonable width even if the tab was hidden (fallbacks to parent/window)
+    // Helper to get a reasonable width even if the tab was hidden (fallbacks to parent)
     function getWidth(container, pad = 60, minWidth = 320) {
         const rect = container.node().getBoundingClientRect();
-        const parentRect = container.node().parentNode ? container.node().parentNode.getBoundingClientRect() : { width: window.innerWidth };
-        const rawWidth = Math.max(rect.width, parentRect.width, window.innerWidth);
+        const parentRect = container.node().parentNode ? container.node().parentNode.getBoundingClientRect() : { width: 1200 };
+        // Prefer container width, fall back to parent width, but don't use window.innerWidth as it's too wide
+        const rawWidth = rect.width > 0 ? rect.width : parentRect.width;
         return Math.max(rawWidth - pad, minWidth);
     }
 
@@ -266,6 +441,46 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
         svg.append("line").attr("x1", 0).attr("x2", width)
             .attr("y1", y(yVal(baseline))).attr("y2", y(yVal(baseline))).attr("class", "baseline-line");
 
+        // Error bars (if we have stddev data)
+        if (hasStats) {
+            // X-axis error bars
+            svg.selectAll(".error-x").data(data).enter().append("line")
+                .attr("class", "error-x")
+                .attr("x1", d => {
+                    const stddev = d.metrics.aes_256_gcm_8k_kbs_stddev || 0;
+                    return x(Math.max(0, xVal(d) - stddev));
+                })
+                .attr("x2", d => {
+                    const stddev = d.metrics.aes_256_gcm_8k_kbs_stddev || 0;
+                    return x(xVal(d) + stddev);
+                })
+                .attr("y1", d => y(yVal(d)))
+                .attr("y2", d => y(yVal(d)))
+                .attr("stroke", d => colorScale(getSeries(d.config.version)))
+                .attr("stroke-width", 2)
+                .attr("opacity", 0.5);
+            
+            // Y-axis error bars
+            svg.selectAll(".error-y").data(data).enter().append("line")
+                .attr("class", "error-y")
+                .attr("x1", d => x(xVal(d)))
+                .attr("x2", d => x(xVal(d)))
+                .attr("y1", d => {
+                    // Use new metric name if available, fall back to legacy
+                    const stddevKey = d.metrics.tls1_3_rsa_new_cps_stddev !== undefined ? 'tls1_3_rsa_new_cps_stddev' : 'handshakes_new_per_sec_stddev';
+                    const stddev = d.metrics[stddevKey] || 0;
+                    return y(Math.max(0, yVal(d) - stddev));
+                })
+                .attr("y2", d => {
+                    const stddevKey = d.metrics.tls1_3_rsa_new_cps_stddev !== undefined ? 'tls1_3_rsa_new_cps_stddev' : 'handshakes_new_per_sec_stddev';
+                    const stddev = d.metrics[stddevKey] || 0;
+                    return y(yVal(d) + stddev);
+                })
+                .attr("stroke", d => colorScale(getSeries(d.config.version)))
+                .attr("stroke-width", 2)
+                .attr("opacity", 0.5);
+        }
+        
         // Dots
         svg.selectAll("circle").data(data).enter().append("circle")
             .attr("cx", d => x(xVal(d))).attr("cy", d => y(yVal(d)))
@@ -273,7 +488,13 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             .style("fill", d => colorScale(getSeries(d.config.version)))
             .style("stroke", "white").style("stroke-width", 2)
             .style("cursor", "pointer")
-            .on("mouseover", (e, d) => showTooltip(e, \`<strong>\${d.config.version}</strong><br>TP: \${(xVal(d)/1024/1024).toFixed(2)} GB/s<br>HS: \${yVal(d).toLocaleString()}\`))
+            .on("mouseover", (e, d) => {
+                const xStddev = d.metrics.aes_256_gcm_8k_kbs_stddev || 0;
+                const yStddevKey = d.metrics.tls1_3_rsa_new_cps_stddev !== undefined ? 'tls1_3_rsa_new_cps_stddev' : 'handshakes_new_per_sec_stddev';
+                const yStddev = d.metrics[yStddevKey] || 0;
+                const statsNote = hasStats ? \`<br><small>±\${(xStddev/1024/1024).toFixed(2)} GB/s, ±\${yStddev.toFixed(0)} cps</small>\` : '';
+                showTooltip(e, \`<strong>\${d.config.version}</strong><br>TP: \${(xVal(d)/1024/1024).toFixed(2)} GB/s<br>HS: \${yVal(d).toLocaleString()}\${statsNote}\`);
+            })
             .on("mouseout", hideTooltip);
 
         // Smart Label Positioning (Force Simulation to avoid overlap)
@@ -298,98 +519,276 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             .text(d => d.version).style("font-size", "11px").style("font-weight", "bold").style("fill", "#495057");
     }
 
-    // --- CHART 2: TLS 1.2 vs 1.3 (Grouped Bar) ---
+    // --- CHART 2: TLS 1.2 vs 1.3 (Slope Chart) ---
     function renderTlsChart() {
         const container = d3.select("#tls-chart");
         container.html("");
-        const width = getWidth(container, 60);
-        const height = 450;
-        const margin = {top: 20, right: 20, bottom: 40, left: 50};
-
-        const svg = container.append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-            .append("g").attr("transform", \`translate(\${margin.left},\${margin.top})\`);
-
-        const x0 = d3.scaleBand().domain(data.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
-        const x1 = d3.scaleBand().domain(['TLS 1.2', 'TLS 1.3']).rangeRound([0, x0.bandwidth()]).padding(0.05);
         
         // Use new metric names if available, fall back to legacy
         const getTls12 = d => d.metrics.tls1_2_ecdhe_rsa_aes128gcm_cps || d.metrics.handshakes_new_tls1_2_per_sec || 0;
         const getTls13 = d => d.metrics.tls1_3_rsa_new_cps || d.metrics.handshakes_new_per_sec || 0;
         
-        // Find max of both metrics
-        const maxVal = d3.max(data, d => Math.max(getTls13(d), getTls12(d)));
-        const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
+        // Check if we have proper TLS 1.2 vs 1.3 data
+        const hasTlsData = data.some(d => getTls12(d) > 0 && getTls13(d) > 0 && getTls12(d) !== getTls13(d));
+        
+        if (!hasTlsData) {
+            container.html("<div style='padding:60px; text-align:center; color:#999'><h3>TLS 1.2 vs 1.3 Comparison Data Not Available</h3><p>Run the full benchmark suite to generate separate TLS 1.2 and TLS 1.3 metrics.</p><p style='margin-top:20px; font-size:0.9em;'>The current data only contains generic handshake metrics. For detailed protocol comparison, the benchmark needs to test both TLS 1.2 (ECDHE-RSA-AES128-GCM-SHA256) and TLS 1.3 (with RSA certificates) separately.</p></div>");
+            return;
+        }
 
-        const color = d3.scaleOrdinal().domain(['TLS 1.2', 'TLS 1.3']).range(['#adb5bd', '#228be6']);
+        const width = getWidth(container, 60);
+        const height = 500;
+        const margin = {top: 40, right: 150, bottom: 40, left: 150};
 
-        svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0));
-        svg.append("g").call(d3.axisLeft(y));
-        svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -40).style("text-anchor", "middle").text("Connections/sec");
+        const svg = container.append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g").attr("transform", \`translate(\${margin.left},\${margin.top})\`);
+        
+        // Prepare slope data
+        const slopeData = data.map(d => ({
+            version: d.config.version,
+            tls12: getTls12(d),
+            tls13: getTls13(d),
+            diff: getTls13(d) - getTls12(d),
+            pctDiff: getTls12(d) > 0 ? ((getTls13(d) - getTls12(d)) / getTls12(d)) * 100 : 0,
+            color: colorScale(getSeries(d.config.version))
+        })).filter(d => d.tls12 > 0 && d.tls13 > 0);
 
-        const versionGroups = svg.selectAll(".g").data(data).enter().append("g").attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
+        const allValues = slopeData.flatMap(d => [d.tls12, d.tls13]);
+        const yMin = d3.min(allValues) * 0.95;
+        const yMax = d3.max(allValues) * 1.05;
+        
+        const y = d3.scaleLinear().domain([yMin, yMax]).range([height, 0]);
+        const x = d3.scalePoint().domain(['TLS 1.2', 'TLS 1.3']).range([0, width]);
 
-        versionGroups.selectAll("rect")
-            .data(d => [
-                {key: 'TLS 1.2', value: getTls12(d)},
-                {key: 'TLS 1.3', value: getTls13(d)}
-            ])
-            .enter().append("rect")
-            .attr("x", d => x1(d.key)).attr("y", d => y(d.value))
-            .attr("width", x1.bandwidth()).attr("height", d => height - y(d.value))
-            .attr("fill", d => color(d.key))
-            .on("mouseover", (e, d) => showTooltip(e, \`\${d.key}: \${d.value.toLocaleString()}\`))
+        // Grid lines
+        svg.append("g").attr("class", "grid")
+            .call(d3.axisLeft(y).tickSize(-width).tickFormat(""))
+            .style("opacity", 0.1);
+
+        // Axis labels
+        svg.append("text")
+            .attr("x", x('TLS 1.2'))
+            .attr("y", -15)
+            .style("text-anchor", "middle")
+            .style("font-size", "16px")
+            .style("font-weight", "bold")
+            .style("fill", "#868e96")
+            .text("TLS 1.2");
+
+        svg.append("text")
+            .attr("x", x('TLS 1.3'))
+            .attr("y", -15)
+            .style("text-anchor", "middle")
+            .style("font-size", "16px")
+            .style("font-weight", "bold")
+            .style("fill", "#228be6")
+            .text("TLS 1.3");
+
+        // Y-axis
+        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+
+        // Draw slope lines with gradient effect
+        const lines = svg.selectAll(".slope-line")
+            .data(slopeData)
+            .enter().append("line")
+            .attr("class", "slope-line")
+            .attr("x1", x('TLS 1.2'))
+            .attr("y1", d => y(d.tls12))
+            .attr("x2", x('TLS 1.3'))
+            .attr("y2", d => y(d.tls13))
+            .attr("stroke", d => d.color)
+            .attr("stroke-width", 3)
+            .attr("opacity", 0.7)
+            .style("cursor", "pointer")
+            .on("mouseover", function(e, d) {
+                d3.select(this).attr("stroke-width", 5).attr("opacity", 1);
+                const dir = d.diff > 0 ? "↑" : "↓";
+                const sign = d.pctDiff > 0 ? "+" : "";
+                showTooltip(e, \`<strong>\${d.version}</strong><br>TLS 1.2: \${d.tls12.toLocaleString()} cps<br>TLS 1.3: \${d.tls13.toLocaleString()} cps<br>Change: \${sign}\${d.pctDiff.toFixed(1)}% \${dir}\`);
+            })
+            .on("mouseout", function(e, d) {
+                d3.select(this).attr("stroke-width", 3).attr("opacity", 0.7);
+                hideTooltip();
+            });
+
+        // Add dots at endpoints
+        svg.selectAll(".dot-left")
+            .data(slopeData)
+            .enter().append("circle")
+            .attr("class", "dot-left")
+            .attr("cx", x('TLS 1.2'))
+            .attr("cy", d => y(d.tls12))
+            .attr("r", 5)
+            .attr("fill", d => d.color)
+            .attr("stroke", "white")
+            .attr("stroke-width", 2)
+            .style("cursor", "pointer")
+            .on("mouseover", (e, d) => {
+                showTooltip(e, \`<strong>\${d.version}</strong><br>TLS 1.2: \${d.tls12.toLocaleString()} cps\`);
+            })
             .on("mouseout", hideTooltip);
 
-        // Legend
-        const legend = svg.append("g").attr("transform", \`translate(\${width - 150}, 0)\`);
-        ['TLS 1.2', 'TLS 1.3'].forEach((key, i) => {
-            const g = legend.append("g").attr("transform", \`translate(0, \${i * 20})\`);
-            g.append("rect").attr("width", 15).attr("height", 15).attr("fill", color(key));
-            g.append("text").attr("x", 20).attr("y", 12).text(key).style("font-size", "12px");
-        });
+        svg.selectAll(".dot-right")
+            .data(slopeData)
+            .enter().append("circle")
+            .attr("class", "dot-right")
+            .attr("cx", x('TLS 1.3'))
+            .attr("cy", d => y(d.tls13))
+            .attr("r", 5)
+            .attr("fill", d => d.color)
+            .attr("stroke", "white")
+            .attr("stroke-width", 2)
+            .style("cursor", "pointer")
+            .on("mouseover", (e, d) => {
+                showTooltip(e, \`<strong>\${d.version}</strong><br>TLS 1.3: \${d.tls13.toLocaleString()} cps\`);
+            })
+            .on("mouseout", hideTooltip);
+
+        // Add version labels on the left
+        svg.selectAll(".label-left")
+            .data(slopeData)
+            .enter().append("text")
+            .attr("class", "label-left")
+            .attr("x", x('TLS 1.2') - 10)
+            .attr("y", d => y(d.tls12) + 4)
+            .style("text-anchor", "end")
+            .style("font-size", "11px")
+            .style("font-weight", "600")
+            .style("fill", d => d.color)
+            .text(d => d.version);
+
+        // Add percentage change labels on the right
+        svg.selectAll(".label-right")
+            .data(slopeData)
+            .enter().append("text")
+            .attr("class", "label-right")
+            .attr("x", x('TLS 1.3') + 10)
+            .attr("y", d => y(d.tls13) + 4)
+            .style("text-anchor", "start")
+            .style("font-size", "11px")
+            .style("font-weight", "600")
+            .style("fill", d => d.pctDiff > 0 ? "#40c057" : "#fa5252")
+            .text(d => {
+                const sign = d.pctDiff > 0 ? "+" : "";
+                return \`\${sign}\${d.pctDiff.toFixed(1)}%\`;
+            });
+
+        // Add subtle annotation
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", height + 35)
+            .style("text-anchor", "middle")
+            .style("font-size", "12px")
+            .style("fill", "#868e96")
+            .style("font-style", "italic")
+            .text("Upward slopes indicate TLS 1.3 outperforms TLS 1.2 • Downward slopes show TLS 1.2 is faster");
     }
 
     // --- CHART 3: BELLINGRATH RSA vs ECDSA ---
     function renderBellingrathRsaEcdsa() {
         const container = d3.select("#rsa-vs-ecdsa-chart");
         container.html("");
-        const width = getWidth(container, 60);
+        
+        // Fixed width calculation - subtract margins from container width
+        const containerWidth = container.node().getBoundingClientRect().width;
+        const margin = {top: 20, right: 120, bottom: 40, left: 70};
+        const width = Math.max(containerWidth - margin.left - margin.right, 400);
         const height = 420;
-        const margin = {top: 20, right: 120, bottom: 40, left: 60};
 
         const svg = container.append("svg")
-            .attr("width", width + margin.left + margin.right)
+            .attr("width", containerWidth)
             .attr("height", height + margin.top + margin.bottom)
             .append("g").attr("transform", \`translate(\${margin.left},\${margin.top})\`);
 
-        const metrics = [
+        // Use specific Bellingrath metrics if available, otherwise fall back to generic handshake metrics
+        const hasDetailedMetrics = data.some(d => d.metrics.tls1_3_rsa_new_cps > 0);
+        
+        const metrics = hasDetailedMetrics ? [
             {key: 'tls1_3_rsa_new_cps', label: 'TLS 1.3 RSA', color: '#228be6'},
             {key: 'tls1_3_ecdsa_new_cps', label: 'TLS 1.3 ECDSA', color: '#15aabf'},
             {key: 'tls1_2_ecdhe_rsa_aes128gcm_cps', label: 'TLS 1.2 ECDHE-RSA', color: '#fa5252'},
             {key: 'tls1_2_ecdhe_ecdsa_aes128gcm_cps', label: 'TLS 1.2 ECDHE-ECDSA', color: '#fd7e14'}
+        ] : [
+            {key: 'handshakes_new_per_sec', label: 'New Handshakes', color: '#228be6'},
+            {key: 'handshakes_resume_per_sec', label: 'Resumed Handshakes', color: '#15aabf'}
         ];
 
-        const x0 = d3.scaleBand().domain(data.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
+        // Filter to show only 3.x versions plus baseline for relative view
+        const displayData = bellingrathViewMode === 'relative' 
+            ? data.filter(d => d.config.version.startsWith('3.') || d.config.version === '1.1.1w')
+            : data;
+
+        const x0 = d3.scaleBand().domain(displayData.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
         const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
         
-        const maxVal = d3.max(data, d => d3.max(metrics, m => d.metrics[m.key] || 0));
-        const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
+        // Calculate values based on view mode
+        let yLabel, maxVal, minVal;
+        if (bellingrathViewMode === 'relative') {
+            yLabel = "% Change vs 1.1.1w";
+            const percentages = displayData.flatMap(d => 
+                metrics.map(m => {
+                    const baseVal = baseline.metrics[m.key] || 1;
+                    const currentVal = d.metrics[m.key] || 0;
+                    return ((currentVal - baseVal) / baseVal) * 100;
+                })
+            );
+            maxVal = d3.max(percentages);
+            minVal = d3.min(percentages);
+            const range = Math.max(Math.abs(maxVal), Math.abs(minVal));
+            maxVal = range * 1.1;
+            minVal = -range * 1.1;
+        } else {
+            yLabel = "Connections/sec";
+            maxVal = d3.max(displayData, d => d3.max(metrics, m => d.metrics[m.key] || 0)) * 1.1;
+            minVal = 0;
+        }
+        
+        const y = d3.scaleLinear().domain([minVal, maxVal]).rangeRound([height, 0]);
+
+        // Add zero line for relative view
+        if (bellingrathViewMode === 'relative') {
+            svg.append("line")
+                .attr("class", "zero-line")
+                .attr("x1", 0).attr("x2", width)
+                .attr("y1", y(0)).attr("y2", y(0));
+        }
 
         svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0));
-        svg.append("g").call(d3.axisLeft(y));
-        svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45).style("text-anchor", "middle").text("Connections/sec");
+        svg.append("g").call(d3.axisLeft(y).tickFormat(d => bellingrathViewMode === 'relative' ? d + '%' : d));
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -height/2)
+            .attr("y", -55)
+            .style("text-anchor", "middle")
+            .style("font-size", "12px")
+            .style("fill", "#495057")
+            .text(yLabel);
 
-        const versionGroups = svg.selectAll(".g").data(data).enter().append("g").attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
+        const versionGroups = svg.selectAll(".g").data(displayData).enter().append("g")
+            .attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
 
         versionGroups.selectAll("rect")
-            .data(d => metrics.map(m => ({key: m.key, label: m.label, color: m.color, value: d.metrics[m.key] || 0})))
+            .data(d => metrics.map(m => {
+                const baseVal = baseline.metrics[m.key] || 1;
+                const currentVal = d.metrics[m.key] || 0;
+                const value = bellingrathViewMode === 'relative' 
+                    ? ((currentVal - baseVal) / baseVal) * 100
+                    : currentVal;
+                const displayValue = bellingrathViewMode === 'relative'
+                    ? \`\${value.toFixed(1)}% (\${currentVal.toLocaleString()} conn/s)\`
+                    : \`\${currentVal.toLocaleString()} conn/s\`;
+                return {key: m.key, label: m.label, color: m.color, value: value, displayValue: displayValue};
+            }))
             .enter().append("rect")
-            .attr("x", d => x1(d.key)).attr("y", d => y(d.value))
-            .attr("width", x1.bandwidth()).attr("height", d => height - y(d.value))
+            .attr("x", d => x1(d.key))
+            .attr("y", d => bellingrathViewMode === 'relative' ? (d.value >= 0 ? y(d.value) : y(0)) : y(d.value))
+            .attr("width", x1.bandwidth())
+            .attr("height", d => bellingrathViewMode === 'relative' ? Math.abs(y(d.value) - y(0)) : height - y(d.value))
             .attr("fill", d => d.color)
-            .on("mouseover", (e, d) => showTooltip(e, \`\${d.label}: \${d.value.toLocaleString()}\`))
+            .attr("opacity", 0.9)
+            .on("mouseover", (e, d) => showTooltip(e, \`\${d.label}: \${d.displayValue}\`))
             .on("mouseout", hideTooltip);
 
         // Legend
@@ -404,7 +803,74 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
     function renderBellingrathResume() {
         const container = d3.select("#resume-chart");
         container.html("");
-        const width = getWidth(container, 60);
+        const containerWidth = container.node().getBoundingClientRect().width;
+        const margin = {top: 20, right: 120, bottom: 60, left: 70};
+        const width = containerWidth - margin.left - margin.right;
+        const height = 360;
+
+        const svg = container.append("svg")
+            .attr("width", containerWidth)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g").attr("transform", \`translate(\${margin.left},\${margin.top})\`);
+
+        // Use actual available metrics from the data
+        const metrics = [
+            {key: 'handshakes_new_per_sec', label: 'New Connections', color: '#228be6'},
+            {key: 'handshakes_resume_per_sec', label: 'Resumed Connections', color: '#74c0fc'}
+        ];
+
+        const x0 = d3.scaleBand().domain(data.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.3);
+        const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.1);
+        
+        const maxVal = d3.max(data, d => d3.max(metrics, m => d.metrics[m.key] || 0));
+        const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
+
+        svg.append("g")
+            .attr("transform", \`translate(0,\${height})\`)
+            .call(d3.axisBottom(x0))
+            .selectAll("text")
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", "rotate(-45)");
+            
+        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -height/2)
+            .attr("y", -50)
+            .style("text-anchor", "middle")
+            .style("font-size", "12px")
+            .style("fill", "#495057")
+            .text("Connections/sec");
+
+        const versionGroups = svg.selectAll(".g").data(data).enter().append("g").attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
+
+        versionGroups.selectAll("rect")
+            .data(d => metrics.map(m => ({key: m.key, label: m.label, color: m.color, value: d.metrics[m.key] || 0})))
+            .enter().append("rect")
+            .attr("x", d => x1(d.key))
+            .attr("y", d => y(d.value))
+            .attr("width", x1.bandwidth())
+            .attr("height", d => height - y(d.value))
+            .attr("fill", d => d.color)
+            .on("mouseover", (e, d) => showTooltip(e, \`\${d.label}: \${d.value.toLocaleString()} conn/sec\`))
+            .on("mouseout", hideTooltip);
+
+        // Legend
+        const legend = svg.append("g").attr("transform", \`translate(\${width + 10}, 0)\`);
+        metrics.forEach((m, i) => {
+            const g = legend.append("g").attr("transform", \`translate(0, \${i * 22})\`);
+            g.append("rect").attr("width", 15).attr("height", 15).attr("fill", m.color);
+            g.append("text").attr("x", 20).attr("y", 12).text(m.label).style("font-size", "11px");
+        });
+    }
+
+    // --- CHART 4: SCHMATZ RSA SIGN ---
+    function renderRsaSignChart() {
+        const container = d3.select("#rsa-sign-chart");
+        container.html("");
+        const width = getWidth(container, 200);  // Account for legend + margins
         const height = 360;
         const margin = {top: 20, right: 120, bottom: 40, left: 60};
 
@@ -414,21 +880,19 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             .append("g").attr("transform", \`translate(\${margin.left},\${margin.top})\`);
 
         const metrics = [
-            {key: 'tls1_3_rsa_new_cps', label: 'TLS 1.3 New', color: '#228be6'},
-            {key: 'tls1_3_rsa_resume_cps', label: 'TLS 1.3 Resume', color: '#74c0fc'},
-            {key: 'tls1_2_ecdhe_rsa_aes128gcm_cps', label: 'TLS 1.2 New', color: '#fa5252'},
-            {key: 'tls1_2_rsa_resume_cps', label: 'TLS 1.2 Resume', color: '#ffa8a8'}
+            {key: 'rsa_2048_sign_per_sec', label: 'RSA-2048 Sign', color: '#228be6'},
+            {key: 'rsa_4096_sign_per_sec', label: 'RSA-4096 Sign', color: '#fa5252'}
         ];
 
         const x0 = d3.scaleBand().domain(data.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
-        const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
+        const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.1);
         
         const maxVal = d3.max(data, d => d3.max(metrics, m => d.metrics[m.key] || 0));
         const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
 
         svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0));
-        svg.append("g").call(d3.axisLeft(y));
-        svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45).style("text-anchor", "middle").text("Connections/sec");
+        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+        svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45).style("text-anchor", "middle").text("Sign Operations/sec");
 
         const versionGroups = svg.selectAll(".g").data(data).enter().append("g").attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
 
@@ -438,7 +902,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             .attr("x", d => x1(d.key)).attr("y", d => y(d.value))
             .attr("width", x1.bandwidth()).attr("height", d => height - y(d.value))
             .attr("fill", d => d.color)
-            .on("mouseover", (e, d) => showTooltip(e, \`\${d.label}: \${d.value.toLocaleString()}\`))
+            .on("mouseover", (e, d) => showTooltip(e, \`\${d.label}: \${d.value.toLocaleString()} ops/sec\`))
             .on("mouseout", hideTooltip);
 
         // Legend
@@ -450,13 +914,13 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
         });
     }
 
-    // --- CHART 4: SCHMATZ RSA COMPARISON ---
-    function renderRsaChart() {
-        const container = d3.select("#rsa-chart");
+    // --- CHART 4B: SCHMATZ RSA VERIFY ---
+    function renderRsaVerifyChart() {
+        const container = d3.select("#rsa-verify-chart");
         container.html("");
-        const width = getWidth(container, 60);
+        const width = getWidth(container, 200);  // Account for legend + margins
         const height = 360;
-        const margin = {top: 20, right: 150, bottom: 40, left: 60};
+        const margin = {top: 20, right: 120, bottom: 40, left: 60};
 
         const svg = container.append("svg")
             .attr("width", width + margin.left + margin.right)
@@ -464,21 +928,19 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             .append("g").attr("transform", \`translate(\${margin.left},\${margin.top})\`);
 
         const metrics = [
-            {key: 'rsa_2048_sign_per_sec', label: 'RSA-2048 Sign', color: '#228be6'},
             {key: 'rsa_2048_verify_per_sec', label: 'RSA-2048 Verify', color: '#74c0fc'},
-            {key: 'rsa_4096_sign_per_sec', label: 'RSA-4096 Sign', color: '#fa5252'},
             {key: 'rsa_4096_verify_per_sec', label: 'RSA-4096 Verify', color: '#ffa8a8'}
         ];
 
         const x0 = d3.scaleBand().domain(data.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
-        const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
+        const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.1);
         
         const maxVal = d3.max(data, d => d3.max(metrics, m => d.metrics[m.key] || 0));
         const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
 
         svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0));
         svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
-        svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45).style("text-anchor", "middle").text("Operations/sec");
+        svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45).style("text-anchor", "middle").text("Verify Operations/sec");
 
         const versionGroups = svg.selectAll(".g").data(data).enter().append("g").attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
 
@@ -488,7 +950,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             .attr("x", d => x1(d.key)).attr("y", d => y(d.value))
             .attr("width", x1.bandwidth()).attr("height", d => height - y(d.value))
             .attr("fill", d => d.color)
-            .on("mouseover", (e, d) => showTooltip(e, \`\${d.label}: \${d.value.toLocaleString()}\`))
+            .on("mouseover", (e, d) => showTooltip(e, \`\${d.label}: \${d.value.toLocaleString()} ops/sec\`))
             .on("mouseout", hideTooltip);
 
         // Legend
@@ -500,12 +962,13 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
         });
     }
 
-    function renderEcdsaChart() {
-        const container = d3.select("#ecdsa-chart");
+    // --- CHART 4C: SCHMATZ ECDSA SIGN ---
+    function renderEcdsaSignChart() {
+        const container = d3.select("#ecdsa-sign-chart");
         container.html("");
-        const width = getWidth(container, 60);
+        const width = getWidth(container, 200);  // Account for legend + margins
         const height = 360;
-        const margin = {top: 20, right: 140, bottom: 40, left: 60};
+        const margin = {top: 20, right: 120, bottom: 40, left: 60};
 
         const svg = container.append("svg")
             .attr("width", width + margin.left + margin.right)
@@ -514,22 +977,19 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
 
         const metrics = [
             {key: 'ecdsa_p256_sign_per_sec', label: 'P-256 Sign', color: '#40c057'},
-            {key: 'ecdsa_p256_verify_per_sec', label: 'P-256 Verify', color: '#8ce99a'},
             {key: 'ecdsa_p384_sign_per_sec', label: 'P-384 Sign', color: '#fab005'},
-            {key: 'ecdsa_p384_verify_per_sec', label: 'P-384 Verify', color: '#ffe066'},
-            {key: 'ecdsa_p521_sign_per_sec', label: 'P-521 Sign', color: '#7950f2'},
-            {key: 'ecdsa_p521_verify_per_sec', label: 'P-521 Verify', color: '#b197fc'}
+            {key: 'ecdsa_p521_sign_per_sec', label: 'P-521 Sign', color: '#7950f2'}
         ];
 
         const x0 = d3.scaleBand().domain(data.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
-        const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.02);
+        const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
         
         const maxVal = d3.max(data, d => d3.max(metrics, m => d.metrics[m.key] || 0));
         const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
 
         svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0));
         svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
-        svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45).style("text-anchor", "middle").text("Operations/sec");
+        svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45).style("text-anchor", "middle").text("Sign Operations/sec");
 
         const versionGroups = svg.selectAll(".g").data(data).enter().append("g").attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
 
@@ -539,22 +999,71 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             .attr("x", d => x1(d.key)).attr("y", d => y(d.value))
             .attr("width", x1.bandwidth()).attr("height", d => height - y(d.value))
             .attr("fill", d => d.color)
-            .on("mouseover", (e, d) => showTooltip(e, \`\${d.label}: \${d.value.toLocaleString()}\`))
+            .on("mouseover", (e, d) => showTooltip(e, \`\${d.label}: \${d.value.toLocaleString()} ops/sec\`))
             .on("mouseout", hideTooltip);
 
         // Legend
         const legend = svg.append("g").attr("transform", \`translate(\${width + 10}, 0)\`);
         metrics.forEach((m, i) => {
-            const g = legend.append("g").attr("transform", \`translate(0, \${i * 20})\`);
-            g.append("rect").attr("width", 12).attr("height", 12).attr("fill", m.color);
-            g.append("text").attr("x", 16).attr("y", 10).text(m.label).style("font-size", "10px");
+            const g = legend.append("g").attr("transform", \`translate(0, \${i * 22})\`);
+            g.append("rect").attr("width", 15).attr("height", 15).attr("fill", m.color);
+            g.append("text").attr("x", 20).attr("y", 12).text(m.label).style("font-size", "11px");
+        });
+    }
+
+    // --- CHART 4D: SCHMATZ ECDSA VERIFY ---
+    function renderEcdsaVerifyChart() {
+        const container = d3.select("#ecdsa-verify-chart");
+        container.html("");
+        const width = getWidth(container, 200);  // Account for legend + margins
+        const height = 360;
+        const margin = {top: 20, right: 120, bottom: 40, left: 60};
+
+        const svg = container.append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g").attr("transform", \`translate(\${margin.left},\${margin.top})\`);
+
+        const metrics = [
+            {key: 'ecdsa_p256_verify_per_sec', label: 'P-256 Verify', color: '#8ce99a'},
+            {key: 'ecdsa_p384_verify_per_sec', label: 'P-384 Verify', color: '#ffe066'},
+            {key: 'ecdsa_p521_verify_per_sec', label: 'P-521 Verify', color: '#b197fc'}
+        ];
+
+        const x0 = d3.scaleBand().domain(data.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
+        const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
+        
+        const maxVal = d3.max(data, d => d3.max(metrics, m => d.metrics[m.key] || 0));
+        const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
+
+        svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0));
+        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+        svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45).style("text-anchor", "middle").text("Verify Operations/sec");
+
+        const versionGroups = svg.selectAll(".g").data(data).enter().append("g").attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
+
+        versionGroups.selectAll("rect")
+            .data(d => metrics.map(m => ({key: m.key, label: m.label, color: m.color, value: d.metrics[m.key] || 0})))
+            .enter().append("rect")
+            .attr("x", d => x1(d.key)).attr("y", d => y(d.value))
+            .attr("width", x1.bandwidth()).attr("height", d => height - y(d.value))
+            .attr("fill", d => d.color)
+            .on("mouseover", (e, d) => showTooltip(e, \`\${d.label}: \${d.value.toLocaleString()} ops/sec\`))
+            .on("mouseout", hideTooltip);
+
+        // Legend
+        const legend = svg.append("g").attr("transform", \`translate(\${width + 10}, 0)\`);
+        metrics.forEach((m, i) => {
+            const g = legend.append("g").attr("transform", \`translate(0, \${i * 22})\`);
+            g.append("rect").attr("width", 15).attr("height", 15).attr("fill", m.color);
+            g.append("text").attr("x", 20).attr("y", 12).text(m.label).style("font-size", "11px");
         });
     }
 
     function renderBlockSizeChart() {
         const container = d3.select("#blocksize-chart");
         container.html("");
-        const width = getWidth(container, 60);
+        const width = getWidth(container, 210);  // Account for legend + margins
         const height = 320;
         const margin = {top: 20, right: 120, bottom: 40, left: 70};
 
@@ -587,7 +1096,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             .x((d, i) => x(blockLabels[i]))
             .y(d => y(d));
 
-        data.forEach(version => {
+        data.forEach((version, idx) => {
             const blockData = getBlockData(version);
             const color = colorScale(getSeries(version.config.version));
             
@@ -598,8 +1107,9 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
                 .attr("stroke-width", 2)
                 .attr("d", line);
 
-            // Add dots
-            svg.selectAll(\`.dot-\${version.config.version}\`)
+            // Add dots - use index-based class to avoid CSS selector issues with version strings containing dots
+            const dotGroup = svg.append("g").attr("class", \`blocksize-dots-\${idx}\`);
+            dotGroup.selectAll("circle")
                 .data(blockData)
                 .enter().append("circle")
                 .attr("cx", (d, i) => x(blockLabels[i]))
@@ -850,6 +1360,43 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
     function hideTooltip() {
         tooltip.transition().duration(500).style("opacity", 0);
     }
+    
+    // Helper to draw error bars on bar charts
+    function drawErrorBars(svg, data, x, y, getValue, getStddev, xOffset = 0) {
+        if (!hasStats) return;
+        
+        const errorBars = svg.selectAll(".error-bar")
+            .data(data.filter(d => getStddev(d) > 0))
+            .enter().append("g")
+            .attr("class", "error-bar");
+        
+        // Vertical line
+        errorBars.append("line")
+            .attr("x1", d => x + xOffset)
+            .attr("x2", d => x + xOffset)
+            .attr("y1", d => y(Math.max(0, getValue(d) - getStddev(d))))
+            .attr("y2", d => y(getValue(d) + getStddev(d)))
+            .attr("stroke", "#333")
+            .attr("stroke-width", 1.5);
+        
+        // Top cap
+        errorBars.append("line")
+            .attr("x1", d => x + xOffset - 3)
+            .attr("x2", d => x + xOffset + 3)
+            .attr("y1", d => y(getValue(d) + getStddev(d)))
+            .attr("y2", d => y(getValue(d) + getStddev(d)))
+            .attr("stroke", "#333")
+            .attr("stroke-width", 1.5);
+        
+        // Bottom cap
+        errorBars.append("line")
+            .attr("x1", d => x + xOffset - 3)
+            .attr("x2", d => x + xOffset + 3)
+            .attr("y1", d => y(Math.max(0, getValue(d) - getStddev(d))))
+            .attr("y2", d => y(Math.max(0, getValue(d) - getStddev(d))))
+            .attr("stroke", "#333")
+            .attr("stroke-width", 1.5);
+    }
 
     function renderForTab(tabId) {
         // Use requestAnimationFrame to allow the browser to perform layout (display: block) before measuring width
@@ -857,7 +1404,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             if (tabId === 'overview') renderScatter();
             if (tabId === 'tls') renderTlsChart();
             if (tabId === 'bellingrath') { renderBellingrathRsaEcdsa(); renderBellingrathResume(); }
-            if (tabId === 'schmatz') { renderRsaChart(); renderEcdsaChart(); renderBlockSizeChart(); }
+            if (tabId === 'schmatz') { renderRsaSignChart(); renderRsaVerifyChart(); renderEcdsaSignChart(); renderEcdsaVerifyChart(); renderBlockSizeChart(); }
             if (tabId === 'mraz') { renderMrazChart(); renderMrazImprovement(); }
             if (tabId === 'multiples') renderMultiples();
             if (tabId === 'pqc') renderPqc();
@@ -875,6 +1422,14 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
         document.querySelector(\`[onclick="switchTab('\${tabId}')"]\`).classList.add('active');
 
         renderForTab(tabId);
+    };
+    
+    // Bellingrath View Toggle
+    window.toggleBellingrathView = function(mode) {
+        bellingrathViewMode = mode;
+        document.querySelectorAll('.view-toggle').forEach(el => el.classList.remove('active'));
+        document.getElementById(\`btn-\${mode}\`).classList.add('active');
+        renderBellingrathRsaEcdsa();
     };
 
     // Re-render active tab on window resize to pick up new widths

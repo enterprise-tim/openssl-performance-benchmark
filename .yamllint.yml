@@ -1,0 +1,17 @@
+---
+extends: default
+
+rules:
+  line-length:
+    max: 140
+    level: warning
+  document-start: disable
+  truthy: disable
+  braces:
+    max-spaces-inside: 1
+  brackets:
+    max-spaces-inside: 1
+  indentation: disable
+  trailing-spaces: enable
+  empty-lines:
+    max: 2

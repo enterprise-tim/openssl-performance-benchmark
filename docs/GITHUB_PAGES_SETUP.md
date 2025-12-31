@@ -198,7 +198,7 @@ Once deployed, your site will look like this:
 │  🔒 OpenSSL Performance Benchmark   │
 │  Automated performance testing      │
 ├─────────────────────────────────────┤
-│ 📊 Dashboard │ 📄 Report │ 📥 Data  │
+│  Dashboard │  Report │ 📥 Data  │
 ├─────────────────────────────────────┤
 │                                     │
 │  [Interactive Visualizations]       │

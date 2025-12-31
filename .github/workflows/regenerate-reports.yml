@@ -1,0 +1,156 @@
+---
+name: Regenerate Reports Only
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Benchmark run ID to use (leave empty for latest)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+  pages: write
+  id-token: write
+
+jobs:
+  regenerate-reports:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Download Benchmark Results
+      run: |
+        echo "📥 Downloading benchmark results..."
+
+        if [-n "${{ inputs.run_id }}"]; then
+          RUN_ID="${{ inputs.run_id }}"
+          echo "Using specified run ID: $RUN_ID"
+        else
+          # Get latest successful benchmark run
+          RUN_ID=$(gh run list \
+            --workflow=benchmark.yml \
+            --status=success \
+            --limit=1 \
+            --json databaseId \
+            --jq='.[0].databaseId')
+          echo "Using latest successful run: $RUN_ID"
+        fi
+
+        if [-z "$RUN_ID"]; then
+          echo "❌ No benchmark results found"
+          echo "Please run the benchmark workflow first"
+          exit 1
+        fi
+
+        echo "Downloading artifacts from run $RUN_ID..."
+        gh run download $RUN_ID --dir downloaded-results --pattern 'result-*'
+
+        # Count downloaded files
+        FILE_COUNT=$(find downloaded-results -name "*.json" | wc -l | tr -d ' ')
+        echo "✅ Downloaded $FILE_COUNT result files"
+
+        if ["$FILE_COUNT" -eq 0]; then
+          echo "❌ No result files found in artifacts"
+          exit 1
+        fi
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Aggregate Results
+      run: |
+        echo "📊 Aggregating results..."
+
+        # Find all result JSON files (they might be in subdirectories)
+        find downloaded-results -name "result-*.json" -exec cp {} downloaded-results/ \;
+
+        # Run aggregation
+        node scripts/aggregate-results.js downloaded-results results
+
+        echo "✅ Aggregation complete"
+        ls -lh results/summary.json
+
+    - name: Generate Reports
+      run: |
+        echo "📝 Generating reports..."
+        npm run generate-report
+
+        echo "📊 Generating visualizations..."
+        npm run generate-viz
+
+        echo "✅ Reports generated"
+        ls -lh results/
+
+    - name: Prepare Release Artifacts
+      run: |
+        mkdir -p release-pack
+        cp results/REPORT.md release-pack/
+        cp results/*.html release-pack/
+        cp results/summary.json release-pack/
+        cp results/detailed-iterations.json release-pack/ 2>/dev/null || true
+
+        tar -czf benchmark-report.tar.gz -C release-pack .
+
+    - name: Upload Report Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: regenerated-report
+        path: release-pack/
+
+    - name: Create Release (if on main)
+      if: github.ref == 'refs/heads/main'
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: report-regen-${{ github.run_id }}
+        release_name: "Regenerated Report ${{ github.run_id }}"
+        body: |
+          Regenerated reports from existing benchmark data.
+
+          Source Run ID: ${{ inputs.run_id || 'latest' }}
+
+          See attached reports and visualizations.
+        draft: false
+        prerelease: false
+
+  deploy-pages:
+    runs-on: ubuntu-latest
+    needs: regenerate-reports
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download Regenerated Reports
+      uses: actions/download-artifact@v4
+      with:
+        name: regenerated-report
+        path: ./gh-pages
+
+    - name: Upload Pages Artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./gh-pages
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
