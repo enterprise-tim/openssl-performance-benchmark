@@ -365,13 +365,30 @@ echo "HANDSHAKE TESTS (RSA Certificate)" >&2
 echo "========================================" >&2
 
 # Start RSA server on port 4433
-openssl s_server -cert rsa_cert.pem -key rsa_key.pem -www -accept 4433 -quiet >/dev/null 2>&1 &
+# Remove 2>/dev/null to see potential startup errors
+# Also redirect output to a log file for debugging
+openssl s_server -cert rsa_cert.pem -key rsa_key.pem -www -accept 4433 -quiet > s_server_rsa.log 2>&1 &
 RSA_SERVER_PID=$!
 sleep 2
+
+# Check if server is running
+if ! kill -0 $RSA_SERVER_PID 2>/dev/null; then
+    echo "ERROR: RSA s_server failed to start." >&2
+    echo "Server Log:" >&2
+    cat s_server_rsa.log >&2
+fi
 
 # --- TLS 1.3 with RSA Certificate ---
 echo "TLS 1.3 RSA: New Connections..." >&2
 HS_TLS13_RSA_NEW=$(openssl s_time -connect localhost:4433 -new -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+
+if [ -z "$HS_TLS13_RSA_NEW" ] || [ "$HS_TLS13_RSA_NEW" == "0" ]; then
+    echo "WARNING: TLS 1.3 RSA New Connections returned 0 or empty." >&2
+    # Run a quick check without grep to see output
+    echo "Raw output sample:" >&2
+    openssl s_time -connect localhost:4433 -new -tls1_3 -time 2 2>&1 | head -n 10 >&2
+fi
+
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_NEW:-0}" '.metrics.tls1_3_rsa_new_cps = ($v | tonumber)')
 
 echo "TLS 1.3 RSA: Resumed Connections..." >&2
