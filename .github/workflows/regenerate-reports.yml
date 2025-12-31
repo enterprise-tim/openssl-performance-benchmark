@@ -36,7 +36,7 @@ jobs:
       run: |
         echo "📥 Downloading benchmark results..."
 
-        if [-n "${{ inputs.run_id }}"]; then
+        if [ -n "${{ inputs.run_id }}" ]; then
           RUN_ID="${{ inputs.run_id }}"
           echo "Using specified run ID: $RUN_ID"
         else
@@ -50,7 +50,7 @@ jobs:
           echo "Using latest successful run: $RUN_ID"
         fi
 
-        if [-z "$RUN_ID"]; then
+        if [ -z "$RUN_ID" ]; then
           echo "❌ No benchmark results found"
           echo "Please run the benchmark workflow first"
           exit 1
@@ -63,7 +63,7 @@ jobs:
         FILE_COUNT=$(find downloaded-results -name "*.json" | wc -l | tr -d ' ')
         echo "✅ Downloaded $FILE_COUNT result files"
 
-        if ["$FILE_COUNT" -eq 0]; then
+        if [ "$FILE_COUNT" -eq 0 ]; then
           echo "❌ No result files found in artifacts"
           exit 1
         fi

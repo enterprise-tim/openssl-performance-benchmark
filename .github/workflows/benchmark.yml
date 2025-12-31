@@ -231,12 +231,12 @@ jobs:
 
         # The multipage generator already creates index.html
         # Just create a backup/legacy single-page view
-        if [-f visualizations.html]; then
+        if [ -f visualizations.html ]; then
           mv visualizations.html legacy-single-page.html
         fi
 
         # Create a simple redirect if index doesn't exist
-        if [! -f index.html]; then
+        if [ ! -f index.html ]; then
           cat > index.html << 'EOF'
         <!DOCTYPE html>
         <html lang="en">
