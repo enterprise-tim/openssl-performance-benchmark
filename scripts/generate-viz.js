@@ -208,10 +208,19 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
 
     const tooltip = d3.select("body").append("div").attr("class", "tooltip");
 
+    // Helper to get a reasonable width even if the tab was hidden (fallbacks to parent/window)
+    function getWidth(container, pad = 60, minWidth = 320) {
+        const rect = container.node().getBoundingClientRect();
+        const parentRect = container.node().parentNode ? container.node().parentNode.getBoundingClientRect() : { width: window.innerWidth };
+        const rawWidth = Math.max(rect.width, parentRect.width, window.innerWidth);
+        return Math.max(rawWidth - pad, minWidth);
+    }
+
     // --- CHART 1: SCATTER (Zoomed) ---
     function renderScatter() {
         const container = d3.select("#scatter-chart");
-        const width = container.node().getBoundingClientRect().width - 80;
+        container.html("");
+        const width = getWidth(container, 80);
         const height = 460;
         const margin = {top: 20, right: 100, bottom: 50, left: 60};
 
@@ -267,16 +276,33 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             .on("mouseover", (e, d) => showTooltip(e, \`<strong>\${d.config.version}</strong><br>TP: \${(xVal(d)/1024/1024).toFixed(2)} GB/s<br>HS: \${yVal(d).toLocaleString()}\`))
             .on("mouseout", hideTooltip);
 
-        // Labels
-        svg.selectAll(".lbl").data(data).enter().append("text")
-            .attr("x", d => x(xVal(d)) + 14).attr("y", d => y(yVal(d)) + 4)
-            .text(d => d.config.version).style("font-size", "11px").style("font-weight", "bold").style("fill", "#495057");
+        // Smart Label Positioning (Force Simulation to avoid overlap)
+        const labels = data.map(d => ({
+            x: x(xVal(d)) + 14,
+            y: y(yVal(d)) + 4,
+            originalY: y(yVal(d)) + 4,
+            version: d.config.version
+        }));
+
+        const simulation = d3.forceSimulation(labels)
+            .force("x", d3.forceX(d => d.x).strength(1))
+            .force("y", d3.forceY(d => d.originalY).strength(0.1))
+            .force("collide", d3.forceCollide(12)) // Radius for text height/spacing
+            .stop();
+
+        for (let i = 0; i < 100; ++i) simulation.tick();
+
+        svg.selectAll(".lbl").data(labels).enter().append("text")
+            .attr("x", d => d.x)
+            .attr("y", d => d.y)
+            .text(d => d.version).style("font-size", "11px").style("font-weight", "bold").style("fill", "#495057");
     }
 
     // --- CHART 2: TLS 1.2 vs 1.3 (Grouped Bar) ---
     function renderTlsChart() {
         const container = d3.select("#tls-chart");
-        const width = container.node().getBoundingClientRect().width - 60;
+        container.html("");
+        const width = getWidth(container, 60);
         const height = 450;
         const margin = {top: 20, right: 20, bottom: 40, left: 50};
 
@@ -328,7 +354,8 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
     // --- CHART 3: BELLINGRATH RSA vs ECDSA ---
     function renderBellingrathRsaEcdsa() {
         const container = d3.select("#rsa-vs-ecdsa-chart");
-        const width = container.node().getBoundingClientRect().width - 60;
+        container.html("");
+        const width = getWidth(container, 60);
         const height = 420;
         const margin = {top: 20, right: 120, bottom: 40, left: 60};
 
@@ -376,7 +403,8 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
 
     function renderBellingrathResume() {
         const container = d3.select("#resume-chart");
-        const width = container.node().getBoundingClientRect().width - 60;
+        container.html("");
+        const width = getWidth(container, 60);
         const height = 360;
         const margin = {top: 20, right: 120, bottom: 40, left: 60};
 
@@ -425,7 +453,8 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
     // --- CHART 4: SCHMATZ RSA COMPARISON ---
     function renderRsaChart() {
         const container = d3.select("#rsa-chart");
-        const width = container.node().getBoundingClientRect().width - 60;
+        container.html("");
+        const width = getWidth(container, 60);
         const height = 360;
         const margin = {top: 20, right: 150, bottom: 40, left: 60};
 
@@ -473,7 +502,8 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
 
     function renderEcdsaChart() {
         const container = d3.select("#ecdsa-chart");
-        const width = container.node().getBoundingClientRect().width - 60;
+        container.html("");
+        const width = getWidth(container, 60);
         const height = 360;
         const margin = {top: 20, right: 140, bottom: 40, left: 60};
 
@@ -523,7 +553,8 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
 
     function renderBlockSizeChart() {
         const container = d3.select("#blocksize-chart");
-        const width = container.node().getBoundingClientRect().width - 60;
+        container.html("");
+        const width = getWidth(container, 60);
         const height = 320;
         const margin = {top: 20, right: 120, bottom: 40, left: 70};
 
@@ -591,6 +622,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
     // --- CHART 5: MRÁZ OPTIMIZATION COMPARISON ---
     function renderMrazChart() {
         const container = d3.select("#mraz-chart");
+        container.html("");
         
         // Filter to only 3.x versions with optimized data
         const mrazData = data.filter(d => d.metrics.optimized_tls1_3_rsa_new_cps > 0);
@@ -600,7 +632,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             return;
         }
 
-        const width = container.node().getBoundingClientRect().width - 60;
+        const width = getWidth(container, 60);
         const height = 420;
         const margin = {top: 20, right: 120, bottom: 40, left: 60};
 
@@ -648,6 +680,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
 
     function renderMrazImprovement() {
         const container = d3.select("#mraz-improvement-chart");
+        container.html("");
         
         // Filter to only 3.x versions with optimized data
         const mrazData = data.filter(d => d.metrics.optimized_tls1_3_rsa_new_cps > 0);
@@ -657,7 +690,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             return;
         }
 
-        const width = container.node().getBoundingClientRect().width - 60;
+        const width = getWidth(container, 60);
         const height = 320;
         const margin = {top: 20, right: 20, bottom: 40, left: 60};
 
@@ -714,7 +747,8 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
     // --- CHART 5: SMALL MULTIPLES (Normalized) ---
     function renderSmallMultiple(divId, metricKey) {
         const container = d3.select(divId);
-        const width = container.node().getBoundingClientRect().width - 50;
+        container.html("");
+        const width = getWidth(container, 50, 260);
         const height = 220;
         const margin = {top: 20, right: 10, bottom: 30, left: 40};
 
@@ -765,13 +799,14 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
     function renderPqc() {
         const pqcData = data.filter(d => d.metrics.ml_kem_768_ops_sec > 0);
         const container = d3.select("#pqc-chart");
+        container.html("");
         
         if (pqcData.length === 0) {
             container.html("<div style='padding:40px; text-align:center; color:#999'>No Post-Quantum Data Available (requires OpenSSL 3.5+)</div>");
             return;
         }
 
-        const width = container.node().getBoundingClientRect().width - 60;
+        const width = getWidth(container, 60);
         const height = 350;
         const margin = {top: 20, right: 20, bottom: 40, left: 60};
 
@@ -816,6 +851,21 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
         tooltip.transition().duration(500).style("opacity", 0);
     }
 
+    function renderForTab(tabId) {
+        // Use requestAnimationFrame to allow the browser to perform layout (display: block) before measuring width
+        const run = () => {
+            if (tabId === 'overview') renderScatter();
+            if (tabId === 'tls') renderTlsChart();
+            if (tabId === 'bellingrath') { renderBellingrathRsaEcdsa(); renderBellingrathResume(); }
+            if (tabId === 'schmatz') { renderRsaChart(); renderEcdsaChart(); renderBlockSizeChart(); }
+            if (tabId === 'mraz') { renderMrazChart(); renderMrazImprovement(); }
+            if (tabId === 'multiples') renderMultiples();
+            if (tabId === 'pqc') renderPqc();
+        };
+        // Double rAF to ensure styles/layout are applied before measuring widths
+        requestAnimationFrame(() => requestAnimationFrame(run));
+    }
+
     // Tab Switcher
     window.switchTab = function(tabId) {
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -823,20 +873,20 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
         
         document.getElementById(tabId).classList.add('active');
         document.querySelector(\`[onclick="switchTab('\${tabId}')"]\`).classList.add('active');
+
+        renderForTab(tabId);
     };
 
-    // Init Charts
-    renderScatter();
-    renderTlsChart();
-    renderBellingrathRsaEcdsa();
-    renderBellingrathResume();
-    renderRsaChart();
-    renderEcdsaChart();
-    renderBlockSizeChart();
-    renderMrazChart();
-    renderMrazImprovement();
-    renderMultiples();
-    renderPqc();
+    // Re-render active tab on window resize to pick up new widths
+    window.addEventListener('resize', () => {
+        const active = document.querySelector('.view-section.active');
+        if (active) {
+            renderForTab(active.id);
+        }
+    });
+
+    // Init Charts (Overview is active by default)
+    renderForTab('overview');
 
 </script>
 </body>
