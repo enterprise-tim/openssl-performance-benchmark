@@ -32,7 +32,7 @@ jobs:
         echo "🎯 Generated matrix: $MATRIX_JSON"
 
   benchmark:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-4-cores
     needs: generate-matrix
     strategy:
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
