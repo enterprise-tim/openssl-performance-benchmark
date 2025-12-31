@@ -490,7 +490,8 @@ RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_RSA:-0}" '.metrics.hand
 # =============================================================================
 
 # Check if this is OpenSSL 3.x
-if echo "$VERSION" | grep -q "^OpenSSL 3"; then
+# Use -E for extended regex to handle multiple spaces if any
+if echo "$VERSION" | grep -E "^OpenSSL\s+3" >/dev/null; then
     echo "" >&2
     echo "========================================" >&2
     echo "OPTIMIZED TESTS (Mráz Configuration)" >&2
@@ -503,9 +504,16 @@ if echo "$VERSION" | grep -q "^OpenSSL 3"; then
         echo "Using optimized config: $OPTIMIZED_CONF" >&2
         
         # Start RSA server with optimized config
-        OPENSSL_CONF="$OPTIMIZED_CONF" openssl s_server -cert rsa_cert.pem -key rsa_key.pem -www -accept 4435 -quiet >/dev/null 2>&1 &
+        OPENSSL_CONF="$OPTIMIZED_CONF" openssl s_server -cert rsa_cert.pem -key rsa_key.pem -www -accept 4435 -quiet > s_server_opt.log 2>&1 &
         OPT_SERVER_PID=$!
         sleep 2
+        
+        # Check if server is running
+        if ! kill -0 $OPT_SERVER_PID 2>/dev/null; then
+            echo "ERROR: Optimized s_server failed to start." >&2
+            echo "Server Log:" >&2
+            cat s_server_opt.log >&2
+        fi
         
         # --- Optimized TLS 1.3 Handshake ---
         echo "OPTIMIZED TLS 1.3 RSA: New Connections..." >&2
@@ -541,7 +549,7 @@ if echo "$VERSION" | grep -q "^OpenSSL 3"; then
         RESULTS=$(echo "$RESULTS" | jq '.config.optimized_config_applied = false')
     fi
 else
-    echo "OpenSSL 1.x detected - skipping optimization tests (not applicable)" >&2
+    echo "OpenSSL 1.x detected (Version: '$VERSION') - skipping optimization tests (not applicable)" >&2
     RESULTS=$(echo "$RESULTS" | jq '.config.optimized_config_applied = false')
 fi
 
