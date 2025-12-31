@@ -1,6 +1,6 @@
 {
   "name": "openssl-performance-benchmark",
-  "version": "1.0.3-dev.0",
+  "version": "1.0.3",
   "type": "module",
   "scripts": {
     "benchmark": "node scripts/run-benchmark.js",
