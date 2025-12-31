@@ -151,6 +151,7 @@ jobs:
         path: release-pack/
         
     - name: Create Release
+      id: create_release
       if: github.ref == 'refs/heads/main'
       uses: actions/create-release@v1
       env:

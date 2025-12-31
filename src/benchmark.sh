@@ -21,7 +21,7 @@ cp rsa_cert.pem cert.pem
 
 # Output JSON structure builder
 RESULTS="{}"
-VERSION=$(openssl version)
+OPENSSL_VERSION_OUTPUT=$(openssl version)
 
 # =============================================================================
 # CAPTURE METADATA (Compiler, OS, Container)
@@ -49,7 +49,7 @@ CPU_MODEL=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs || echo "U
 
 # Initialize JSON with metadata
 RESULTS=$(echo "$RESULTS" | jq -n \
-    --arg v "$VERSION" \
+    --arg v "$OPENSSL_VERSION_OUTPUT" \
     --arg cf "$COMPILER_FLAGS" \
     --arg pl "$PLATFORM" \
     --arg od "$OPENSSL_DIR" \
@@ -70,7 +70,7 @@ RESULTS=$(echo "$RESULTS" | jq -n \
         metrics: {}
     }')
 
-echo "DEBUG: OpenSSL Version: $VERSION" >&2
+echo "DEBUG: OpenSSL Version: $OPENSSL_VERSION_OUTPUT" >&2
 
 # Helper function to parse speed output
 # Usage: parse_speed <algo_name> <column_index_1k> <column_index_8k>
@@ -491,7 +491,7 @@ RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_RSA:-0}" '.metrics.hand
 
 # Check if this is OpenSSL 3.x
 # Use -E for extended regex to handle multiple spaces if any
-if echo "$VERSION" | grep -E "^OpenSSL\s+3" >/dev/null; then
+if echo "$OPENSSL_VERSION_OUTPUT" | grep -E "^OpenSSL\s+3" >/dev/null; then
     echo "" >&2
     echo "========================================" >&2
     echo "OPTIMIZED TESTS (Mráz Configuration)" >&2
@@ -549,7 +549,7 @@ if echo "$VERSION" | grep -E "^OpenSSL\s+3" >/dev/null; then
         RESULTS=$(echo "$RESULTS" | jq '.config.optimized_config_applied = false')
     fi
 else
-    echo "OpenSSL 1.x detected (Version: '$VERSION') - skipping optimization tests (not applicable)" >&2
+    echo "OpenSSL 1.x detected (Version: '$OPENSSL_VERSION_OUTPUT') - skipping optimization tests (not applicable)" >&2
     RESULTS=$(echo "$RESULTS" | jq '.config.optimized_config_applied = false')
 fi
 
