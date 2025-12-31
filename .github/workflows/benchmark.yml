@@ -229,13 +229,7 @@ jobs:
         echo "📄 Setting up GitHub Pages structure..."
         cd gh-pages
 
-        # The multipage generator already creates index.html
-        # Just create a backup/legacy single-page view
-        if [ -f visualizations.html ]; then
-          mv visualizations.html legacy-single-page.html
-        fi
-
-        # Create a simple redirect if index doesn't exist
+        # If multipage generator didn't create index.html, create a simple one
         if [ ! -f index.html ]; then
           cat > index.html << 'EOF'
         <!DOCTYPE html>
@@ -315,8 +309,8 @@ jobs:
         </body>
         </html>
         EOF
+        fi
 
-        echo "✅ Created index.html"
         echo "📁 GitHub Pages content:"
         ls -la
 

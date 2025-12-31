@@ -1,6 +1,6 @@
 {
   "name": "openssl-performance-benchmark",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "type": "module",
   "scripts": {
     "benchmark": "node scripts/run-benchmark.js",
@@ -24,11 +24,13 @@
     "test:docker:full": "bash scripts/test-docker-build.sh full",
     "test:docker:version": "bash scripts/test-docker-build.sh quick",
     "lint:yaml": "bash scripts/lint-yaml.sh",
+    "lint:workflows": "bash scripts/test-workflow-bash.sh",
+    "lint:actions": "bash scripts/lint-actions.sh",
     "validate": "npm test && npm run test:docker",
     "validate:full": "npm run test:coverage && npm run test:docker:full",
     "pretest": "echo '🧪 Running test suite with Vitest...'",
     "prepublishOnly": "npm test",
-    "precommit": "npm run lint:yaml && npm test"
+    "precommit": "npm run lint:actions && npm test"
   },
   "devDependencies": {
     "vitest": "^1.1.0",
