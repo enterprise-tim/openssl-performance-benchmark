@@ -848,6 +848,19 @@ async function main() {
 
   try {
     const rawData = await fs.readFile(summaryPath, 'utf8');
+    
+    // Validate data before generating HTML
+    let jsonData;
+    try {
+        jsonData = JSON.parse(rawData);
+    } catch (e) {
+        throw new Error('summary.json is not valid JSON');
+    }
+
+    if (!Array.isArray(jsonData) || jsonData.length === 0) {
+        throw new Error('summary.json contains no results. Run benchmark first.');
+    }
+
     const finalHtml = HTML_TEMPLATE(rawData);
     await fs.writeFile(outputPath, finalHtml);
     console.log(`📊 Visualization dashboard generated at: ${outputPath}`);
