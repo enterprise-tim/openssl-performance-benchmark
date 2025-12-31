@@ -6,7 +6,10 @@
     "benchmark": "node scripts/run-benchmark.js",
     "generate-report": "node scripts/generate-report.js",
     "generate-viz": "node scripts/generate-viz.js",
-    "report": "npm run generate-report && npm run generate-viz"
+    "report": "npm run generate-report && npm run generate-viz",
+    "test": "bash ./test_jq.sh",
+    "prepublishOnly": "npm test",
+    "precommit": "npm test"
   },
   "dependencies": {}
 }
