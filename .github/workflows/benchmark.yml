@@ -19,19 +19,36 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      iterations: ${{ steps.set-matrix.outputs.iterations }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
     
-    - name: Generate version matrix
+    - name: Generate version matrix with iterations
       id: set-matrix
       run: |
-        echo "🔍 Reading OpenSSL versions from config..."
-        # Extract the versions array and format it for the matrix
-        # We need the output to be JSON: { "include": [...] }
-        MATRIX_JSON=$(jq -c '{include: .versions}' config/versions.json)
+        echo "🔍 Reading OpenSSL versions and iteration config..."
+        
+        # Read iterations count (default to 3 if not specified)
+        ITERATIONS=$(jq -r '.iterations // 3' config/versions.json)
+        echo "iterations=$ITERATIONS" >> $GITHUB_OUTPUT
+        echo "📊 Running $ITERATIONS iterations per version"
+        
+        # Generate matrix with version x iteration combinations
+        # Output format: { "include": [{"version": "1.1.1w", "url": "...", "series": "...", "iteration": 1}, ...] }
+        MATRIX_JSON=$(jq -c --argjson iters "$ITERATIONS" '
+          {
+            include: [
+              .versions[] as $v | 
+              range(1; $iters + 1) | 
+              $v + {iteration: .}
+            ]
+          }
+        ' config/versions.json)
+        
         echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
-        echo "🎯 Generated matrix: $MATRIX_JSON"
+        echo "🎯 Generated matrix with $(echo $MATRIX_JSON | jq '.include | length') total jobs"
+        echo "$MATRIX_JSON" | jq '.'
 
   benchmark:
     runs-on: ubuntu-latest-4-cores
@@ -49,26 +66,27 @@ jobs:
     
     - name: Build Benchmark Image
       run: |
-        echo "📦 Building image for OpenSSL ${{ matrix.version }}"
-        docker build -t openssl-bench:${{ matrix.version }} \
+        echo "📦 Building image for OpenSSL ${{ matrix.version }} (Iteration ${{ matrix.iteration }}/${{ needs.generate-matrix.outputs.iterations }})"
+        docker build -t openssl-bench:${{ matrix.version }}-iter${{ matrix.iteration }} \
           --build-arg OPENSSL_VERSION=${{ matrix.version }} \
           --build-arg OPENSSL_URL=${{ matrix.url }} \
           -f docker/Dockerfile .
     
-    - name: Run Benchmark
+    - name: Run Benchmark (Iteration ${{ matrix.iteration }})
       id: run_bench
       run: |
-        echo "🏃 Running benchmark..."
+        echo "🏃 Running benchmark iteration ${{ matrix.iteration }} for OpenSSL ${{ matrix.version }}..."
         mkdir -p results
         
-        # Run docker and capture output
-        OUTPUT=$(docker run --rm openssl-bench:${{ matrix.version }})
+        # Run docker and capture output (fresh container each time)
+        OUTPUT=$(docker run --rm openssl-bench:${{ matrix.version }}-iter${{ matrix.iteration }})
         
-        # Save output to file
-        echo "$OUTPUT" > results/result-${{ matrix.version }}.json
+        # Save output to file with iteration number
+        RESULT_FILE="results/result-${{ matrix.version }}-iter${{ matrix.iteration }}.json"
+        echo "$OUTPUT" > "$RESULT_FILE"
         
         # Validate JSON
-        if jq -e . results/result-${{ matrix.version }}.json >/dev/null 2>&1; then
+        if jq -e . "$RESULT_FILE" >/dev/null 2>&1; then
           echo "✅ JSON result is valid"
         else
           echo "❌ Invalid JSON output:"
@@ -76,25 +94,27 @@ jobs:
           exit 1
         fi
         
-        # Add metadata (like the node script does)
-        # We use jq to add the 'config' object from the matrix
+        # Add metadata including iteration number
         TMP_FILE=$(mktemp)
         jq --argjson config '${{ toJson(matrix) }}' \
            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-           '.config = $config | .timestamp = $timestamp' \
-           results/result-${{ matrix.version }}.json > "$TMP_FILE"
-        mv "$TMP_FILE" results/result-${{ matrix.version }}.json
+           --argjson iteration '${{ matrix.iteration }}' \
+           '.config = $config | .timestamp = $timestamp | .iteration = $iteration' \
+           "$RESULT_FILE" > "$TMP_FILE"
+        mv "$TMP_FILE" "$RESULT_FILE"
+        
+        echo "✅ Saved results for ${{ matrix.version }} iteration ${{ matrix.iteration }}"
 
     - name: Upload Benchmark Result
       uses: actions/upload-artifact@v4
       with:
-        name: result-${{ matrix.version }}
-        path: results/result-${{ matrix.version }}.json
+        name: result-${{ matrix.version }}-iter${{ matrix.iteration }}
+        path: results/result-${{ matrix.version }}-iter${{ matrix.iteration }}.json
         retention-days: 7
 
   report:
     runs-on: ubuntu-latest
-    needs: benchmark
+    needs: [benchmark, generate-matrix]
     if: always()
     
     steps:
@@ -117,16 +137,22 @@ jobs:
         pattern: result-*
         merge-multiple: true
         
-    - name: Aggregate Results
+    - name: Aggregate Results with Statistics
       run: |
-        mkdir -p results
-        echo "🔍 Aggregating results from $(ls downloaded-results/result-*.json | wc -l) files..."
+        echo "📊 Aggregating results from multiple iterations..."
+        echo "   Total result files: $(ls downloaded-results/result-*.json 2>/dev/null | wc -l)"
+        echo "   Iterations per version: ${{ needs.generate-matrix.outputs.iterations }}"
         
-        # Merge individual result objects into a single array
-        jq -s '.' downloaded-results/result-*.json > results/summary.json
+        # Use our aggregation script to compute mean and stddev
+        node scripts/aggregate-results.js downloaded-results results
         
-        echo "✅ Created results/summary.json"
-        ls -l results/summary.json
+        echo ""
+        echo "✅ Statistical aggregation complete"
+        echo "📄 Summary file:"
+        ls -lh results/summary.json
+        echo ""
+        echo "📊 Preview of aggregated data:"
+        jq -r '.[] | "\(.config.version): \(.config.iterations_count) iterations"' results/summary.json
         
     - name: Generate Reports
       run: |
@@ -202,8 +228,15 @@ jobs:
         echo "📄 Setting up GitHub Pages structure..."
         cd gh-pages
         
-        # Create an index.html that includes the visualizations
-        cat > index.html << 'EOF'
+        # The multipage generator already creates index.html
+        # Just create a backup/legacy single-page view
+        if [ -f visualizations.html ]; then
+          mv visualizations.html legacy-single-page.html
+        fi
+        
+        # Create a simple redirect if index doesn't exist
+        if [ ! -f index.html ]; then
+          cat > index.html << 'EOF'
         <!DOCTYPE html>
         <html lang="en">
         <head>

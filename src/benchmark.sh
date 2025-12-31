@@ -23,10 +23,16 @@ cp rsa_cert.pem cert.pem
 RESULTS="{}"
 OPENSSL_VERSION_OUTPUT=$(openssl version)
 
+# Detect OpenSSL version series for version-specific handling
+IS_OPENSSL_1_1=$(echo "$OPENSSL_VERSION_OUTPUT" | grep -E "^OpenSSL\s+1\.1\." >/dev/null && echo "true" || echo "false")
+IS_OPENSSL_3=$(echo "$OPENSSL_VERSION_OUTPUT" | grep -E "^OpenSSL\s+3\." >/dev/null && echo "true" || echo "false")
+
 # =============================================================================
 # CAPTURE METADATA (Compiler, OS, Container)
 # =============================================================================
 echo "Capturing environment metadata..." >&2
+echo "DEBUG: Detected OpenSSL 1.1.x: $IS_OPENSSL_1_1" >&2
+echo "DEBUG: Detected OpenSSL 3.x: $IS_OPENSSL_3" >&2
 
 # OpenSSL Build Info
 # Note: Flags might be multiline or contain quotes, so we clean them up
@@ -395,6 +401,7 @@ fi
 # Reference: https://www.youtube.com/watch?v=b01y5FDx-ao
 # Tests: TLS 1.3 (RSA/EC), TLS 1.2 (ECDHE-RSA, ECDHE-ECDSA, AES256-GCM-SHA384)
 # Metrics: CPS (Connections Per Second), Session Resumption
+# Note: OpenSSL 1.1.1 s_time has different flags than OpenSSL 3.x
 # =============================================================================
 
 echo "" >&2
@@ -417,29 +424,51 @@ if ! kill -0 $RSA_SERVER_PID 2>/dev/null; then
 fi
 
 # --- TLS 1.3 with RSA Certificate ---
-echo "TLS 1.3 RSA: New Connections..." >&2
-HS_TLS13_RSA_NEW=$(openssl s_time -connect localhost:4433 -new -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+# Note: OpenSSL 1.1.1 s_time doesn't support -tls1_3 flag
+if [ "$IS_OPENSSL_1_1" = "true" ]; then
+    echo "TLS 1.3 RSA: New Connections (using auto-negotiation for OpenSSL 1.1.1)..." >&2
+    # In OpenSSL 1.1.1, we use -ssl3 to allow auto-negotiation to TLS 1.3
+    HS_TLS13_RSA_NEW=$(openssl s_time -connect localhost:4433 -new -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+else
+    echo "TLS 1.3 RSA: New Connections..." >&2
+    HS_TLS13_RSA_NEW=$(openssl s_time -connect localhost:4433 -new -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+fi
 
 if [ -z "$HS_TLS13_RSA_NEW" ] || [ "$HS_TLS13_RSA_NEW" == "0" ]; then
     echo "WARNING: TLS 1.3 RSA New Connections returned 0 or empty." >&2
     # Run a quick check without grep to see output
     echo "Raw output sample:" >&2
-    openssl s_time -connect localhost:4433 -new -tls1_3 -time 2 2>&1 | head -n 10 >&2
+    if [ "$IS_OPENSSL_1_1" = "true" ]; then
+        openssl s_time -connect localhost:4433 -new -time 2 2>&1 | head -n 10 >&2
+    else
+        openssl s_time -connect localhost:4433 -new -tls1_3 -time 2 2>&1 | head -n 10 >&2
+    fi
 fi
 
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_NEW:-0}" '.metrics.tls1_3_rsa_new_cps = ($v | tonumber)')
 
-echo "TLS 1.3 RSA: Resumed Connections..." >&2
-HS_TLS13_RSA_RESUME=$(openssl s_time -connect localhost:4433 -reuse -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+if [ "$IS_OPENSSL_1_1" = "true" ]; then
+    echo "TLS 1.3 RSA: Resumed Connections (using auto-negotiation for OpenSSL 1.1.1)..." >&2
+    HS_TLS13_RSA_RESUME=$(openssl s_time -connect localhost:4433 -reuse -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+else
+    echo "TLS 1.3 RSA: Resumed Connections..." >&2
+    HS_TLS13_RSA_RESUME=$(openssl s_time -connect localhost:4433 -reuse -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+fi
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_RESUME:-0}" '.metrics.tls1_3_rsa_resume_cps = ($v | tonumber)')
 
 # --- TLS 1.3 with specific cipher (TLS-AES128-GCM-SHA256 from slide) ---
-echo "TLS 1.3 RSA: TLS_AES_128_GCM_SHA256..." >&2
-HS_TLS13_AES128=$(openssl s_time -connect localhost:4433 -new -tls1_3 -ciphersuites TLS_AES_128_GCM_SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+if [ "$IS_OPENSSL_1_1" = "true" ]; then
+    echo "TLS 1.3 RSA: TLS_AES_128_GCM_SHA256 (using auto-negotiation for OpenSSL 1.1.1)..." >&2
+    HS_TLS13_AES128=$(openssl s_time -connect localhost:4433 -new -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+else
+    echo "TLS 1.3 RSA: TLS_AES_128_GCM_SHA256..." >&2
+    HS_TLS13_AES128=$(openssl s_time -connect localhost:4433 -new -tls1_3 -ciphersuites TLS_AES_128_GCM_SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+fi
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_AES128:-0}" '.metrics.tls1_3_rsa_aes128gcm_cps = ($v | tonumber)')
 
 # --- TLS 1.2 with ECDHE-RSA-AES128-GCM-SHA256 (Industry workhorse) ---
 echo "TLS 1.2 RSA: ECDHE-RSA-AES128-GCM-SHA256..." >&2
+# OpenSSL 1.1.1 supports -tls1_2 flag
 HS_TLS12_ECDHE_RSA=$(openssl s_time -connect localhost:4433 -new -tls1_2 -cipher ECDHE-RSA-AES128-GCM-SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_RSA:-0}" '.metrics.tls1_2_ecdhe_rsa_aes128gcm_cps = ($v | tonumber)')
 
@@ -468,12 +497,22 @@ EC_SERVER_PID=$!
 sleep 5
 
 # --- TLS 1.3 with ECDSA Certificate ---
-echo "TLS 1.3 ECDSA: New Connections..." >&2
-HS_TLS13_EC_NEW=$(openssl s_time -connect localhost:4434 -new -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+if [ "$IS_OPENSSL_1_1" = "true" ]; then
+    echo "TLS 1.3 ECDSA: New Connections (using auto-negotiation for OpenSSL 1.1.1)..." >&2
+    HS_TLS13_EC_NEW=$(openssl s_time -connect localhost:4434 -new -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+else
+    echo "TLS 1.3 ECDSA: New Connections..." >&2
+    HS_TLS13_EC_NEW=$(openssl s_time -connect localhost:4434 -new -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+fi
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_EC_NEW:-0}" '.metrics.tls1_3_ecdsa_new_cps = ($v | tonumber)')
 
-echo "TLS 1.3 ECDSA: Resumed Connections..." >&2
-HS_TLS13_EC_RESUME=$(openssl s_time -connect localhost:4434 -reuse -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+if [ "$IS_OPENSSL_1_1" = "true" ]; then
+    echo "TLS 1.3 ECDSA: Resumed Connections (using auto-negotiation for OpenSSL 1.1.1)..." >&2
+    HS_TLS13_EC_RESUME=$(openssl s_time -connect localhost:4434 -reuse -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+else
+    echo "TLS 1.3 ECDSA: Resumed Connections..." >&2
+    HS_TLS13_EC_RESUME=$(openssl s_time -connect localhost:4434 -reuse -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+fi
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_EC_RESUME:-0}" '.metrics.tls1_3_ecdsa_resume_cps = ($v | tonumber)')
 
 # --- TLS 1.2 with ECDHE-ECDSA-AES128-GCM-SHA256 (From Bellingrath slide) ---
@@ -508,9 +547,8 @@ RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_RSA:-0}" '.metrics.hand
 # These optimizations only apply to OpenSSL 3.x - for 1.1.1, we skip this section.
 # =============================================================================
 
-# Check if this is OpenSSL 3.x
-# Use -E for extended regex to handle multiple spaces if any
-if echo "$OPENSSL_VERSION_OUTPUT" | grep -E "^OpenSSL\s+3" >/dev/null; then
+# Check if this is OpenSSL 3.x (use the variable we already set)
+if [ "$IS_OPENSSL_3" = "true" ]; then
     echo "" >&2
     echo "========================================" >&2
     echo "OPTIMIZED TESTS (Mráz Configuration)" >&2

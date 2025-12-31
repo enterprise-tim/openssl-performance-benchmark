@@ -1,0 +1,170 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run unit tests
+      run: npm test
+    
+    - name: Run legacy tests (jq validation)
+      run: npm run test:legacy
+    
+    - name: Validate configuration
+      run: |
+        echo "📋 Validating config/versions.json..."
+        jq -e '.iterations' config/versions.json
+        jq -e '.versions | length > 0' config/versions.json
+        echo "✅ Configuration valid"
+    
+    - name: Test aggregation script with mock data
+      run: |
+        echo "🧪 Testing aggregation with mock data..."
+        mkdir -p test-agg-input test-agg-output
+        
+        # Create 3 mock iterations
+        cat > test-agg-input/result-test-iter1.json << 'EOF'
+        {
+          "version": "Test 1.0.0",
+          "config": {"version": "1.0.0", "iteration": 1},
+          "metadata": {},
+          "metrics": {"test_metric": 100},
+          "iteration": 1
+        }
+        EOF
+        
+        cat > test-agg-input/result-test-iter2.json << 'EOF'
+        {
+          "version": "Test 1.0.0",
+          "config": {"version": "1.0.0", "iteration": 2},
+          "metadata": {},
+          "metrics": {"test_metric": 105},
+          "iteration": 2
+        }
+        EOF
+        
+        cat > test-agg-input/result-test-iter3.json << 'EOF'
+        {
+          "version": "Test 1.0.0",
+          "config": {"version": "1.0.0", "iteration": 3},
+          "metadata": {},
+          "metrics": {"test_metric": 95},
+          "iteration": 3
+        }
+        EOF
+        
+        # Run aggregation
+        node scripts/aggregate-results.js test-agg-input test-agg-output
+        
+        # Validate output
+        jq -e '.[0].config.iterations_count == 3' test-agg-output/summary.json
+        jq -e '.[0].metrics.test_metric == 100' test-agg-output/summary.json
+        
+        echo "✅ Aggregation test passed"
+        
+        # Cleanup
+        rm -rf test-agg-input test-agg-output
+    
+    - name: Test matrix generation logic
+      run: |
+        echo "🧪 Testing matrix generation..."
+        
+        # Test that jq command produces correct matrix
+        MATRIX=$(jq -c --argjson iters 3 '{include: [.versions[] as $v | range(1; $iters + 1) | $v + {iteration: .}]}' config/versions.json)
+        
+        # Verify structure
+        echo "$MATRIX" | jq -e '.include | length > 0'
+        echo "$MATRIX" | jq -e '.include[0].iteration == 1'
+        
+        echo "✅ Matrix generation test passed"
+    
+    - name: Upload test results
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-node-${{ matrix.node-version }}
+        path: |
+          *.log
+          test-*.json
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Check shell scripts
+      run: |
+        echo "🔍 Checking shell scripts..."
+        bash -n src/benchmark.sh
+        bash -n test_jq.sh
+        echo "✅ Shell scripts valid"
+    
+    - name: Check JSON files
+      run: |
+        echo "🔍 Validating JSON files..."
+        jq empty config/versions.json
+        echo "✅ JSON files valid"
+    
+    - name: Check YAML files
+      uses: ibiqlik/action-yamllint@v3
+      with:
+        file_or_dir: .github/workflows/*.yml
+        config_file: .yamllint.yml
+        strict: false
+
+  summary:
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    if: always()
+    
+    steps:
+    - name: Test Summary
+      run: |
+        echo "## 🧪 Test Suite Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.test.result }}" == "success" ]; then
+          echo "✅ **Unit Tests:** PASSED" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Unit Tests:** FAILED" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.lint.result }}" == "success" ]; then
+          echo "✅ **Linting:** PASSED" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Linting:** FAILED" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+

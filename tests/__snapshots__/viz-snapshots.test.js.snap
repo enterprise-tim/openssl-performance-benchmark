@@ -1,0 +1,38 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Visualization Snapshots - Chart Data Transformation > should produce consistent slope chart data 1`] = `
+[
+  {
+    "diff": 50,
+    "hasStats": true,
+    "pctDiff": 0.78125,
+    "tls12": 6400,
+    "tls13": 6450,
+    "version": "3.5.3",
+  },
+]
+`;
+
+exports[`Visualization Snapshots - HTML Template Structure > should have consistent card structure 1`] = `
+"
+<div class="card">
+    <h2>Test Chart</h2>
+    <div class="card-desc">This is a test chart</div>
+    <div id="test-chart" style="height: 400px;"></div>
+</div>"
+`;
+
+exports[`Visualization Snapshots - HTML Template Structure > should have consistent header structure 1`] = `
+"
+<div class="header">
+    <h1>OpenSSL Performance Benchmark</h1>
+    <div class="subtitle">Statistical Analysis</div>
+    <span id="iterations-note">● 3 iterations per version</span>
+</div>"
+`;
+
+exports[`Visualization Snapshots - HTML Template Structure > should have consistent tab structure 1`] = `
+"<div class="tab active" onclick="switchTab('overview')">1. Overview</div>
+<div class="tab " onclick="switchTab('tls')">2. TLS 1.2/1.3</div>
+<div class="tab " onclick="switchTab('schmatz')">4. Schmatz Algos</div>"
+`;

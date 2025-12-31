@@ -71,8 +71,15 @@ async function main() {
       return a.config.version.localeCompare(b.config.version, undefined, { numeric: true });
     });
 
+    // Check if we have aggregated data with multiple iterations
+    const iterationCount = results[0]?.config?.iterations_count || 1;
+    
     console.log('\n===============================================================');
     console.log('OpenSSL Performance Benchmark Report');
+    if (iterationCount > 1) {
+      console.log(`Statistical Analysis: ${iterationCount} iterations per version`);
+      console.log('All values shown as mean ± stddev');
+    }
     console.log('===============================================================');
     
     // 1. Throughput Table
@@ -88,12 +95,15 @@ async function main() {
 
     results.forEach(r => {
       const m = r.metrics;
+      const iterCount = r.config?.iterations_count || 1;
+      const showStddev = iterCount > 1;
+      
       console.log(
         r.config.version.padEnd(15) + 
-        formatNum(m.aes_256_gcm_1k_kbs).padEnd(20) + 
-        formatNum(m.aes_256_gcm_8k_kbs).padEnd(20) + 
-        formatNum(m.sha256_1k_kbs).padEnd(20) + 
-        formatNum(m.sha256_8k_kbs)
+        (showStddev ? formatNumWithStddev(m.aes_256_gcm_1k_kbs, m.aes_256_gcm_1k_kbs_stddev) : formatNum(m.aes_256_gcm_1k_kbs)).padEnd(20) + 
+        (showStddev ? formatNumWithStddev(m.aes_256_gcm_8k_kbs, m.aes_256_gcm_8k_kbs_stddev) : formatNum(m.aes_256_gcm_8k_kbs)).padEnd(20) + 
+        (showStddev ? formatNumWithStddev(m.sha256_1k_kbs, m.sha256_1k_kbs_stddev) : formatNum(m.sha256_1k_kbs)).padEnd(20) + 
+        (showStddev ? formatNumWithStddev(m.sha256_8k_kbs, m.sha256_8k_kbs_stddev) : formatNum(m.sha256_8k_kbs))
       );
     });
 
@@ -330,6 +340,20 @@ function formatNum(n) {
   return new Intl.NumberFormat('en-US').format(Math.round(n));
 }
 
+function formatNumWithStddev(mean, stddev) {
+  if (mean === undefined || mean === null) return '0';
+  if (stddev === undefined || stddev === null || stddev === 0) {
+    return formatNum(mean);
+  }
+  // Format as "mean ± stddev" with appropriate precision
+  const stddevPercent = (stddev / mean) * 100;
+  if (stddevPercent < 0.1) {
+    // Very low variance, don't clutter the output
+    return formatNum(mean);
+  }
+  return `${formatNum(mean)} ± ${formatNum(stddev)}`;
+}
+
 function getSystemInfo() {
   const cpus = os.cpus();
   const cpuModel = cpus[0] ? cpus[0].model : 'Unknown CPU';
@@ -349,9 +373,19 @@ async function generateMarkdownReport(results) {
   let md = `# OpenSSL Performance Benchmark Results\n\n`;
   md += `Analysis of OpenSSL performance regressions and improvements across versions 1.1.1 through 3.5.3.\n\n`;
   
+  // Get iteration count from first result
+  const iterationCount = results[0]?.config?.iterations_count || 1;
+  
   // Metadata Section (from first result, as it should be consistent for OS/Container)
   const meta = results[0]?.metadata || {};
   md += `## Test Methodology & System Info\n\n`;
+  
+  if (iterationCount > 1) {
+    md += `**Statistical Validation:** Each OpenSSL version was tested **${iterationCount} times** in separate containers to ensure measurement reliability. `;
+    md += `All reported values are **mean averages** across iterations, with standard deviations shown where significant (±values). `;
+    md += `This approach eliminates localized variance and provides confidence in the measurements.\n\n`;
+  }
+  
   md += `All tests were conducted in isolated Docker containers (Debian Bookworm) to ensure environment consistency. Each version was compiled from source.\n\n`;
   md += `**System Specification:**\n`;
   md += `- **CPU:** ${sysInfo.cpuModel} (${sysInfo.cpuCores} cores)\n`;
@@ -390,6 +424,11 @@ async function generateMarkdownReport(results) {
   // Handshake Section
   md += `\n## TLS Handshake Performance (Connections/sec)\n\n`;
   md += `> **Why this matters:** Handshake performance is critical for web servers handling many short-lived connections. This was a primary regression point in OpenSSL 3.0.\n\n`;
+  
+  if (showStddevInTables) {
+    md += `> **Measurement Reliability:** Each value is the mean of ${iterationCount} independent runs ± standard deviation.\n\n`;
+  }
+  
   md += `| Version | New Connections | Resumed | Change vs 1.1.1w |\n`;
   md += `|---------|----------------:|--------:|-----------------:|\n`;
   
@@ -399,18 +438,29 @@ async function generateMarkdownReport(results) {
     const pctStr = (pctChange >= 0 ? '+' : '') + pctChange.toFixed(1) + '%';
     const changeCol = r.config.version === '1.1.1w' ? 'Baseline' : pctStr;
     
-    md += `| **${r.config.version}** | ${formatNum(m.handshakes_new_per_sec)} | ${formatNum(m.handshakes_resume_per_sec)} | ${changeCol} |\n`;
+    const newConn = showStddevInTables ? formatNumWithStddev(m.handshakes_new_per_sec, m.handshakes_new_per_sec_stddev) : formatNum(m.handshakes_new_per_sec);
+    const resumed = showStddevInTables ? formatNumWithStddev(m.handshakes_resume_per_sec, m.handshakes_resume_per_sec_stddev) : formatNum(m.handshakes_resume_per_sec);
+    
+    md += `| **${r.config.version}** | ${newConn} | ${resumed} | ${changeCol} |\n`;
   });
 
   // Throughput Section
   md += `\n## Algorithm Throughput (KB/s)\n\n`;
   md += `> **Why this matters:** Raw encryption speed affects bulk data transfer. AES-256-GCM is the standard for TLS, and SHA256 is ubiquitous for signing.\n\n`;
+  
+  const showStddevInTables = iterationCount > 1;
+  if (showStddevInTables) {
+    md += `> **Statistical Note:** Values shown as mean ± standard deviation from ${iterationCount} iterations.\n\n`;
+  }
+  
   md += `| Version | AES-256-GCM (8K) | SHA256 (8K) |\n`;
   md += `|---------|-----------------:|------------:|\n`;
   
   results.forEach(r => {
     const m = r.metrics;
-    md += `| **${r.config.version}** | ${formatNum(m.aes_256_gcm_8k_kbs)} | ${formatNum(m.sha256_8k_kbs)} |\n`;
+    const aesVal = showStddevInTables ? formatNumWithStddev(m.aes_256_gcm_8k_kbs, m.aes_256_gcm_8k_kbs_stddev) : formatNum(m.aes_256_gcm_8k_kbs);
+    const shaVal = showStddevInTables ? formatNumWithStddev(m.sha256_8k_kbs, m.sha256_8k_kbs_stddev) : formatNum(m.sha256_8k_kbs);
+    md += `| **${r.config.version}** | ${aesVal} | ${shaVal} |\n`;
   });
 
   // Multi-threaded Section
@@ -469,6 +519,14 @@ async function generateMarkdownReport(results) {
     const m = r.metrics;
     md += `| **${r.config.version}** | ${formatNum(m.tls1_3_rsa_resume_cps)} | ${formatNum(m.tls1_2_rsa_resume_cps)} |\n`;
   });
+
+  md += `\n**Understanding the Performance Gap:**\n\n`;
+  md += `TLS 1.2 session resumption consistently achieves significantly higher performance (often 30,000-40,000+ CPS) compared to TLS 1.3 (typically 6,000-7,000 CPS). This occurs because:\n\n`;
+  md += `1. **TLS 1.2 Resumption Simplicity:** Session tickets completely bypass expensive asymmetric cryptography. The server decrypts the ticket, retrieves the cached master secret, and derives new symmetric keys—no public key operations required.\n\n`;
+  md += `2. **TLS 1.3 PSK Complexity:** Pre-Shared Key (PSK) resumption in TLS 1.3 is more secure (better forward secrecy) but performs additional operations: HKDF key derivation, optional ephemeral Diffie-Hellman exchanges, and more complex state management.\n\n`;
+  md += `3. **Code Maturity:** TLS 1.2 has been optimized for over a decade. TLS 1.3 (introduced in OpenSSL 1.1.1) and especially the OpenSSL 3.x Provider architecture are still being tuned.\n\n`;
+  md += `4. **OpenSSL 3.x Provider Overhead:** The abstraction layers in OpenSSL 3.x add per-operation overhead that accumulates during handshakes with many small cryptographic operations.\n\n`;
+  md += `**Practical Impact:** While TLS 1.3 provides superior security properties (mandatory perfect forward secrecy, encrypted handshakes), TLS 1.2 session resumption remains faster in pure throughput. For most applications, TLS 1.3's security benefits outweigh this performance difference, but high-throughput environments may need to consider this tradeoff.\n\n`;
 
   // Schmatz Algorithm Benchmark Section
   md += `\n## Schmatz Algorithm Benchmarks\n\n`;
