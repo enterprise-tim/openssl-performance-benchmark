@@ -1,41 +1,43 @@
 # OpenSSL Performance Benchmark
 
-This project is a benchmark suite designed to evaluate the performance of different OpenSSL versions, specifically investigating reported regressions in the 3.x series compared to 1.1.1.
+This project automates the performance testing of OpenSSL across multiple versions (from 1.1.1 to the latest 3.x series) to identify performance regressions and improvements.
 
-## Architecture
+It runs in isolated Docker containers to ensure consistent, reproducible results.
 
-The benchmark uses a matrix build approach:
-1.  **Configuration**: `config/versions.json` defines the OpenSSL versions to test and their source URLs.
-2.  **Containerization**: A parameterized `Dockerfile` builds a clean environment for each version, compiling OpenSSL from source to ensure consistency.
-3.  **Orchestration**: A Node.js script (`scripts/run-benchmark.js`) iterates through the versions, builds the Docker images, runs the benchmarks, and aggregates results.
-4.  **Metrics**:
-    *   **Throughput**: AES-256-GCM and SHA256 (via `openssl speed`).
-    *   **Handshake**: New and Resumed TLS connections per second (via `openssl s_time`).
+## Quick Start
 
-## Usage
+### Prerequisites
+*   Node.js v18+
+*   Docker (Daemon must be running)
 
-1.  **Prerequisites**:
-    *   Docker
-    *   Node.js (for the runner script)
+### Run Benchmark
+```bash
+npm install
+npm run benchmark
+```
+This will compile and test each configured OpenSSL version. **Note:** This can take 30+ minutes as it compiles from source.
 
-2.  **Run the Benchmark**:
-    ```bash
-    npm run benchmark
-    ```
+### Generate Reports
+```bash
+npm run report
+```
+This processes the results and generates:
+*   `results/REPORT.md`: Detailed markdown analysis.
+*   `results/visualizations.html`: Interactive charts.
 
-3.  **View Results**:
-    Results will be saved in the `results/` directory as individual JSON files and a consolidated `summary.json`.
+## Documentation
 
-## Configuration
+For detailed information, please see the [**Guide**](./guide/index.md):
 
-Edit `config/versions.json` to add or remove versions.
+*   [**Architecture**](./guide/architecture.md): How the pipeline works.
+*   [**Metrics**](./guide/metrics.md): Explanation of what is being measured (Throughput, Handshake CPS, etc.).
+*   [**Configuration**](./guide/configuration.md): How to add new OpenSSL versions.
+*   [**Usage**](./guide/usage.md): Detailed usage instructions.
 
-## Current Versions Tested
+## Key Features
 
-*   1.1.1w (Baseline)
-*   3.0.15 (LTS)
-*   3.1.7
-*   3.2.3
-*   3.3.2
-*   3.4.0
-
+*   **Throughput Testing:** AES-GCM and SHA256 at various block sizes.
+*   **Handshake Performance:** TLS 1.2 vs 1.3, RSA vs ECDSA, New vs Resumed.
+*   **Asymmetric Crypto:** RSA and ECDSA signing/verification speeds.
+*   **Post-Quantum:** ML-KEM-768 testing for supported versions (OpenSSL 3.5+).
+*   **Optimization Analysis:** Tests OpenSSL 3.x with default vs. tuned configurations (Mráz optimizations).
