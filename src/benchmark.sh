@@ -320,52 +320,54 @@ echo "Schmatz algorithm tests complete." >&2
 
 # --- PQC Tests (OpenSSL 3.5+) ---
 # Try to detect if ML-KEM is available
-# We use a broad grep because the name might be 'ml-kem-768' or similar
+# We check with 'list -public-key-algorithms' OR 'list -kem-algorithms' (if 3.x introduced it)
+# We also just try to run the speed command on ml-kem-768 to be sure.
+echo "Checking for PQC (ML-KEM) support..." >&2
+
+# Debug: List algorithms to see what is available
+# echo "DEBUG: Available public key algorithms:" >&2
+# openssl list -public-key-algorithms 2>/dev/null | head -n 20 >&2
+
+IS_PQC=false
 if openssl list -public-key-algorithms 2>/dev/null | grep -i "ml-kem" >/dev/null; then
+    IS_PQC=true
+elif openssl speed -help 2>&1 | grep -i "ml-kem" >/dev/null; then
+    IS_PQC=true
+fi
+
+if [ "$IS_PQC" = true ]; then
     echo "PQC detected. Running ML-KEM-768 speed test..." >&2
-    # Note: speed command for KEM might differ. usually 'speed -evp ml-kem-768' works for keygen/encaps/decaps
-    # But 'speed' output format for public key algos is different (ops/sec), not throughput (bytes/sec)
-    # We will try to capture the 1024 byte column if it exists, or just ops/sec? 
-    # Actually, for PQC, 'ops/sec' is the standard metric, not 'throughput'.
-    # But our existing 'parse_speed' expects columns.
-    # Let's try to just run it and see if it outputs standard columns. If not, we skip for now to avoid breaking JSON.
-    # OpenSSL 3.5 speed test for KEM usually outputs 'ops/sec'.
-    # We will implement a simplified check:
     
     # Run speed test. capture output.
-    PQC_OUT=$(openssl speed -seconds 5 -evp ml-kem-768 2>/dev/null)
+    PQC_OUT=$(openssl speed -seconds 5 -evp ml-kem-768 2>&1)
     
+    # Debug PQC output
+    # echo "DEBUG PQC OUT:" >&2
+    # echo "$PQC_OUT" | head -n 5 >&2
+
     # Parse the output.
     # Typical output for KEM speed test (format may vary slightly):
     # ml-kem-768 :  1234.5 op/s
     # or a table.
-    # Let's assume standard 'openssl speed' table format for asymmetric algos.
-    # Columns usually: keygen, encaps, decaps
-    # We will try to extract the numbers.
-    # Because parsing 'speed' output can be brittle across versions, we'll try a regex approach.
     
     # Let's try to grab the last line which usually contains the results
-    # The output usually looks like:
-    #                              sign    verify    sign/s verify/s
-    # ml-kem-768                      0.000s   0.000s      1234.5   1234.5
-    # (Note: for KEM it is keygen/encap/decap, so columns might differ)
-    
-    # To be safe and robust, we'll just try to grep for the numbers on the line starting with "ml-kem-768"
-    # and assume the columns match the standard order.
-    # For KEMs in 3.x, it might actually just test keygen if we don't specify prop?
-    # Let's capture the raw line first.
     PQC_LINE=$(echo "$PQC_OUT" | grep -i "^ml-kem-768")
     
     if [ ! -z "$PQC_LINE" ]; then
        # Extract the last column as a proxy for "operations per second"
-       # This is a simplification but gives us *a* number to compare.
-       # A better approach is usually to look at the 'encap' column.
        PQC_OPS=$(echo "$PQC_LINE" | awk '{print $NF}')
        RESULTS=$(echo "$RESULTS" | jq --arg v "${PQC_OPS:-0}" '.metrics.ml_kem_768_ops_sec = ($v | tonumber)')
        echo "  Captured ML-KEM-768: $PQC_OPS ops/sec" >&2
     else
+       echo "WARNING: Could not parse ML-KEM output." >&2
+       echo "Raw Output:" >&2
+       echo "$PQC_OUT" >&2
        RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_kem_768_ops_sec = 0')
     fi
+else
+    echo "PQC (ML-KEM) not detected in this OpenSSL build." >&2
+    # Debug: why not?
+    # openssl version -a >&2
 fi
 
 # =============================================================================
