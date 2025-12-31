@@ -153,13 +153,13 @@ jobs:
         echo "## 🧪 Test Suite Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
 
-        if ["${{ needs.test.result }}" == "success"]; then
+        if [ "${{ needs.test.result }}" == "success" ]; then
           echo "✅ **Unit Tests:** PASSED" >> $GITHUB_STEP_SUMMARY
         else
           echo "❌ **Unit Tests:** FAILED" >> $GITHUB_STEP_SUMMARY
         fi
 
-        if ["${{ needs.lint.result }}" == "success"]; then
+        if [ "${{ needs.lint.result }}" == "success" ]; then
           echo "✅ **Linting:** PASSED" >> $GITHUB_STEP_SUMMARY
         else
           echo "❌ **Linting:** FAILED" >> $GITHUB_STEP_SUMMARY
