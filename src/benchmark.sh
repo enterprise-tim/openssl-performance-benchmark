@@ -146,7 +146,7 @@ MULTI_OUT=$(openssl speed -seconds 10 -multi $CORES -evp aes-256-gcm 2>&1)
 # We look for the line starting with 'evp' (since -evp was used) or the algorithm name depending on version.
 # OpenSSL 3.x with -multi often prints 'evp' at the start of the line.
 # UPDATED: grep -E "^\s*(evp|aes-256-gcm)" to handle potential leading whitespace
-MULTI_LINE=$(echo "$MULTI_OUT" | grep -E "^\s*(evp|aes-256-gcm)" | tail -1)
+MULTI_LINE=$(echo "$MULTI_OUT" | grep -i -E "^\s*(evp|aes-256-gcm)" | tail -1)
 
 # Extract 1K and 8K columns (same indices as single thread: 5 and 6)
 if [ ! -z "$MULTI_LINE" ]; then
