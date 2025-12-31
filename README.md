@@ -25,6 +25,16 @@ This processes the results and generates:
 *   `results/REPORT.md`: Detailed markdown analysis.
 *   `results/visualizations.html`: Interactive charts.
 
+## Automated CI/CD
+
+This project includes GitHub Actions workflows that automatically:
+- Run benchmarks weekly or on push to `main`
+- Generate reports and visualizations
+- Create GitHub releases with benchmark data
+- **Deploy results to GitHub Pages** for easy viewing
+
+See [GitHub Pages Setup Guide](./docs/GITHUB_PAGES_SETUP.md) for enabling automated publishing.
+
 ## Documentation
 
 For detailed information, please see the [**Guide**](./guide/index.md):
@@ -33,6 +43,7 @@ For detailed information, please see the [**Guide**](./guide/index.md):
 *   [**Metrics**](./guide/metrics.md): Explanation of what is being measured (Throughput, Handshake CPS, etc.).
 *   [**Configuration**](./guide/configuration.md): How to add new OpenSSL versions.
 *   [**Usage**](./guide/usage.md): Detailed usage instructions.
+*   [**GitHub Pages Setup**](./docs/GITHUB_PAGES_SETUP.md): Automated result publishing.
 
 ## Key Features
 
