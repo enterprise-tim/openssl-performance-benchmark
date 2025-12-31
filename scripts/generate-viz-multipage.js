@@ -99,7 +99,7 @@ function generateHeader(title, iterationCount) {
 </div>`;
 }
 
-function generateNavigation() {
+function generateNavigation(hasOptimizedData) {
   return `
 <div class="container">
     <div class="card">
@@ -121,10 +121,13 @@ function generateNavigation() {
                 <h3 style="margin: 0 0 10px 0;">4. Schmatz Algorithms</h3>
                 <p style="margin: 0; font-size: 0.9rem; color: #495057;">RSA/ECDSA key sizes and curves</p>
             </a>
-            <a href="mraz.html" style="display: block; padding: 20px; background: #f3f0ff; border-radius: 8px; text-decoration: none; color: #6741d9; border: 2px solid #e5dbff;">
+            ${hasOptimizedData ? `<a href="mraz.html" style="display: block; padding: 20px; background: #f3f0ff; border-radius: 8px; text-decoration: none; color: #6741d9; border: 2px solid #e5dbff;">
                 <h3 style="margin: 0 0 10px 0;">5. Mráz Optimization</h3>
                 <p style="margin: 0; font-size: 0.9rem; color: #495057;">Default vs optimized configuration</p>
-            </a>
+            </a>` : `<div style="display: block; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px solid #dee2e6; opacity: 0.6;">
+                <h3 style="margin: 0 0 10px 0; color: #868e96;">5. Mráz Optimization</h3>
+                <p style="margin: 0; font-size: 0.9rem; color: #868e96;">Not available - run benchmarks with OpenSSL 3.x and optimized config</p>
+            </div>`}
             <a href="pqc.html" style="display: block; padding: 20px; background: #f0f9ff; border-radius: 8px; text-decoration: none; color: #0c8599; border: 2px solid #99e9f2;">
                 <h3 style="margin: 0 0 10px 0;">6. Post-Quantum (PQC)</h3>
                 <p style="margin: 0; font-size: 0.9rem; color: #495057;">ML-KEM-768 performance (OpenSSL 3.5+)</p>
@@ -216,6 +219,9 @@ async function main() {
     }
     
     const iterationCount = jsonData[0]?.config?.iterations_count || 1;
+    
+    // Check if we have optimized data for Mráz page
+    const hasOptimizedData = jsonData.some(d => d.metrics?.optimized_tls1_3_rsa_new_cps > 0);
 
     // Page 1: Index/Navigation
     console.log('  📄 Generating index.html...');
@@ -235,7 +241,7 @@ ${SHARED_STYLES}
 
 ${generateHeader('Dashboard', iterationCount)}
 
-${generateNavigation()}
+${generateNavigation(hasOptimizedData)}
 
 <div class="container">
     <div class="card">
@@ -264,7 +270,7 @@ ${generateNavigation()}
       path.join(RESULTS_DIR, 'overview.html'),
       createPageTemplate(
         'Overview: Performance Tradeoffs',
-        'Scatter plot showing <strong>Handshake Speed</strong> (Y) vs <strong>Encryption Throughput</strong> (X). Error bars show ±1 standard deviation when multiple iterations were run.',
+        'Scatter plot showing <strong>TLS 1.3 Handshake Speed</strong> (Y) vs <strong>AES-256-GCM Encryption Throughput</strong> (X). Handshake metrics use the deprecated <code>handshakes_new_per_sec</code> (TLS 1.3 with RSA certificates). Error bars show ±1 standard deviation when multiple iterations were run.',
         getScatterChartFunction(),
         rawData,
         iterationCount
@@ -298,12 +304,16 @@ ${generateNavigation()}
       createSchmatzPage(rawData, iterationCount)
     );
 
-    // Page 6: Mráz Optimization
-    console.log('  📄 Generating mraz.html...');
-    await fs.writeFile(
-      path.join(RESULTS_DIR, 'mraz.html'),
-      createMrazPage(rawData, iterationCount)
-    );
+    // Page 6: Mráz Optimization (only if data exists)
+    if (hasOptimizedData) {
+      console.log('  📄 Generating mraz.html...');
+      await fs.writeFile(
+        path.join(RESULTS_DIR, 'mraz.html'),
+        createMrazPage(rawData, iterationCount)
+      );
+    } else {
+      console.log('  ⊘ Skipping mraz.html (no optimized data available)');
+    }
 
     // Page 7: PQC
     console.log('  📄 Generating pqc.html...');
@@ -325,7 +335,9 @@ ${generateNavigation()}
     console.log('   - tls-comparison.html');
     console.log('   - bellingrath.html');
     console.log('   - schmatz.html');
-    console.log('   - mraz.html');
+    if (hasOptimizedData) {
+      console.log('   - mraz.html');
+    }
     console.log('   - pqc.html');
     console.log('\n   Open index.html in your browser to explore!\n');
     
@@ -376,7 +388,7 @@ function renderChart() {
     svg.append("text").attr("x", width/2).attr("y", height + 40)
         .style("text-anchor", "middle").text("AES-256-GCM Throughput (Higher is Better →)");
     svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45)
-        .style("text-anchor", "middle").text("Handshakes/sec (Higher is Better ↑)");
+        .style("text-anchor", "middle").text("TLS 1.3 Handshakes/sec (Higher is Better ↑)");
 
     // Error bars (if statistics available)
     if (hasStats) {
@@ -418,7 +430,7 @@ function renderChart() {
         .style("cursor", "pointer")
         .on("mouseover", (e, d) => {
             const statsNote = hasStats ? \`<br><small>±\${((d.metrics.aes_256_gcm_8k_kbs_stddev || 0)/1024/1024).toFixed(2)} GB/s, ±\${(d.metrics.tls1_3_rsa_new_cps_stddev || d.metrics.handshakes_new_per_sec_stddev || 0).toFixed(0)} cps</small>\` : '';
-            showTooltip(e, \`<strong>\${d.config.version}</strong><br>TP: \${(xVal(d)/1024/1024).toFixed(2)} GB/s<br>HS: \${yVal(d).toLocaleString()}\${statsNote}\`);
+            showTooltip(e, \`<strong>\${d.config.version}</strong><br>AES-256-GCM: \${(xVal(d)/1024/1024).toFixed(2)} GB/s<br>TLS 1.3 Handshakes: \${yVal(d).toLocaleString()} cps\${statsNote}\`);
         })
         .on("mouseout", hideTooltip);
 
@@ -618,9 +630,10 @@ ${generateHeader('Bellingrath Test Matrix', iterationCount)}
     </div>
     
     <div class="card">
-        <h2>Session Resumption Performance</h2>
+        <h2>TLS 1.3 Session Resumption Performance</h2>
         <div class="card-desc">
-            Comparison of new vs resumed connections. Resumed connections reuse cached session parameters for faster setup.
+            Comparison of new vs resumed <strong>TLS 1.3</strong> connections with RSA certificates. Resumed connections reuse cached session parameters for faster setup.
+            <br><strong>Note:</strong> These are the deprecated <code>handshakes_new_per_sec</code> and <code>handshakes_resume_per_sec</code> metrics, which specifically measure TLS 1.3 (not TLS 1.2).
         </div>
         <div id="resumption-chart"></div>
     </div>
@@ -744,8 +757,8 @@ function renderResumptionChart() {
         .append("g").attr("transform", \`translate(\${margin.left},\${margin.top})\`);
 
     const metrics = [
-        {key: 'handshakes_new_per_sec', label: 'New Connections', color: '#228be6'},
-        {key: 'handshakes_resume_per_sec', label: 'Resumed Connections', color: '#74c0fc'}
+        {key: 'handshakes_new_per_sec', label: 'TLS 1.3 New Connections', color: '#228be6'},
+        {key: 'handshakes_resume_per_sec', label: 'TLS 1.3 Resumed Connections', color: '#74c0fc'}
     ];
 
     const x0 = d3.scaleBand().domain(data.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.3);
@@ -848,9 +861,26 @@ ${generateHeader('Schmatz Algorithm Benchmarks', iterationCount)}
     <div class="card">
         <h2>Block Size Sensitivity (AES-256-GCM)</h2>
         <div class="card-desc">
-            Small blocks stress initialization overhead. Large blocks show maximum throughput.
+            <p><strong>What This Chart Shows:</strong> This benchmark measures AES-256-GCM encryption throughput across different block sizes (16 bytes to 8KB) to reveal how cryptographic operations scale with data size.</p>
+            
+            <p><strong>Key Insights:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 25px;">
+                <li><strong>Small blocks (16-64 bytes)</strong> stress initialization overhead - each encryption requires Provider setup, key scheduling, and context creation</li>
+                <li><strong>Medium blocks (256 bytes - 1KB)</strong> show the transition point where throughput begins to increase</li>
+                <li><strong>Large blocks (8KB+)</strong> achieve maximum throughput by amortizing initialization costs across more data</li>
+                <li><strong>The gap between versions</strong> reveals Provider architecture overhead in OpenSSL 3.x compared to 1.1.1w</li>
+            </ul>
+            
+            <p><strong>Real-World Impact:</strong> Applications encrypting small messages (e.g., individual database fields, IoT sensor data) will see much lower throughput than bulk encryption (file encryption, large API payloads).</p>
         </div>
         <div id="blocksize-chart" style="height: 400px;"></div>
+        
+        <div style="margin-top: 30px;">
+            <h3 style="color: #495057; border-bottom: 2px solid #dee2e6; padding-bottom: 8px;">Performance Data (KB/s)</h3>
+            <div id="blocksize-table" style="overflow-x: auto; margin-top: 15px;">
+                <!-- Table will be generated by JavaScript -->
+            </div>
+        </div>
     </div>
     
     <div style="text-align: center; margin: 30px 0;">
@@ -871,6 +901,15 @@ ${SHARED_UTILS}
 function renderGroupedBarChart(containerId, metrics) {
     const container = d3.select(containerId);
     container.html("");
+    
+    // Check if we have any data for these metrics
+    const maxVal = d3.max(data, d => d3.max(metrics, m => d.metrics[m.key] || 0));
+    if (!maxVal || maxVal === 0) {
+        const metricNames = metrics.map(m => m.label).join(', ');
+        container.html(\`<div style='padding:40px; text-align:center; color:#999'><h3>Data Not Available</h3><p>No data found for: \${metricNames}</p><p style='margin-top:20px; font-size:0.9em;'>Run the full benchmark suite to generate these metrics.</p></div>\`);
+        return;
+    }
+    
     const width = getWidth(container, 200);
     const height = 320;
     const margin = {top: 20, right: 120, bottom: 40, left: 60};
@@ -882,7 +921,6 @@ function renderGroupedBarChart(containerId, metrics) {
 
     const x0 = d3.scaleBand().domain(data.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
     const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
-    const maxVal = d3.max(data, d => d3.max(metrics, m => d.metrics[m.key] || 0));
     const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
 
     svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0));
@@ -971,6 +1009,62 @@ function renderBlockSizeChart() {
     });
 }
 
+function renderBlockSizeTable() {
+    const container = document.getElementById('blocksize-table');
+    if (!container) return;
+    
+    const blockSizes = [
+        { key: 'aes_256_gcm_16b_kbs', label: '16 Bytes' },
+        { key: 'aes_256_gcm_64b_kbs', label: '64 Bytes' },
+        { key: 'aes_256_gcm_256b_kbs', label: '256 Bytes' },
+        { key: 'aes_256_gcm_1k_kbs', label: '1024 Bytes (1KB)' },
+        { key: 'aes_256_gcm_8k_kbs', label: '8192 Bytes (8KB)' }
+    ];
+    
+    let tableHTML = \`
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Version</th>
+                    \${blockSizes.map(bs => \`<th style="padding: 12px; text-align: right; font-weight: 600; color: #495057;">\${bs.label}</th>\`).join('')}
+                </tr>
+            </thead>
+            <tbody>
+    \`;
+    
+    data.forEach((version, idx) => {
+        const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8f9fa';
+        tableHTML += \`
+            <tr style="background: \${bgColor}; border-bottom: 1px solid #e9ecef;">
+                <td style="padding: 10px; font-weight: 600; color: \${colorScale(getSeries(version.config.version))};">
+                    \${version.config.version}
+                </td>
+        \`;
+        
+        blockSizes.forEach(bs => {
+            const value = version.metrics[bs.key] || 0;
+            const displayValue = value === 0 ? '—' : 
+                                value >= 1024 * 1024 ? (value / (1024 * 1024)).toFixed(2) + ' GB/s' :
+                                value >= 1024 ? (value / 1024).toFixed(2) + ' MB/s' :
+                                value.toFixed(2) + ' KB/s';
+            
+            tableHTML += \`<td style="padding: 10px; text-align: right; font-family: 'Monaco', 'Courier New', monospace;">\${displayValue}</td>\`;
+        });
+        
+        tableHTML += \`</tr>\`;
+    });
+    
+    tableHTML += \`
+            </tbody>
+        </table>
+        <div style="margin-top: 10px; font-size: 12px; color: #6c757d; font-style: italic;">
+            Note: Values show encryption throughput. Higher is better. "—" indicates data not captured for that block size.
+        </div>
+    \`;
+    
+    container.innerHTML = tableHTML;
+}
+
 // Render charts
 renderGroupedBarChart("#rsa-sign-chart", [
     {key: 'rsa_2048_sign_per_sec', label: 'RSA-2048', color: '#228be6'},
@@ -995,6 +1089,7 @@ renderGroupedBarChart("#ecdsa-verify-chart", [
 ]);
 
 renderBlockSizeChart();
+renderBlockSizeTable();
 
 window.addEventListener('resize', () => {
     renderGroupedBarChart("#rsa-sign-chart", [
