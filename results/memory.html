@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handshake Memory Consumption</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; color: #333; }
+
+/* Header */
+.header { background: white; padding: 20px 40px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { margin: 0; font-size: 1.5rem; }
+.header .nav-links { display: flex; gap: 15px; }
+.header .nav-links a { color: #228be6; text-decoration: none; font-weight: 500; }
+.header .nav-links a:hover { text-decoration: underline; }
+
+/* Container */
+.container { max-width: 1400px; margin: 0 auto; padding: 30px; }
+
+/* Cards */
+.card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 30px; }
+.card h2 { margin-top: 0; font-size: 1.2rem; color: #495057; border-bottom: 1px solid #f1f3f5; padding-bottom: 15px; margin-bottom: 20px; }
+.card-desc { font-size: 0.9rem; color: #868e96; margin-bottom: 20px; line-height: 1.6; }
+
+/* Tooltip */
+.tooltip { position: absolute; background: rgba(33, 37, 41, 0.95); color: white; padding: 8px 12px; border-radius: 4px; pointer-events: none; opacity: 0; font-size: 12px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: opacity 0.2s; }
+
+/* View Toggle Buttons */
+.view-toggle { padding: 6px 14px; border: 1px solid #dee2e6; background: white; border-radius: 4px; cursor: pointer; font-size: 13px; color: #495057; transition: all 0.2s; font-weight: 500; }
+.view-toggle:hover { background: #f8f9fa; border-color: #228be6; color: #228be6; }
+.view-toggle.active { background: #228be6; color: white; border-color: #228be6; }
+
+/* D3 Styling */
+.grid line { stroke: #f1f3f5; }
+.grid path { stroke: none; }
+.axis text { fill: #868e96; font-size: 11px; }
+.axis path, .axis line { stroke: #dee2e6; }
+.baseline-line { stroke: #333; stroke-dasharray: 4,4; stroke-width: 1.5; opacity: 0.5; }
+.zero-line { stroke: #868e96; stroke-dasharray: 2,2; stroke-width: 1; opacity: 0.7; }
+
+/* Breadcrumb */
+.breadcrumb { background: white; padding: 15px 40px; border-bottom: 1px solid #e9ecef; font-size: 0.9rem; }
+.breadcrumb a { color: #228be6; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { color: #868e96; margin: 0 8px; }
+</style>
+</head>
+<body>
+
+
+<div class="breadcrumb">
+    <a href="index.html">🏠 Home</a>
+    <span>›</span>
+    <span>Memory Consumption Analysis</span>
+</div>
+<div class="header">
+    <h1>OpenSSL Performance Benchmark</h1>
+    <div style="font-size: 0.9rem; color: #868e96;">
+        Memory Consumption Analysis
+    </div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>🧠 Handshake Memory Consumption (RAM)</h2>
+        <div class="card-desc">
+            Memory consumption (RSS) of OpenSSL s_server during TLS handshakes. This measures the Resident Set Size 
+            (physical RAM used) during connection establishment for different OpenSSL versions. Lower is better.
+            <br><br>
+            <strong>Why This Matters:</strong> Memory consumption differences between 1.1.1w and 3.x versions were raised 
+            as a concern. This data shows actual RAM impact during TLS 1.2 and TLS 1.3 handshakes.
+        </div>
+        <div id="memory-chart" style="height: 500px; width: 100%;"></div>
+    </div>
+    
+    <div class="card">
+        <h2>📊 Memory Comparison: TLS 1.3 vs TLS 1.2</h2>
+        <div class="card-desc">
+            Comparing memory consumption between TLS protocols. Shows how protocol version affects memory footprint.
+        </div>
+        <div id="memory-protocol-chart" style="height: 400px; width: 100%;"></div>
+    </div>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="index.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            ← Back to Overview
+        </a>
+    </div>
+</div>
+
+<script>
+const data = "[\n  {\n    \"config\": {\"version\": \"1.1.1w\", \"iterations_count\": 1},\n    \"metrics\": {\n      \"tls1_3_rsa_new_cps\": 5500,\n      \"aes_256_gcm_8k_kbs\": 850000,\n      \"handshakes_new_per_sec\": 5500\n    }\n  }\n]\n";
+const hasStats = data.length > 0 && data[0].config && data[0].config.iterations_count > 1;
+data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, { numeric: true }));
+
+
+// Shared D3 utilities
+const colorScale = d3.scaleOrdinal()
+    .domain(['1.1.1', '3.0', '3.1', '3.2', '3.3', '3.4', '3.5'])
+    .range(['#228be6', '#fa5252', '#fd7e14', '#fab005', '#40c057', '#15aabf', '#7950f2']);
+
+const getSeries = (ver) => {
+    if (ver.startsWith('1.1.1')) return '1.1.1';
+    return ver.split('.').slice(0, 2).join('.');
+};
+
+const tooltip = d3.select("body").append("div").attr("class", "tooltip");
+
+function showTooltip(event, html) {
+    tooltip.transition().duration(200).style("opacity", .9);
+    tooltip.html(html)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 28) + "px");
+}
+
+function hideTooltip() {
+    tooltip.transition().duration(500).style("opacity", 0);
+}
+
+function getWidth(container, pad = 60, minWidth = 320) {
+    const rect = container.node().getBoundingClientRect();
+    const parentRect = container.node().parentNode ? container.node().parentNode.getBoundingClientRect() : { width: 1200 };
+    const rawWidth = rect.width > 0 ? rect.width : parentRect.width;
+    return Math.max(rawWidth - pad, minWidth);
+}
+
+
+function renderMemoryChart() {
+    const container = d3.select("#memory-chart");
+    container.html("");
+    
+    // Check if we have memory data
+    const hasMemData = data.some(d => 
+        (d.metrics.tls1_3_rsa_new_memory_kb || 0) > 0 ||
+        (d.metrics.tls1_2_ecdhe_rsa_memory_kb || 0) > 0
+    );
+    
+    if (!hasMemData) {
+        container.html('<div style="padding:60px; text-align:center; color:#999"><h3>Memory Data Not Available</h3><p>Run benchmarks with the updated benchmark script to collect memory metrics.</p></div>');
+        return;
+    }
+    
+    const metrics = [
+        {key: 'tls1_3_rsa_new_memory_kb', label: 'TLS 1.3 RSA New', color: '#228be6'},
+        {key: 'tls1_3_rsa_resume_memory_kb', label: 'TLS 1.3 RSA Resume', color: '#74c0fc'},
+        {key: 'tls1_2_ecdhe_rsa_memory_kb', label: 'TLS 1.2 ECDHE-RSA', color: '#fa5252'},
+        {key: 'tls1_2_rsa_resume_memory_kb', label: 'TLS 1.2 RSA Resume', color: '#ffa8a8'},
+        {key: 'tls1_3_ecdsa_new_memory_kb', label: 'TLS 1.3 ECDSA New', color: '#40c057'},
+        {key: 'tls1_2_ecdhe_ecdsa_memory_kb', label: 'TLS 1.2 ECDHE-ECDSA', color: '#fab005'}
+    ];
+    
+    const containerWidth = container.node().getBoundingClientRect().width || 1000;
+    const margin = {top: 40, right: 200, bottom: 60, left: 80};
+    const width = containerWidth - margin.left - margin.right;
+    const height = 450;
+    
+    const svg = container.append("svg")
+        .attr("width", containerWidth)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+    
+    const x0 = d3.scaleBand().domain(data.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
+    const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
+    
+    const maxVal = d3.max(data, d => d3.max(metrics, m => d.metrics[m.key] || 0));
+    const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
+    
+    // Grid
+    svg.append("g").attr("class", "grid")
+        .call(d3.axisLeft(y).tickSize(-width).tickFormat(""));
+    
+    // Axes
+    svg.append("g").attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x0))
+        .selectAll("text").style("font-size", "11px");
+    
+    svg.append("g")
+        .call(d3.axisLeft(y).tickFormat(d => (d/1024).toFixed(1) + ' MB'))
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -60)
+        .attr("x", -height/2)
+        .attr("fill", "#495057")
+        .style("text-anchor", "middle")
+        .style("font-weight", "600")
+        .text("Memory Consumption (MB)");
+    
+    // Bars
+    const versionGroups = svg.selectAll(".version-group")
+        .data(data).enter().append("g")
+        .attr("transform", d => `translate(${x0(d.config.version)},0)`);
+    
+    versionGroups.selectAll("rect")
+        .data(d => metrics.map(m => ({
+            key: m.key,
+            label: m.label,
+            color: m.color,
+            value: d.metrics[m.key] || 0,
+            version: d.config.version
+        })))
+        .enter().append("rect")
+        .attr("x", d => x1(d.key))
+        .attr("y", d => y(d.value))
+        .attr("width", x1.bandwidth())
+        .attr("height", d => Math.max(0, height - y(d.value)))
+        .attr("fill", d => d.color)
+        .on("mouseover", (event, d) => {
+            if (d.value > 0) {
+                showTooltip(event, `
+                    <strong>${d.version}</strong><br/>
+                    ${d.label}<br/>
+                    <strong>${(d.value/1024).toFixed(2)} MB</strong>
+                `);
+            }
+        })
+        .on("mouseout", hideTooltip);
+    
+    // Legend
+    const legend = svg.append("g")
+        .attr("transform", `translate(${width + 20}, 0)`);
+    
+    metrics.forEach((m, i) => {
+        const lg = legend.append("g")
+            .attr("transform", `translate(0, ${i * 22})`);
+        
+        lg.append("rect")
+            .attr("width", 14)
+            .attr("height", 14)
+            .attr("fill", m.color);
+        
+        lg.append("text")
+            .attr("x", 20)
+            .attr("y", 11)
+            .style("font-size", "11px")
+            .style("fill", "#495057")
+            .text(m.label);
+    });
+}
+
+function renderMemoryProtocolChart() {
+    const container = d3.select("#memory-protocol-chart");
+    container.html("");
+    
+    const hasMemData = data.some(d => 
+        (d.metrics.tls1_3_rsa_new_memory_kb || 0) > 0 &&
+        (d.metrics.tls1_2_ecdhe_rsa_memory_kb || 0) > 0
+    );
+    
+    if (!hasMemData) {
+        container.html('<div style="padding:40px; text-align:center; color:#999"><p>Protocol comparison requires both TLS 1.2 and TLS 1.3 memory data.</p></div>');
+        return;
+    }
+    
+    const containerWidth = container.node().getBoundingClientRect().width || 1000;
+    const margin = {top: 40, right: 150, bottom: 60, left: 80};
+    const width = containerWidth - margin.left - margin.right;
+    const height = 350;
+    
+    const svg = container.append("svg")
+        .attr("width", containerWidth)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+    
+    const protocolData = data.map(d => ({
+        version: d.config.version,
+        tls12: (d.metrics.tls1_2_ecdhe_rsa_memory_kb || 0) / 1024,
+        tls13: (d.metrics.tls1_3_rsa_new_memory_kb || 0) / 1024,
+        diff: ((d.metrics.tls1_3_rsa_new_memory_kb || 0) - (d.metrics.tls1_2_ecdhe_rsa_memory_kb || 0)) / 1024
+    })).filter(d => d.tls12 > 0 && d.tls13 > 0);
+    
+    const x = d3.scaleBand().domain(protocolData.map(d => d.version)).rangeRound([0, width]).padding(0.3);
+    const maxVal = d3.max(protocolData, d => Math.max(d.tls12, d.tls13));
+    const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
+    
+    // Grid
+    svg.append("g").attr("class", "grid")
+        .call(d3.axisLeft(y).tickSize(-width).tickFormat(""));
+    
+    // Axes
+    svg.append("g").attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x))
+        .selectAll("text").style("font-size", "11px");
+    
+    svg.append("g")
+        .call(d3.axisLeft(y).tickFormat(d => d.toFixed(1) + ' MB'))
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -60)
+        .attr("x", -height/2)
+        .attr("fill", "#495057")
+        .style("text-anchor", "middle")
+        .style("font-weight", "600")
+        .text("Memory (MB)");
+    
+    // TLS 1.2 bars
+    svg.selectAll(".bar-tls12")
+        .data(protocolData).enter().append("rect")
+        .attr("class", "bar-tls12")
+        .attr("x", d => x(d.version))
+        .attr("y", d => y(d.tls12))
+        .attr("width", x.bandwidth() / 2.2)
+        .attr("height", d => height - y(d.tls12))
+        .attr("fill", "#fa5252")
+        .on("mouseover", (event, d) => {
+            showTooltip(event, `<strong>${d.version}</strong><br/>TLS 1.2: <strong>${d.tls12.toFixed(2)} MB</strong>`);
+        })
+        .on("mouseout", hideTooltip);
+    
+    // TLS 1.3 bars
+    svg.selectAll(".bar-tls13")
+        .data(protocolData).enter().append("rect")
+        .attr("class", "bar-tls13")
+        .attr("x", d => x(d.version) + x.bandwidth() / 2.2 + 2)
+        .attr("y", d => y(d.tls13))
+        .attr("width", x.bandwidth() / 2.2)
+        .attr("height", d => height - y(d.tls13))
+        .attr("fill", "#228be6")
+        .on("mouseover", (event, d) => {
+            showTooltip(event, `<strong>${d.version}</strong><br/>TLS 1.3: <strong>${d.tls13.toFixed(2)} MB</strong>`);
+        })
+        .on("mouseout", hideTooltip);
+    
+    // Legend
+    const legend = svg.append("g")
+        .attr("transform", `translate(${width + 20}, 0)`);
+    
+    [['TLS 1.2', '#fa5252'], ['TLS 1.3', '#228be6']].forEach((item, i) => {
+        const lg = legend.append("g")
+            .attr("transform", `translate(0, ${i * 22})`);
+        
+        lg.append("rect")
+            .attr("width", 14)
+            .attr("height", 14)
+            .attr("fill", item[1]);
+        
+        lg.append("text")
+            .attr("x", 20)
+            .attr("y", 11)
+            .style("font-size", "12px")
+            .style("fill", "#495057")
+            .text(item[0]);
+    });
+}
+
+renderMemoryChart();
+renderMemoryProtocolChart();
+
+window.addEventListener('resize', () => {
+    renderMemoryChart();
+    renderMemoryProtocolChart();
+});
+</script>
+
+
+<div style="border-top: 1px solid #e9ecef; padding: 30px 0; margin-top: 50px; text-align: center; background: #f8f9fa;">
+    <div style="max-width: 800px; margin: 0 auto; padding: 0 20px;">
+        <div style="margin-bottom: 15px;">
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #24292f; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; transition: background 0.2s;">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                View on GitHub
+            </a>
+        </div>
+        <div style="font-size: 0.85rem; color: #868e96; line-height: 1.6;">
+            <strong style="color: #495057;">Open Source Benchmark</strong><br>
+            Found a problem? Have an improvement?<br>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
+        </div>
+        <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
+            Licensed under Apache 2.0 • Community-driven development
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -60,7 +60,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
 <div class="header">
     <h1>OpenSSL Performance Benchmark</h1>
     <div style="font-size: 0.9rem; color: #868e96;">
-        Dashboard<span style="color: #40c057; margin-left: 20px;">● 3 iterations per version</span>
+        Dashboard
     </div>
 </div>
 
@@ -85,13 +85,17 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
                 <h3 style="margin: 0 0 10px 0;">4. Schmatz Algorithms</h3>
                 <p style="margin: 0; font-size: 0.9rem; color: #495057;">RSA/ECDSA key sizes and curves</p>
             </a>
-            <a href="mraz.html" style="display: block; padding: 20px; background: #f3f0ff; border-radius: 8px; text-decoration: none; color: #6741d9; border: 2px solid #e5dbff;">
-                <h3 style="margin: 0 0 10px 0;">5. Mráz Optimization</h3>
-                <p style="margin: 0; font-size: 0.9rem; color: #495057;">Default vs optimized configuration</p>
-            </a>
+            <div style="display: block; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px solid #dee2e6; opacity: 0.6;">
+                <h3 style="margin: 0 0 10px 0; color: #868e96;">5. Mráz Optimization</h3>
+                <p style="margin: 0; font-size: 0.9rem; color: #868e96;">Not available - run benchmarks with OpenSSL 3.x and optimized config</p>
+            </div>
             <a href="pqc.html" style="display: block; padding: 20px; background: #f0f9ff; border-radius: 8px; text-decoration: none; color: #0c8599; border: 2px solid #99e9f2;">
-                <h3 style="margin: 0 0 10px 0;">6. Post-Quantum (PQC)</h3>
-                <p style="margin: 0; font-size: 0.9rem; color: #495057;">ML-KEM-768 performance (OpenSSL 3.5+)</p>
+                <h3 style="margin: 0 0 10px 0;">7. Post-Quantum (PQC)</h3>
+                <p style="margin: 0; font-size: 0.9rem; color: #495057;">ML-KEM-768 vs Classical ECDH comparison (OpenSSL 3.5+)</p>
+            </a>
+            <a href="memory.html" style="display: block; padding: 20px; background: #f3e5f5; border-radius: 8px; text-decoration: none; color: #7b1fa2; border: 2px solid #e1bee7;">
+                <h3 style="margin: 0 0 10px 0;">8. Memory Consumption</h3>
+                <p style="margin: 0; font-size: 0.9rem; color: #495057;">RAM usage during TLS handshakes across versions</p>
             </a>
         </div>
     </div>
@@ -110,6 +114,28 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
             </a>
         </div>
     </div>
+    
+    <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+        <h2 style="color: white; border-bottom-color: rgba(255,255,255,0.3);">🌟 Open Source Project</h2>
+        <div style="font-size: 1rem; line-height: 1.8; margin-bottom: 20px;">
+            This benchmark suite is <strong>open source</strong> and community-driven. 
+            Found an issue? Have an idea for improvement? Contributions are welcome!
+        </div>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: white; color: #667eea; text-decoration: none; border-radius: 6px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                View on GitHub
+            </a>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="padding: 12px 24px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; border: 2px solid white;">
+                🍴 Fork & Contribute
+            </a>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/issues" target="_blank" rel="noopener" style="padding: 12px 24px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; border: 2px solid white;">
+                🐛 Report Issues
+            </a>
+        </div>
+    </div>
 </div>
 
 <div class="container">
@@ -117,7 +143,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
         <h2>About This Benchmark</h2>
         <p>
             This benchmark suite tests OpenSSL performance across versions 1.1.1w through 3.5.3.
-            Each version was tested <strong>3 times</strong> in separate containers, with results showing <strong>mean ± standard deviation</strong>.
+            
         </p>
         <p>
             <strong>Test Environment:</strong> Debian Bookworm containers, compiled from source, isolated execution.
@@ -125,6 +151,28 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
         <p>
             <strong>Generated:</strong> 2026-01-01
         </p>
+    </div>
+</div>
+
+
+<div style="border-top: 1px solid #e9ecef; padding: 30px 0; margin-top: 50px; text-align: center; background: #f8f9fa;">
+    <div style="max-width: 800px; margin: 0 auto; padding: 0 20px;">
+        <div style="margin-bottom: 15px;">
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #24292f; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; transition: background 0.2s;">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                View on GitHub
+            </a>
+        </div>
+        <div style="font-size: 0.85rem; color: #868e96; line-height: 1.6;">
+            <strong style="color: #495057;">Open Source Benchmark</strong><br>
+            Found a problem? Have an improvement?<br>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
+        </div>
+        <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
+            Licensed under Apache 2.0 • Community-driven development
+        </div>
     </div>
 </div>
 

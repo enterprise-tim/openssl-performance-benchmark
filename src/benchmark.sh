@@ -218,10 +218,13 @@ parse_asymmetric() {
         return
     fi
     
-    # Extract sign/s (second to last column) and verify/s (last column)
+    # Extract sign/s and verify/s
+    # OpenSSL 3.2+ format: algo bits time1 time2 time3 time4 sign/s verify/s encr./s decr./s
+    # We need fields 6 and 7 (sign/s and verify/s), NOT the last two fields
+    # which are encr./s and decr./s in newer versions
     local sign_rate verify_rate
-    sign_rate=$(echo "$line" | awk '{print $(NF-1)}')
-    verify_rate=$(echo "$line" | awk '{print $NF}')
+    sign_rate=$(echo "$line" | awk '{print $6}')
+    verify_rate=$(echo "$line" | awk '{print $7}')
 
     # Validate that these are numbers (handling +k suffix if present, though rare for ops/s)
     # If they are not numbers (e.g. "in"), return 0
@@ -422,15 +425,28 @@ if ! kill -0 $RSA_SERVER_PID 2>/dev/null; then
     cat s_server_rsa.log >&2
 fi
 
+# Make memory measurement script executable
+chmod +x ./measure_memory.sh 2>/dev/null || true
+
 # --- TLS 1.3 with RSA Certificate ---
 # Note: OpenSSL 1.1.1 s_time doesn't support -tls1_3 flag
 if [ "$IS_OPENSSL_1_1" = "true" ]; then
     echo "TLS 1.3 RSA: New Connections (using auto-negotiation for OpenSSL 1.1.1)..." >&2
     # In OpenSSL 1.1.1, we use -ssl3 to allow auto-negotiation to TLS 1.3
+    # Start memory measurement in background
+    ./measure_memory.sh $RSA_SERVER_PID 10 > mem_tls13_rsa_new.tmp &
+    MEM_PID=$!
     HS_TLS13_RSA_NEW=$(openssl s_time -connect localhost:4433 -new -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS13_RSA_NEW_MEM=$(cat mem_tls13_rsa_new.tmp 2>/dev/null || echo "0")
 else
     echo "TLS 1.3 RSA: New Connections..." >&2
+    # Start memory measurement in background
+    ./measure_memory.sh $RSA_SERVER_PID 10 > mem_tls13_rsa_new.tmp &
+    MEM_PID=$!
     HS_TLS13_RSA_NEW=$(openssl s_time -connect localhost:4433 -new -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS13_RSA_NEW_MEM=$(cat mem_tls13_rsa_new.tmp 2>/dev/null || echo "0")
 fi
 
 if [ -z "$HS_TLS13_RSA_NEW" ] || [ "$HS_TLS13_RSA_NEW" == "0" ]; then
@@ -445,15 +461,25 @@ if [ -z "$HS_TLS13_RSA_NEW" ] || [ "$HS_TLS13_RSA_NEW" == "0" ]; then
 fi
 
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_NEW:-0}" '.metrics.tls1_3_rsa_new_cps = (if $v == "" then 0 else ($v | tonumber) end)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${TLS13_RSA_NEW_MEM:-0}" '.metrics.tls1_3_rsa_new_memory_kb = ($v | tonumber)')
 
 if [ "$IS_OPENSSL_1_1" = "true" ]; then
     echo "TLS 1.3 RSA: Resumed Connections (using auto-negotiation for OpenSSL 1.1.1)..." >&2
+    ./measure_memory.sh $RSA_SERVER_PID 10 > mem_tls13_rsa_resume.tmp &
+    MEM_PID=$!
     HS_TLS13_RSA_RESUME=$(openssl s_time -connect localhost:4433 -reuse -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS13_RSA_RESUME_MEM=$(cat mem_tls13_rsa_resume.tmp 2>/dev/null || echo "0")
 else
     echo "TLS 1.3 RSA: Resumed Connections..." >&2
+    ./measure_memory.sh $RSA_SERVER_PID 10 > mem_tls13_rsa_resume.tmp &
+    MEM_PID=$!
     HS_TLS13_RSA_RESUME=$(openssl s_time -connect localhost:4433 -reuse -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS13_RSA_RESUME_MEM=$(cat mem_tls13_rsa_resume.tmp 2>/dev/null || echo "0")
 fi
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_RESUME:-0}" '.metrics.tls1_3_rsa_resume_cps = (if $v == "" then 0 else ($v | tonumber) end)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${TLS13_RSA_RESUME_MEM:-0}" '.metrics.tls1_3_rsa_resume_memory_kb = ($v | tonumber)')
 
 # --- TLS 1.3 with specific cipher (TLS-AES128-GCM-SHA256 from slide) ---
 if [ "$IS_OPENSSL_1_1" = "true" ]; then
@@ -467,26 +493,61 @@ RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_AES128:-0}" '.metrics.tls1_3_
 
 # --- TLS 1.2 with ECDHE-RSA-AES128-GCM-SHA256 (Industry workhorse) ---
 echo "TLS 1.2 RSA: ECDHE-RSA-AES128-GCM-SHA256..." >&2
-# OpenSSL 1.1.1 supports -tls1_2 flag
-HS_TLS12_ECDHE_RSA=$(openssl s_time -connect localhost:4433 -new -tls1_2 -cipher ECDHE-RSA-AES128-GCM-SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+# Note: OpenSSL 1.1.1 s_time doesn't support -tls1_2 flag
+if [ "$IS_OPENSSL_1_1" = "true" ]; then
+    # For 1.1.1, use cipher suite without explicit version flag (will negotiate TLS 1.2)
+    ./measure_memory.sh $RSA_SERVER_PID 10 > mem_tls12_ecdhe_rsa.tmp &
+    MEM_PID=$!
+    HS_TLS12_ECDHE_RSA=$(openssl s_time -connect localhost:4433 -new -cipher ECDHE-RSA-AES128-GCM-SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS12_ECDHE_RSA_MEM=$(cat mem_tls12_ecdhe_rsa.tmp 2>/dev/null || echo "0")
+else
+    ./measure_memory.sh $RSA_SERVER_PID 10 > mem_tls12_ecdhe_rsa.tmp &
+    MEM_PID=$!
+    HS_TLS12_ECDHE_RSA=$(openssl s_time -connect localhost:4433 -new -tls1_2 -cipher ECDHE-RSA-AES128-GCM-SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS12_ECDHE_RSA_MEM=$(cat mem_tls12_ecdhe_rsa.tmp 2>/dev/null || echo "0")
+fi
 
 if [ -z "$HS_TLS12_ECDHE_RSA" ] || [ "$HS_TLS12_ECDHE_RSA" == "0" ]; then
     echo "WARNING: TLS 1.2 ECDHE-RSA test returned 0 or empty." >&2
     echo "Raw output sample:" >&2
-    openssl s_time -connect localhost:4433 -new -tls1_2 -cipher ECDHE-RSA-AES128-GCM-SHA256 -time 2 2>&1 | head -n 10 >&2
+    if [ "$IS_OPENSSL_1_1" = "true" ]; then
+        openssl s_time -connect localhost:4433 -new -cipher ECDHE-RSA-AES128-GCM-SHA256 -time 2 2>&1 | head -n 10 >&2
+    else
+        openssl s_time -connect localhost:4433 -new -tls1_2 -cipher ECDHE-RSA-AES128-GCM-SHA256 -time 2 2>&1 | head -n 10 >&2
+    fi
 fi
 
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_RSA:-0}" '.metrics.tls1_2_ecdhe_rsa_aes128gcm_cps = (if $v == "" then 0 else ($v | tonumber) end)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${TLS12_ECDHE_RSA_MEM:-0}" '.metrics.tls1_2_ecdhe_rsa_memory_kb = ($v | tonumber)')
 
 # --- TLS 1.2 with AES256-GCM-SHA384 (From Bellingrath slide) ---
 echo "TLS 1.2 RSA: AES256-GCM-SHA384..." >&2
-HS_TLS12_AES256=$(openssl s_time -connect localhost:4433 -new -tls1_2 -cipher AES256-GCM-SHA384 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+if [ "$IS_OPENSSL_1_1" = "true" ]; then
+    HS_TLS12_AES256=$(openssl s_time -connect localhost:4433 -new -cipher AES256-GCM-SHA384 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+else
+    HS_TLS12_AES256=$(openssl s_time -connect localhost:4433 -new -tls1_2 -cipher AES256-GCM-SHA384 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+fi
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_AES256:-0}" '.metrics.tls1_2_rsa_aes256gcm_cps = (if $v == "" then 0 else ($v | tonumber) end)')
 
 # --- TLS 1.2 RSA: Session Resumption ---
 echo "TLS 1.2 RSA: Resumed Connections..." >&2
-HS_TLS12_RSA_RESUME=$(openssl s_time -connect localhost:4433 -reuse -tls1_2 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+if [ "$IS_OPENSSL_1_1" = "true" ]; then
+    ./measure_memory.sh $RSA_SERVER_PID 10 > mem_tls12_rsa_resume.tmp &
+    MEM_PID=$!
+    HS_TLS12_RSA_RESUME=$(openssl s_time -connect localhost:4433 -reuse -cipher ECDHE-RSA-AES128-GCM-SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS12_RSA_RESUME_MEM=$(cat mem_tls12_rsa_resume.tmp 2>/dev/null || echo "0")
+else
+    ./measure_memory.sh $RSA_SERVER_PID 10 > mem_tls12_rsa_resume.tmp &
+    MEM_PID=$!
+    HS_TLS12_RSA_RESUME=$(openssl s_time -connect localhost:4433 -reuse -tls1_2 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS12_RSA_RESUME_MEM=$(cat mem_tls12_rsa_resume.tmp 2>/dev/null || echo "0")
+fi
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_RSA_RESUME:-0}" '.metrics.tls1_2_rsa_resume_cps = (if $v == "" then 0 else ($v | tonumber) end)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${TLS12_RSA_RESUME_MEM:-0}" '.metrics.tls1_2_rsa_resume_memory_kb = ($v | tonumber)')
 
 # Kill RSA server
 kill $RSA_SERVER_PID 2>/dev/null
@@ -505,31 +566,75 @@ sleep 5
 # --- TLS 1.3 with ECDSA Certificate ---
 if [ "$IS_OPENSSL_1_1" = "true" ]; then
     echo "TLS 1.3 ECDSA: New Connections (using auto-negotiation for OpenSSL 1.1.1)..." >&2
+    ./measure_memory.sh $EC_SERVER_PID 10 > mem_tls13_ecdsa_new.tmp &
+    MEM_PID=$!
     HS_TLS13_EC_NEW=$(openssl s_time -connect localhost:4434 -new -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS13_ECDSA_NEW_MEM=$(cat mem_tls13_ecdsa_new.tmp 2>/dev/null || echo "0")
 else
     echo "TLS 1.3 ECDSA: New Connections..." >&2
+    ./measure_memory.sh $EC_SERVER_PID 10 > mem_tls13_ecdsa_new.tmp &
+    MEM_PID=$!
     HS_TLS13_EC_NEW=$(openssl s_time -connect localhost:4434 -new -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS13_ECDSA_NEW_MEM=$(cat mem_tls13_ecdsa_new.tmp 2>/dev/null || echo "0")
 fi
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_EC_NEW:-0}" '.metrics.tls1_3_ecdsa_new_cps = (if $v == "" then 0 else ($v | tonumber) end)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${TLS13_ECDSA_NEW_MEM:-0}" '.metrics.tls1_3_ecdsa_new_memory_kb = ($v | tonumber)')
 
 if [ "$IS_OPENSSL_1_1" = "true" ]; then
     echo "TLS 1.3 ECDSA: Resumed Connections (using auto-negotiation for OpenSSL 1.1.1)..." >&2
+    ./measure_memory.sh $EC_SERVER_PID 10 > mem_tls13_ecdsa_resume.tmp &
+    MEM_PID=$!
     HS_TLS13_EC_RESUME=$(openssl s_time -connect localhost:4434 -reuse -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS13_ECDSA_RESUME_MEM=$(cat mem_tls13_ecdsa_resume.tmp 2>/dev/null || echo "0")
 else
     echo "TLS 1.3 ECDSA: Resumed Connections..." >&2
+    ./measure_memory.sh $EC_SERVER_PID 10 > mem_tls13_ecdsa_resume.tmp &
+    MEM_PID=$!
     HS_TLS13_EC_RESUME=$(openssl s_time -connect localhost:4434 -reuse -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS13_ECDSA_RESUME_MEM=$(cat mem_tls13_ecdsa_resume.tmp 2>/dev/null || echo "0")
 fi
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_EC_RESUME:-0}" '.metrics.tls1_3_ecdsa_resume_cps = (if $v == "" then 0 else ($v | tonumber) end)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${TLS13_ECDSA_RESUME_MEM:-0}" '.metrics.tls1_3_ecdsa_resume_memory_kb = ($v | tonumber)')
 
 # --- TLS 1.2 with ECDHE-ECDSA-AES128-GCM-SHA256 (From Bellingrath slide) ---
 echo "TLS 1.2 ECDSA: ECDHE-ECDSA-AES128-GCM-SHA256..." >&2
-HS_TLS12_ECDHE_ECDSA=$(openssl s_time -connect localhost:4434 -new -tls1_2 -cipher ECDHE-ECDSA-AES128-GCM-SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+if [ "$IS_OPENSSL_1_1" = "true" ]; then
+    ./measure_memory.sh $EC_SERVER_PID 10 > mem_tls12_ecdhe_ecdsa.tmp &
+    MEM_PID=$!
+    HS_TLS12_ECDHE_ECDSA=$(openssl s_time -connect localhost:4434 -new -cipher ECDHE-ECDSA-AES128-GCM-SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS12_ECDHE_ECDSA_MEM=$(cat mem_tls12_ecdhe_ecdsa.tmp 2>/dev/null || echo "0")
+else
+    ./measure_memory.sh $EC_SERVER_PID 10 > mem_tls12_ecdhe_ecdsa.tmp &
+    MEM_PID=$!
+    HS_TLS12_ECDHE_ECDSA=$(openssl s_time -connect localhost:4434 -new -tls1_2 -cipher ECDHE-ECDSA-AES128-GCM-SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS12_ECDHE_ECDSA_MEM=$(cat mem_tls12_ecdhe_ecdsa.tmp 2>/dev/null || echo "0")
+fi
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_ECDSA:-0}" '.metrics.tls1_2_ecdhe_ecdsa_aes128gcm_cps = (if $v == "" then 0 else ($v | tonumber) end)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${TLS12_ECDHE_ECDSA_MEM:-0}" '.metrics.tls1_2_ecdhe_ecdsa_memory_kb = ($v | tonumber)')
 
 # --- TLS 1.2 ECDSA: Session Resumption ---
 echo "TLS 1.2 ECDSA: Resumed Connections..." >&2
-HS_TLS12_EC_RESUME=$(openssl s_time -connect localhost:4434 -reuse -tls1_2 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+if [ "$IS_OPENSSL_1_1" = "true" ]; then
+    ./measure_memory.sh $EC_SERVER_PID 10 > mem_tls12_ecdsa_resume.tmp &
+    MEM_PID=$!
+    HS_TLS12_EC_RESUME=$(openssl s_time -connect localhost:4434 -reuse -cipher ECDHE-ECDSA-AES128-GCM-SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS12_ECDSA_RESUME_MEM=$(cat mem_tls12_ecdsa_resume.tmp 2>/dev/null || echo "0")
+else
+    ./measure_memory.sh $EC_SERVER_PID 10 > mem_tls12_ecdsa_resume.tmp &
+    MEM_PID=$!
+    HS_TLS12_EC_RESUME=$(openssl s_time -connect localhost:4434 -reuse -tls1_2 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
+    wait $MEM_PID 2>/dev/null || true
+    TLS12_ECDSA_RESUME_MEM=$(cat mem_tls12_ecdsa_resume.tmp 2>/dev/null || echo "0")
+fi
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_EC_RESUME:-0}" '.metrics.tls1_2_ecdsa_resume_cps = (if $v == "" then 0 else ($v | tonumber) end)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${TLS12_ECDSA_RESUME_MEM:-0}" '.metrics.tls1_2_ecdsa_resume_memory_kb = ($v | tonumber)')
 
 # Kill ECDSA server
 kill $EC_SERVER_PID 2>/dev/null
@@ -587,6 +692,8 @@ if [ "$IS_OPENSSL_3" = "true" ]; then
         RESULTS=$(echo "$RESULTS" | jq --arg v "${OPT_TLS13:-0}" '.metrics.optimized_tls1_3_rsa_new_cps = (if $v == "" then 0 else ($v | tonumber) end)')
         
         # --- Optimized TLS 1.2 Handshake ---
+        # Note: This section only runs for OpenSSL 3.x (see IS_OPENSSL_3 check above)
+        # so we can safely use -tls1_2 flag here
         echo "OPTIMIZED TLS 1.2 RSA: ECDHE-RSA-AES128..." >&2
         OPT_TLS12=$(OPENSSL_CONF="$OPTIMIZED_CONF" openssl s_time -connect localhost:4435 -new -tls1_2 -cipher ECDHE-RSA-AES128-GCM-SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
         RESULTS=$(echo "$RESULTS" | jq --arg v "${OPT_TLS12:-0}" '.metrics.optimized_tls1_2_ecdhe_rsa_cps = (if $v == "" then 0 else ($v | tonumber) end)')

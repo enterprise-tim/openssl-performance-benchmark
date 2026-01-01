@@ -67,7 +67,8 @@ jobs:
 
     - name: Build Benchmark Image
       run: |
-        echo "📦 Building image for OpenSSL ${{ matrix.version }} (Iteration ${{ matrix.iteration }}/${{ needs.generate-matrix.outputs.iterations }})"
+        echo "📦 Building image for OpenSSL ${{ matrix.version }}"
+        echo "   Iteration ${{ matrix.iteration }}/${{ needs.generate-matrix.outputs.iterations }}"
         docker build -t openssl-bench:${{ matrix.version }}-iter${{ matrix.iteration }} \
           --build-arg OPENSSL_VERSION=${{ matrix.version }} \
           --build-arg OPENSSL_URL=${{ matrix.url }} \
@@ -167,8 +168,13 @@ jobs:
       run: |
         mkdir -p release-pack
         cp results/REPORT.md release-pack/
-        cp results/visualizations.html release-pack/
         cp results/summary.json release-pack/
+
+        # Copy all generated HTML files (multi-page visualization)
+        cp results/*.html release-pack/ 2>/dev/null || echo "No HTML files found"
+
+        # Also copy detailed iterations if present
+        cp results/detailed-iterations.json release-pack/ 2>/dev/null || echo "No detailed iterations"
 
         # Create a compressed archive
         tar -czf benchmark-report.tar.gz -C release-pack .
@@ -229,90 +235,46 @@ jobs:
         echo "📄 Setting up GitHub Pages structure..."
         cd gh-pages
 
-        # If multipage generator didn't create index.html, create a simple one
+        # The multipage generator creates index.html, but verify it exists
         if [ ! -f index.html ]; then
+          echo "⚠️  Warning: index.html not found! The multipage generator should create it."
+          echo "📋 Creating fallback index.html..."
           cat > index.html << 'EOF'
         <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>OpenSSL Performance Benchmark Results</title>
+            <meta http-equiv="refresh" content="0; url=overview.html">
+            <title>OpenSSL Performance Benchmark - Redirecting...</title>
             <style>
                 body {
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                    margin: 0;
-                    padding: 20px;
-                    background: #f5f5f5;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    padding: 40px;
+                    text-align: center;
                 }
-                .header {
-                    background: white;
-                    padding: 20px;
-                    margin-bottom: 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }
-                h1 {
-                    margin: 0 0 10px 0;
-                    color: #333;
-                }
-                .subtitle {
-                    color: #666;
-                    margin: 0;
-                }
-                .nav {
-                    background: white;
-                    padding: 15px 20px;
-                    margin-bottom: 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }
-                .nav a {
-                    margin-right: 20px;
-                    color: #0366d6;
-                    text-decoration: none;
-                    font-weight: 500;
-                }
-                .nav a:hover {
-                    text-decoration: underline;
-                }
-                .content {
-                    background: white;
-                    padding: 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }
-                iframe {
-                    width: 100%;
-                    height: calc(100vh - 250px);
-                    border: none;
-                    border-radius: 4px;
-                }
+                h1 { color: #333; }
+                p { color: #666; }
+                a { color: #228be6; }
             </style>
         </head>
         <body>
-            <div class="header">
-                <h1>🔒 OpenSSL Performance Benchmark</h1>
-                <p class="subtitle">Automated performance testing across OpenSSL versions</p>
-            </div>
-
-            <div class="nav">
-                <a href="visualizations.html">📊 Interactive Dashboard</a>
-                <a href="REPORT.md" download>📄 Download Markdown Report</a>
-                <a href="summary.json" download>📥 Download Raw Data (JSON)</a>
-                <a href="https://github.com/${{ github.repository }}">🔗 View Repository</a>
-            </div>
-
-            <div class="content">
-                <iframe src="visualizations.html" title="OpenSSL Benchmark Visualizations"></iframe>
-            </div>
+            <h1>OpenSSL Performance Benchmark</h1>
+            <p>Redirecting to dashboard...</p>
+            <p>If you are not redirected, <a href="overview.html">click here</a>.</p>
         </body>
         </html>
         EOF
+        else
+          echo "✅ index.html exists (created by multipage generator)"
         fi
 
+        echo ""
         echo "📁 GitHub Pages content:"
         ls -la
+        echo ""
+        echo "📊 HTML files:"
+        ls -1 *.html 2>/dev/null || echo "No HTML files found!"
 
     - name: Upload Pages Artifact
       uses: actions/upload-pages-artifact@v3
