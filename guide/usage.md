@@ -114,7 +114,7 @@ git push
     -   `results/tls-comparison.html` - TLS 1.2 vs 1.3 (deep-linkable!)
     -   `results/bellingrath.html` - Bellingrath matrix (deep-linkable!)
     -   `results/schmatz.html` - Algorithm benchmarks (deep-linkable!)
-    -   `results/mraz.html` - Optimization analysis (deep-linkable!)
+    -   `results/mraz.html` - Optimization analysis (only generated if optimized benchmarks were run)
     -   `results/pqc.html` - Post-quantum results (deep-linkable!)
 
 ## Regenerating Reports Without Re-Running Benchmarks

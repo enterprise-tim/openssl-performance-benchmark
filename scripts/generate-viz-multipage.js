@@ -468,7 +468,7 @@ function renderChart() {
         return;
     }
 
-    const width = getWidth(container, 60);
+    const width = getWidth(container, 320);
     const height = 500;
     const margin = {top: 40, right: 150, bottom: 40, left: 150};
 
@@ -1174,9 +1174,10 @@ function renderComparisonChart() {
         return;
     }
 
-    const width = getWidth(container, 60);
+    const containerWidth = container.node().getBoundingClientRect().width || 1000;
+    const margin = {top: 30, right: 180, bottom: 60, left: 80};
+    const width = containerWidth - margin.left - margin.right;
     const height = 420;
-    const margin = {top: 20, right: 120, bottom: 40, left: 60};
 
     const svg = container.append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -1191,17 +1192,46 @@ function renderComparisonChart() {
     const x0 = d3.scaleBand().domain(mrazData.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
     const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
     const maxVal = d3.max(mrazData, d => d3.max(metrics, m => d.metrics[m.key] || 0));
-    const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
+    const y = d3.scaleLinear().domain([0, maxVal * 1.15]).rangeRound([height, 0]);
 
-    svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0));
+    // X-axis with larger font
+    svg.append("g")
+        .attr("transform", \`translate(0,\${height})\`)
+        .call(d3.axisBottom(x0))
+        .selectAll("text")
+        .style("font-size", "14px")
+        .style("font-weight", "500");
+
+    // Y-axis
     svg.append("g").call(d3.axisLeft(y));
+    
+    // Y-axis label
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -60)
+        .attr("x", -height / 2)
+        .attr("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "600")
+        .style("fill", "#495057")
+        .text("Connections per Second");
 
     const versionGroups = svg.selectAll(".g").data(mrazData).enter().append("g")
         .attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
 
-    versionGroups.selectAll("rect").data(d => metrics.map(m => 
-        ({key: m.key, label: m.label, color: m.color, value: d.metrics[m.key] || 0})
-    )).enter().append("rect")
+    versionGroups.selectAll("rect").data(d => {
+        const defaultVal = d.metrics.tls1_3_rsa_new_cps || 0;
+        const optimizedVal = d.metrics.optimized_tls1_3_rsa_new_cps || 0;
+        const improvement = ((optimizedVal - defaultVal) / defaultVal * 100).toFixed(1);
+        return metrics.map(m => ({
+            key: m.key, 
+            label: m.label, 
+            color: m.color, 
+            value: d.metrics[m.key] || 0,
+            improvement: improvement,
+            version: d.config.version
+        }));
+    }).enter().append("rect")
         .attr("x", d => x1(d.key))
         .attr("y", d => y(d.value))
         .attr("width", x1.bandwidth())
@@ -1210,11 +1240,32 @@ function renderComparisonChart() {
         .on("mouseover", (e, d) => showTooltip(e, \`\${d.label}: \${d.value.toLocaleString()}\`))
         .on("mouseout", hideTooltip);
 
-    const legend = svg.append("g").attr("transform", \`translate(\${width + 10}, 0)\`);
+    // Add percentage improvement labels on the optimized bars
+    mrazData.forEach(d => {
+        const defaultVal = d.metrics.tls1_3_rsa_new_cps || 0;
+        const optimizedVal = d.metrics.optimized_tls1_3_rsa_new_cps || 0;
+        const improvement = ((optimizedVal - defaultVal) / defaultVal * 100).toFixed(1);
+        
+        svg.append("text")
+            .attr("x", x0(d.config.version) + x1('optimized_tls1_3_rsa_new_cps') + x1.bandwidth() / 2)
+            .attr("y", y(optimizedVal) - 8)
+            .attr("text-anchor", "middle")
+            .style("font-size", "13px")
+            .style("font-weight", "bold")
+            .style("fill", "#2f9e44")
+            .text(\`+\${improvement}%\`);
+    });
+
+    const legend = svg.append("g").attr("transform", \`translate(\${width + 20}, 0)\`);
     metrics.forEach((m, i) => {
-        const g = legend.append("g").attr("transform", \`translate(0, \${i * 22})\`);
-        g.append("rect").attr("width", 15).attr("height", 15).attr("fill", m.color);
-        g.append("text").attr("x", 20).attr("y", 12).text(m.label).style("font-size", "11px");
+        const g = legend.append("g").attr("transform", \`translate(0, \${i * 25})\`);
+        g.append("rect").attr("width", 18).attr("height", 18).attr("fill", m.color);
+        g.append("text")
+            .attr("x", 25)
+            .attr("y", 14)
+            .text(m.label)
+            .style("font-size", "13px")
+            .style("font-weight", "500");
     });
 }
 
@@ -1225,9 +1276,10 @@ function renderImprovementChart() {
     
     if (mrazData.length === 0) return;
 
-    const width = getWidth(container, 60);
-    const height = 320;
+    const containerWidth = container.node().getBoundingClientRect().width || 1000;
     const margin = {top: 20, right: 20, bottom: 40, left: 60};
+    const width = containerWidth - margin.left - margin.right;
+    const height = 320;
 
     const svg = container.append("svg")
         .attr("width", width + margin.left + margin.right)

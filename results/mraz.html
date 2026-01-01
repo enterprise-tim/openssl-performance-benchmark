@@ -1,4 +1,93 @@
-[
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mráz Optimization - OpenSSL Benchmark</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; color: #333; }
+
+/* Header */
+.header { background: white; padding: 20px 40px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { margin: 0; font-size: 1.5rem; }
+.header .nav-links { display: flex; gap: 15px; }
+.header .nav-links a { color: #228be6; text-decoration: none; font-weight: 500; }
+.header .nav-links a:hover { text-decoration: underline; }
+
+/* Container */
+.container { max-width: 1400px; margin: 0 auto; padding: 30px; }
+
+/* Cards */
+.card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 30px; }
+.card h2 { margin-top: 0; font-size: 1.2rem; color: #495057; border-bottom: 1px solid #f1f3f5; padding-bottom: 15px; margin-bottom: 20px; }
+.card-desc { font-size: 0.9rem; color: #868e96; margin-bottom: 20px; line-height: 1.6; }
+
+/* Tooltip */
+.tooltip { position: absolute; background: rgba(33, 37, 41, 0.95); color: white; padding: 8px 12px; border-radius: 4px; pointer-events: none; opacity: 0; font-size: 12px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: opacity 0.2s; }
+
+/* View Toggle Buttons */
+.view-toggle { padding: 6px 14px; border: 1px solid #dee2e6; background: white; border-radius: 4px; cursor: pointer; font-size: 13px; color: #495057; transition: all 0.2s; font-weight: 500; }
+.view-toggle:hover { background: #f8f9fa; border-color: #228be6; color: #228be6; }
+.view-toggle.active { background: #228be6; color: white; border-color: #228be6; }
+
+/* D3 Styling */
+.grid line { stroke: #f1f3f5; }
+.grid path { stroke: none; }
+.axis text { fill: #868e96; font-size: 11px; }
+.axis path, .axis line { stroke: #dee2e6; }
+.baseline-line { stroke: #333; stroke-dasharray: 4,4; stroke-width: 1.5; opacity: 0.5; }
+.zero-line { stroke: #868e96; stroke-dasharray: 2,2; stroke-width: 1; opacity: 0.7; }
+
+/* Breadcrumb */
+.breadcrumb { background: white; padding: 15px 40px; border-bottom: 1px solid #e9ecef; font-size: 0.9rem; }
+.breadcrumb a { color: #228be6; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { color: #868e96; margin: 0 8px; }
+</style>
+</head>
+<body>
+
+
+<div class="breadcrumb">
+    <a href="index.html">🏠 Home</a>
+    <span>›</span>
+    <span>Mráz Optimization Analysis</span>
+</div>
+<div class="header">
+    <h1>OpenSSL Performance Benchmark</h1>
+    <div style="font-size: 0.9rem; color: #868e96;">
+        Mráz Optimization Analysis<span style="color: #40c057; margin-left: 20px;">● 3 iterations per version</span>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Default vs Optimized Configuration</h2>
+        <div class="card-desc">
+            Based on <a href="https://www.youtube.com/watch?v=Cv-43gJJFIs" target="_blank">Tomáš Mráz's OpenSSL 3.x Performance Tuning</a> talk.
+            Shows handshake performance with default vs. optimized config (minimal provider loading, explicit properties).
+        </div>
+        <div id="comparison-chart" style="height: 450px;"></div>
+    </div>
+    
+    <div class="card">
+        <h2>Improvement Percentage</h2>
+        <div class="card-desc">
+            Shows the percentage improvement from applying Mráz's recommendations. Green bars = positive improvement.
+        </div>
+        <div id="improvement-chart" style="height: 350px;"></div>
+    </div>
+    
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="index.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            ← Back to Overview
+        </a>
+    </div>
+</div>
+
+<script>
+const data = [
   {
     "version": "OpenSSL 1.1.1w  11 Sep 2023",
     "config": {
@@ -2281,4 +2370,206 @@
       }
     ]
   }
-]
+];
+const hasStats = data.length > 0 && data[0].config && data[0].config.iterations_count > 1;
+data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, { numeric: true }));
+
+
+// Shared D3 utilities
+const colorScale = d3.scaleOrdinal()
+    .domain(['1.1.1', '3.0', '3.1', '3.2', '3.3', '3.4', '3.5'])
+    .range(['#228be6', '#fa5252', '#fd7e14', '#fab005', '#40c057', '#15aabf', '#7950f2']);
+
+const getSeries = (ver) => {
+    if (ver.startsWith('1.1.1')) return '1.1.1';
+    return ver.split('.').slice(0, 2).join('.');
+};
+
+const tooltip = d3.select("body").append("div").attr("class", "tooltip");
+
+function showTooltip(event, html) {
+    tooltip.transition().duration(200).style("opacity", .9);
+    tooltip.html(html)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 28) + "px");
+}
+
+function hideTooltip() {
+    tooltip.transition().duration(500).style("opacity", 0);
+}
+
+function getWidth(container, pad = 60, minWidth = 320) {
+    const rect = container.node().getBoundingClientRect();
+    const parentRect = container.node().parentNode ? container.node().parentNode.getBoundingClientRect() : { width: 1200 };
+    const rawWidth = rect.width > 0 ? rect.width : parentRect.width;
+    return Math.max(rawWidth - pad, minWidth);
+}
+
+
+function renderComparisonChart() {
+    const mrazData = data.filter(d => d.metrics.optimized_tls1_3_rsa_new_cps > 0);
+    const container = d3.select("#comparison-chart");
+    container.html("");
+    
+    if (mrazData.length === 0) {
+        container.html('<div style="padding:40px; text-align:center; color:#999">No optimization data available. Run benchmark with OpenSSL 3.x.</div>');
+        return;
+    }
+
+    const containerWidth = container.node().getBoundingClientRect().width || 1000;
+    const margin = {top: 30, right: 180, bottom: 60, left: 80};
+    const width = containerWidth - margin.left - margin.right;
+    const height = 420;
+
+    const svg = container.append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const metrics = [
+        {key: 'tls1_3_rsa_new_cps', label: 'TLS 1.3 Default', color: '#adb5bd'},
+        {key: 'optimized_tls1_3_rsa_new_cps', label: 'TLS 1.3 Optimized', color: '#40c057'}
+    ];
+
+    const x0 = d3.scaleBand().domain(mrazData.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
+    const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
+    const maxVal = d3.max(mrazData, d => d3.max(metrics, m => d.metrics[m.key] || 0));
+    const y = d3.scaleLinear().domain([0, maxVal * 1.15]).rangeRound([height, 0]);
+
+    // X-axis with larger font
+    svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x0))
+        .selectAll("text")
+        .style("font-size", "14px")
+        .style("font-weight", "500");
+
+    // Y-axis
+    svg.append("g").call(d3.axisLeft(y));
+    
+    // Y-axis label
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -60)
+        .attr("x", -height / 2)
+        .attr("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "600")
+        .style("fill", "#495057")
+        .text("Connections per Second");
+
+    const versionGroups = svg.selectAll(".g").data(mrazData).enter().append("g")
+        .attr("transform", d => `translate(${x0(d.config.version)},0)`);
+
+    versionGroups.selectAll("rect").data(d => {
+        const defaultVal = d.metrics.tls1_3_rsa_new_cps || 0;
+        const optimizedVal = d.metrics.optimized_tls1_3_rsa_new_cps || 0;
+        const improvement = ((optimizedVal - defaultVal) / defaultVal * 100).toFixed(1);
+        return metrics.map(m => ({
+            key: m.key, 
+            label: m.label, 
+            color: m.color, 
+            value: d.metrics[m.key] || 0,
+            improvement: improvement,
+            version: d.config.version
+        }));
+    }).enter().append("rect")
+        .attr("x", d => x1(d.key))
+        .attr("y", d => y(d.value))
+        .attr("width", x1.bandwidth())
+        .attr("height", d => height - y(d.value))
+        .attr("fill", d => d.color)
+        .on("mouseover", (e, d) => showTooltip(e, `${d.label}: ${d.value.toLocaleString()}`))
+        .on("mouseout", hideTooltip);
+
+    // Add percentage improvement labels on the optimized bars
+    mrazData.forEach(d => {
+        const defaultVal = d.metrics.tls1_3_rsa_new_cps || 0;
+        const optimizedVal = d.metrics.optimized_tls1_3_rsa_new_cps || 0;
+        const improvement = ((optimizedVal - defaultVal) / defaultVal * 100).toFixed(1);
+        
+        svg.append("text")
+            .attr("x", x0(d.config.version) + x1('optimized_tls1_3_rsa_new_cps') + x1.bandwidth() / 2)
+            .attr("y", y(optimizedVal) - 8)
+            .attr("text-anchor", "middle")
+            .style("font-size", "13px")
+            .style("font-weight", "bold")
+            .style("fill", "#2f9e44")
+            .text(`+${improvement}%`);
+    });
+
+    const legend = svg.append("g").attr("transform", `translate(${width + 20}, 0)`);
+    metrics.forEach((m, i) => {
+        const g = legend.append("g").attr("transform", `translate(0, ${i * 25})`);
+        g.append("rect").attr("width", 18).attr("height", 18).attr("fill", m.color);
+        g.append("text")
+            .attr("x", 25)
+            .attr("y", 14)
+            .text(m.label)
+            .style("font-size", "13px")
+            .style("font-weight", "500");
+    });
+}
+
+function renderImprovementChart() {
+    const mrazData = data.filter(d => d.metrics.optimized_tls1_3_rsa_new_cps > 0);
+    const container = d3.select("#improvement-chart");
+    container.html("");
+    
+    if (mrazData.length === 0) return;
+
+    const containerWidth = container.node().getBoundingClientRect().width || 1000;
+    const margin = {top: 20, right: 20, bottom: 40, left: 60};
+    const width = containerWidth - margin.left - margin.right;
+    const height = 320;
+
+    const svg = container.append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const improvementData = mrazData.map(d => ({
+        version: d.config.version,
+        improvement: ((d.metrics.optimized_tls1_3_rsa_new_cps - d.metrics.tls1_3_rsa_new_cps) / d.metrics.tls1_3_rsa_new_cps) * 100
+    }));
+
+    const x = d3.scaleBand().domain(improvementData.map(d => d.version)).range([0, width]).padding(0.3);
+    const yDomain = d3.extent(improvementData, d => d.improvement);
+    const absMax = Math.max(Math.abs(yDomain[0] || 0), Math.abs(yDomain[1] || 0), 10);
+    const y = d3.scaleLinear().domain([-absMax, absMax]).range([height, 0]);
+
+    svg.append("line").attr("x1", 0).attr("x2", width).attr("y1", y(0)).attr("y2", y(0))
+        .attr("stroke", "#333").attr("stroke-dasharray", "4,4");
+
+    svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
+    svg.append("g").call(d3.axisLeft(y).tickFormat(d => d + "%"));
+
+    svg.selectAll("rect").data(improvementData).enter().append("rect")
+        .attr("x", d => x(d.version))
+        .attr("y", d => d.improvement >= 0 ? y(d.improvement) : y(0))
+        .attr("height", d => Math.abs(y(d.improvement) - y(0)))
+        .attr("width", x.bandwidth())
+        .attr("fill", d => d.improvement >= 0 ? "#40c057" : "#fa5252")
+        .on("mouseover", (e, d) => showTooltip(e, `${d.version}: ${d.improvement.toFixed(1)}%`))
+        .on("mouseout", hideTooltip);
+
+    svg.selectAll(".lbl").data(improvementData).enter().append("text")
+        .attr("x", d => x(d.version) + x.bandwidth()/2)
+        .attr("y", d => d.improvement >= 0 ? y(d.improvement) - 5 : y(d.improvement) + 15)
+        .text(d => (d.improvement >= 0 ? "+" : "") + d.improvement.toFixed(1) + "%")
+        .style("text-anchor", "middle")
+        .style("font-size", "11px")
+        .style("font-weight", "bold");
+}
+
+renderComparisonChart();
+renderImprovementChart();
+
+window.addEventListener('resize', () => {
+    renderComparisonChart();
+    renderImprovementChart();
+});
+</script>
+
+</body>
+</html>

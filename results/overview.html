@@ -1,4 +1,84 @@
-[
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overview: Performance Tradeoffs - OpenSSL Benchmark</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+
+body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; color: #333; }
+
+/* Header */
+.header { background: white; padding: 20px 40px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { margin: 0; font-size: 1.5rem; }
+.header .nav-links { display: flex; gap: 15px; }
+.header .nav-links a { color: #228be6; text-decoration: none; font-weight: 500; }
+.header .nav-links a:hover { text-decoration: underline; }
+
+/* Container */
+.container { max-width: 1400px; margin: 0 auto; padding: 30px; }
+
+/* Cards */
+.card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 30px; }
+.card h2 { margin-top: 0; font-size: 1.2rem; color: #495057; border-bottom: 1px solid #f1f3f5; padding-bottom: 15px; margin-bottom: 20px; }
+.card-desc { font-size: 0.9rem; color: #868e96; margin-bottom: 20px; line-height: 1.6; }
+
+/* Tooltip */
+.tooltip { position: absolute; background: rgba(33, 37, 41, 0.95); color: white; padding: 8px 12px; border-radius: 4px; pointer-events: none; opacity: 0; font-size: 12px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: opacity 0.2s; }
+
+/* View Toggle Buttons */
+.view-toggle { padding: 6px 14px; border: 1px solid #dee2e6; background: white; border-radius: 4px; cursor: pointer; font-size: 13px; color: #495057; transition: all 0.2s; font-weight: 500; }
+.view-toggle:hover { background: #f8f9fa; border-color: #228be6; color: #228be6; }
+.view-toggle.active { background: #228be6; color: white; border-color: #228be6; }
+
+/* D3 Styling */
+.grid line { stroke: #f1f3f5; }
+.grid path { stroke: none; }
+.axis text { fill: #868e96; font-size: 11px; }
+.axis path, .axis line { stroke: #dee2e6; }
+.baseline-line { stroke: #333; stroke-dasharray: 4,4; stroke-width: 1.5; opacity: 0.5; }
+.zero-line { stroke: #868e96; stroke-dasharray: 2,2; stroke-width: 1; opacity: 0.7; }
+
+/* Breadcrumb */
+.breadcrumb { background: white; padding: 15px 40px; border-bottom: 1px solid #e9ecef; font-size: 0.9rem; }
+.breadcrumb a { color: #228be6; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { color: #868e96; margin: 0 8px; }
+
+    </style>
+</head>
+<body>
+
+
+<div class="breadcrumb">
+    <a href="index.html">🏠 Home</a>
+    <span>›</span>
+    <span>Overview: Performance Tradeoffs</span>
+</div>
+<div class="header">
+    <h1>OpenSSL Performance Benchmark</h1>
+    <div style="font-size: 0.9rem; color: #868e96;">
+        Overview: Performance Tradeoffs<span style="color: #40c057; margin-left: 20px;">● 3 iterations per version</span>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Overview: Performance Tradeoffs</h2>
+        <div class="card-desc">Scatter plot showing <strong>TLS 1.3 Handshake Speed</strong> (Y) vs <strong>AES-256-GCM Encryption Throughput</strong> (X). Handshake metrics use the deprecated <code>handshakes_new_per_sec</code> (TLS 1.3 with RSA certificates). Error bars show ±1 standard deviation when multiple iterations were run.</div>
+        <div id="chart-container" style="min-height: 400px;"></div>
+    </div>
+    
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="index.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            ← Back to Overview
+        </a>
+    </div>
+</div>
+
+<script>
+    const data = [
   {
     "version": "OpenSSL 1.1.1w  11 Sep 2023",
     "config": {
@@ -2281,4 +2361,152 @@
       }
     ]
   }
-]
+];
+    const hasStats = data.length > 0 && data[0].config && data[0].config.iterations_count > 1;
+    const iterationCount = data[0]?.config?.iterations_count || 1;
+    
+    data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, { numeric: true }));
+    const baseline = data.find(d => d.config.version === '1.1.1w') || data[0];
+    
+
+// Shared D3 utilities
+const colorScale = d3.scaleOrdinal()
+    .domain(['1.1.1', '3.0', '3.1', '3.2', '3.3', '3.4', '3.5'])
+    .range(['#228be6', '#fa5252', '#fd7e14', '#fab005', '#40c057', '#15aabf', '#7950f2']);
+
+const getSeries = (ver) => {
+    if (ver.startsWith('1.1.1')) return '1.1.1';
+    return ver.split('.').slice(0, 2).join('.');
+};
+
+const tooltip = d3.select("body").append("div").attr("class", "tooltip");
+
+function showTooltip(event, html) {
+    tooltip.transition().duration(200).style("opacity", .9);
+    tooltip.html(html)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 28) + "px");
+}
+
+function hideTooltip() {
+    tooltip.transition().duration(500).style("opacity", 0);
+}
+
+function getWidth(container, pad = 60, minWidth = 320) {
+    const rect = container.node().getBoundingClientRect();
+    const parentRect = container.node().parentNode ? container.node().parentNode.getBoundingClientRect() : { width: 1200 };
+    const rawWidth = rect.width > 0 ? rect.width : parentRect.width;
+    return Math.max(rawWidth - pad, minWidth);
+}
+
+
+    // Chart-specific rendering
+    
+function renderChart() {
+    const container = d3.select("#chart-container");
+    container.html("");
+    const width = getWidth(container, 80);
+    const height = 500;
+    const margin = {top: 20, right: 100, bottom: 50, left: 60};
+
+    const svg = container.append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const xVal = d => d.metrics.aes_256_gcm_8k_kbs;
+    const yVal = d => d.metrics.tls1_3_rsa_new_cps || d.metrics.handshakes_new_per_sec;
+
+    const xExtent = d3.extent(data, xVal);
+    const yExtent = d3.extent(data, yVal);
+    const xPad = (xExtent[1] - xExtent[0]) * 0.1;
+    const yPad = (yExtent[1] - yExtent[0]) * 0.1;
+
+    const x = d3.scaleLinear().domain([xExtent[0] - xPad, xExtent[1] + xPad]).range([0, width]);
+    const y = d3.scaleLinear().domain([yExtent[0] - yPad, yExtent[1] + yPad]).range([height, 0]);
+
+    // Grid
+    svg.append("g").attr("class", "grid").attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x).tickSize(-height).tickFormat(""));
+    svg.append("g").attr("class", "grid")
+        .call(d3.axisLeft(y).tickSize(-width).tickFormat(""));
+
+    // Axes
+    svg.append("g").attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x).tickFormat(d => (d/1024/1024).toFixed(1) + ' GB/s'));
+    svg.append("g").call(d3.axisLeft(y));
+
+    // Axis Labels
+    svg.append("text").attr("x", width/2).attr("y", height + 40)
+        .style("text-anchor", "middle").text("AES-256-GCM Throughput (Higher is Better →)");
+    svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45)
+        .style("text-anchor", "middle").text("TLS 1.3 Handshakes/sec (Higher is Better ↑)");
+
+    // Error bars (if statistics available)
+    if (hasStats) {
+        svg.selectAll(".error-x").data(data).enter().append("line")
+            .attr("class", "error-x")
+            .attr("x1", d => x(Math.max(0, xVal(d) - (d.metrics.aes_256_gcm_8k_kbs_stddev || 0))))
+            .attr("x2", d => x(xVal(d) + (d.metrics.aes_256_gcm_8k_kbs_stddev || 0)))
+            .attr("y1", d => y(yVal(d)))
+            .attr("y2", d => y(yVal(d)))
+            .attr("stroke", d => colorScale(getSeries(d.config.version)))
+            .attr("stroke-width", 2)
+            .attr("opacity", 0.5);
+        
+        svg.selectAll(".error-y").data(data).enter().append("line")
+            .attr("class", "error-y")
+            .attr("x1", d => x(xVal(d)))
+            .attr("x2", d => x(xVal(d)))
+            .attr("y1", d => {
+                const stddevKey = d.metrics.tls1_3_rsa_new_cps_stddev !== undefined ? 
+                    'tls1_3_rsa_new_cps_stddev' : 'handshakes_new_per_sec_stddev';
+                return y(Math.max(0, yVal(d) - (d.metrics[stddevKey] || 0)));
+            })
+            .attr("y2", d => {
+                const stddevKey = d.metrics.tls1_3_rsa_new_cps_stddev !== undefined ? 
+                    'tls1_3_rsa_new_cps_stddev' : 'handshakes_new_per_sec_stddev';
+                return y(yVal(d) + (d.metrics[stddevKey] || 0));
+            })
+            .attr("stroke", d => colorScale(getSeries(d.config.version)))
+            .attr("stroke-width", 2)
+            .attr("opacity", 0.5);
+    }
+
+    // Dots
+    svg.selectAll("circle").data(data).enter().append("circle")
+        .attr("cx", d => x(xVal(d))).attr("cy", d => y(yVal(d)))
+        .attr("r", 10)
+        .style("fill", d => colorScale(getSeries(d.config.version)))
+        .style("stroke", "white").style("stroke-width", 2)
+        .style("cursor", "pointer")
+        .on("mouseover", (e, d) => {
+            const statsNote = hasStats ? `<br><small>±${((d.metrics.aes_256_gcm_8k_kbs_stddev || 0)/1024/1024).toFixed(2)} GB/s, ±${(d.metrics.tls1_3_rsa_new_cps_stddev || d.metrics.handshakes_new_per_sec_stddev || 0).toFixed(0)} cps</small>` : '';
+            showTooltip(e, `<strong>${d.config.version}</strong><br>AES-256-GCM: ${(xVal(d)/1024/1024).toFixed(2)} GB/s<br>TLS 1.3 Handshakes: ${yVal(d).toLocaleString()} cps${statsNote}`);
+        })
+        .on("mouseout", hideTooltip);
+
+    // Labels
+    const labels = data.map((d, i) => ({
+        x: x(xVal(d)) + 14,
+        y: y(yVal(d)) + 4,
+        version: d.config.version
+    }));
+
+    svg.selectAll(".lbl").data(labels).enter().append("text")
+        .attr("x", d => d.x)
+        .attr("y", d => d.y)
+        .text(d => d.version)
+        .style("font-size", "11px")
+        .style("font-weight", "bold")
+        .style("fill", "#495057");
+}
+
+    
+    // Render on load and resize
+    window.addEventListener('load', renderChart);
+    window.addEventListener('resize', renderChart);
+</script>
+
+</body>
+</html>

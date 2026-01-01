@@ -1,4 +1,84 @@
-[
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post-Quantum Cryptography - OpenSSL Benchmark</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+
+body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; color: #333; }
+
+/* Header */
+.header { background: white; padding: 20px 40px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { margin: 0; font-size: 1.5rem; }
+.header .nav-links { display: flex; gap: 15px; }
+.header .nav-links a { color: #228be6; text-decoration: none; font-weight: 500; }
+.header .nav-links a:hover { text-decoration: underline; }
+
+/* Container */
+.container { max-width: 1400px; margin: 0 auto; padding: 30px; }
+
+/* Cards */
+.card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 30px; }
+.card h2 { margin-top: 0; font-size: 1.2rem; color: #495057; border-bottom: 1px solid #f1f3f5; padding-bottom: 15px; margin-bottom: 20px; }
+.card-desc { font-size: 0.9rem; color: #868e96; margin-bottom: 20px; line-height: 1.6; }
+
+/* Tooltip */
+.tooltip { position: absolute; background: rgba(33, 37, 41, 0.95); color: white; padding: 8px 12px; border-radius: 4px; pointer-events: none; opacity: 0; font-size: 12px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: opacity 0.2s; }
+
+/* View Toggle Buttons */
+.view-toggle { padding: 6px 14px; border: 1px solid #dee2e6; background: white; border-radius: 4px; cursor: pointer; font-size: 13px; color: #495057; transition: all 0.2s; font-weight: 500; }
+.view-toggle:hover { background: #f8f9fa; border-color: #228be6; color: #228be6; }
+.view-toggle.active { background: #228be6; color: white; border-color: #228be6; }
+
+/* D3 Styling */
+.grid line { stroke: #f1f3f5; }
+.grid path { stroke: none; }
+.axis text { fill: #868e96; font-size: 11px; }
+.axis path, .axis line { stroke: #dee2e6; }
+.baseline-line { stroke: #333; stroke-dasharray: 4,4; stroke-width: 1.5; opacity: 0.5; }
+.zero-line { stroke: #868e96; stroke-dasharray: 2,2; stroke-width: 1; opacity: 0.7; }
+
+/* Breadcrumb */
+.breadcrumb { background: white; padding: 15px 40px; border-bottom: 1px solid #e9ecef; font-size: 0.9rem; }
+.breadcrumb a { color: #228be6; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { color: #868e96; margin: 0 8px; }
+
+    </style>
+</head>
+<body>
+
+
+<div class="breadcrumb">
+    <a href="index.html">🏠 Home</a>
+    <span>›</span>
+    <span>Post-Quantum Cryptography</span>
+</div>
+<div class="header">
+    <h1>OpenSSL Performance Benchmark</h1>
+    <div style="font-size: 0.9rem; color: #868e96;">
+        Post-Quantum Cryptography<span style="color: #40c057; margin-left: 20px;">● 3 iterations per version</span>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Post-Quantum Cryptography</h2>
+        <div class="card-desc">ML-KEM-768 performance. Only available in OpenSSL 3.5+. These algorithms are computationally heavier than classical ECC but provide quantum resistance.</div>
+        <div id="chart-container" style="min-height: 400px;"></div>
+    </div>
+    
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="index.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            ← Back to Overview
+        </a>
+    </div>
+</div>
+
+<script>
+    const data = [
   {
     "version": "OpenSSL 1.1.1w  11 Sep 2023",
     "config": {
@@ -2281,4 +2361,94 @@
       }
     ]
   }
-]
+];
+    const hasStats = data.length > 0 && data[0].config && data[0].config.iterations_count > 1;
+    const iterationCount = data[0]?.config?.iterations_count || 1;
+    
+    data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, { numeric: true }));
+    const baseline = data.find(d => d.config.version === '1.1.1w') || data[0];
+    
+
+// Shared D3 utilities
+const colorScale = d3.scaleOrdinal()
+    .domain(['1.1.1', '3.0', '3.1', '3.2', '3.3', '3.4', '3.5'])
+    .range(['#228be6', '#fa5252', '#fd7e14', '#fab005', '#40c057', '#15aabf', '#7950f2']);
+
+const getSeries = (ver) => {
+    if (ver.startsWith('1.1.1')) return '1.1.1';
+    return ver.split('.').slice(0, 2).join('.');
+};
+
+const tooltip = d3.select("body").append("div").attr("class", "tooltip");
+
+function showTooltip(event, html) {
+    tooltip.transition().duration(200).style("opacity", .9);
+    tooltip.html(html)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 28) + "px");
+}
+
+function hideTooltip() {
+    tooltip.transition().duration(500).style("opacity", 0);
+}
+
+function getWidth(container, pad = 60, minWidth = 320) {
+    const rect = container.node().getBoundingClientRect();
+    const parentRect = container.node().parentNode ? container.node().parentNode.getBoundingClientRect() : { width: 1200 };
+    const rawWidth = rect.width > 0 ? rect.width : parentRect.width;
+    return Math.max(rawWidth - pad, minWidth);
+}
+
+
+    // Chart-specific rendering
+    
+function renderChart() {
+    const pqcData = data.filter(d => d.metrics.ml_kem_768_ops_sec > 0);
+    const container = d3.select("#chart-container");
+    container.html("");
+    
+    if (pqcData.length === 0) {
+        container.html('<div style="padding:40px; text-align:center; color:#999">No Post-Quantum Data Available (requires OpenSSL 3.5+)</div>');
+        return;
+    }
+
+    const width = getWidth(container, 60);
+    const height = 400;
+    const margin = {top: 20, right: 20, bottom: 40, left: 60};
+
+    const svg = container.append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const x = d3.scaleBand().domain(pqcData.map(d => d.config.version)).range([0, width]).padding(0.4);
+    const y = d3.scaleLinear().domain([0, d3.max(pqcData, d => d.metrics.ml_kem_768_ops_sec) * 1.2]).range([height, 0]);
+
+    svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
+    svg.append("g").call(d3.axisLeft(y));
+
+    svg.selectAll("rect").data(pqcData).enter().append("rect")
+        .attr("x", d => x(d.config.version))
+        .attr("y", d => y(d.metrics.ml_kem_768_ops_sec))
+        .attr("width", x.bandwidth())
+        .attr("height", d => height - y(d.metrics.ml_kem_768_ops_sec))
+        .attr("fill", "#7950f2")
+        .on("mouseover", (e, d) => showTooltip(e, `${d.metrics.ml_kem_768_ops_sec.toLocaleString()} ops/sec`))
+        .on("mouseout", hideTooltip);
+        
+    svg.selectAll(".lbl").data(pqcData).enter().append("text")
+        .attr("x", d => x(d.config.version) + x.bandwidth()/2)
+        .attr("y", d => y(d.metrics.ml_kem_768_ops_sec) - 5)
+        .text(d => d.metrics.ml_kem_768_ops_sec.toLocaleString())
+        .style("text-anchor", "middle")
+        .style("font-size", "12px");
+}
+
+    
+    // Render on load and resize
+    window.addEventListener('load', renderChart);
+    window.addEventListener('resize', renderChart);
+</script>
+
+</body>
+</html>

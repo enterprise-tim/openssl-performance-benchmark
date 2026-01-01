@@ -421,6 +421,9 @@ async function generateMarkdownReport(results) {
     md += `| **${v}** | ${info.date} | ${info.features} |\n`;
   });
   
+  // Determine if we should show standard deviations
+  const showStddevInTables = iterationCount > 1;
+  
   // Handshake Section
   md += `\n## TLS Handshake Performance (Connections/sec)\n\n`;
   md += `> **Why this matters:** Handshake performance is critical for web servers handling many short-lived connections. This was a primary regression point in OpenSSL 3.0.\n\n`;
@@ -448,7 +451,6 @@ async function generateMarkdownReport(results) {
   md += `\n## Algorithm Throughput (KB/s)\n\n`;
   md += `> **Why this matters:** Raw encryption speed affects bulk data transfer. AES-256-GCM is the standard for TLS, and SHA256 is ubiquitous for signing.\n\n`;
   
-  const showStddevInTables = iterationCount > 1;
   if (showStddevInTables) {
     md += `> **Statistical Note:** Values shown as mean ± standard deviation from ${iterationCount} iterations.\n\n`;
   }
@@ -564,7 +566,13 @@ async function generateMarkdownReport(results) {
   });
 
   md += `\n### Block Size Sensitivity (AES-256-GCM KB/s)\n\n`;
-  md += `> **Why test block sizes?** Small blocks stress initialization overhead (Provider fetch). Large blocks show maximum throughput. The gap reveals architectural overhead.\n\n`;
+  md += `> **What This Shows:** This benchmark measures AES-256-GCM encryption throughput across different block sizes (16 bytes to 8KB) to reveal how cryptographic operations scale with data size.\n\n`;
+  md += `> **Key Insights:**\n`;
+  md += `> - **Small blocks (16-64 bytes)** stress initialization overhead - each encryption requires Provider setup, key scheduling, and context creation\n`;
+  md += `> - **Medium blocks (256 bytes - 1KB)** show the transition point where throughput begins to increase\n`;
+  md += `> - **Large blocks (8KB+)** achieve maximum throughput by amortizing initialization costs across more data\n`;
+  md += `> - **The gap between versions** reveals Provider architecture overhead in OpenSSL 3.x compared to 1.1.1w\n\n`;
+  md += `> **Real-World Impact:** Applications encrypting small messages (e.g., individual database fields, IoT sensor data) will see much lower throughput than bulk encryption (file encryption, large API payloads).\n\n`;
   md += `| Version | 16 Bytes | 64 Bytes | 256 Bytes | 1024 Bytes | 8192 Bytes |\n`;
   md += `|---------|--------:|---------:|----------:|-----------:|-----------:|\n`;
   

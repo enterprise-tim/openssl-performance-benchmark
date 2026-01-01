@@ -576,7 +576,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             return;
         }
 
-        const width = getWidth(container, 60);
+        const width = getWidth(container, 320);
         const height = 500;
         const margin = {top: 40, right: 150, bottom: 40, left: 150};
 
