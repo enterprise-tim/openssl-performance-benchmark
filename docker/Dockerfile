@@ -40,13 +40,18 @@ ENV LD_LIBRARY_PATH="/opt/openssl/lib64:/opt/openssl/lib:${LD_LIBRARY_PATH}"
 
 WORKDIR /benchmark
 
-# Compile ML-KEM benchmark tool
+# Compile ML-KEM benchmark tool (only for OpenSSL 3.x)
 COPY src/mlkem_bench.c .
-RUN gcc -o mlkem_bench mlkem_bench.c \
-    -I/opt/openssl/include \
-    -L/opt/openssl/lib64 -L/opt/openssl/lib \
-    -lcrypto -Wl,-rpath,/opt/openssl/lib64 -Wl,-rpath,/opt/openssl/lib \
-    && chmod +x mlkem_bench
+RUN if echo "${OPENSSL_VERSION}" | grep -q "^3\."; then \
+        echo "Compiling ML-KEM benchmark for OpenSSL 3.x" && \
+        gcc -o mlkem_bench mlkem_bench.c \
+            -I/opt/openssl/include \
+            -L/opt/openssl/lib64 -L/opt/openssl/lib \
+            -lcrypto -Wl,-rpath,/opt/openssl/lib64 -Wl,-rpath,/opt/openssl/lib \
+            && chmod +x mlkem_bench; \
+    else \
+        echo "Skipping ML-KEM benchmark (requires OpenSSL 3.x, found ${OPENSSL_VERSION})"; \
+    fi
 
 COPY src/benchmark.sh .
 RUN chmod +x benchmark.sh
