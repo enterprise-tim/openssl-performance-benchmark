@@ -52,7 +52,7 @@ npm run report
 This processes existing `results/summary.json` and generates:
 *   `results/REPORT.md`: Detailed markdown analysis with mean ± stddev.
 *   `results/index.html`: Multi-page interactive dashboard (deep-linkable!)
-*   Individual chart pages: `overview.html`, `tls-comparison.html`, `bellingrath.html`, `schmatz.html`, `mraz.html`, `pqc.html`
+*   Individual chart pages: `overview.html`, `tls-comparison.html`, `bellingrath.html`, `schmatz.html`, `mraz.html` (only if optimized benchmarks were run), `pqc.html`
 
 **Time:** ~2-3 seconds (vs. 30-60 minutes for full benchmark!)
 
@@ -125,6 +125,22 @@ npm run validate  # Everything: unit + Docker + coverage
 *   **Comprehensive Testing:** 350+ tests with Vitest ensure reliability before deployment.
 
 **Note on OpenSSL 1.1.1:** The benchmark script automatically handles CLI differences between OpenSSL 1.1.1 and 3.x (e.g., `s_time` doesn't support `-tls1_3` flag in 1.1.1). Version detection ensures compatibility.
+
+## ⚠️ Important: Handshake Metric Naming
+
+**Legacy Metrics (Deprecated):**
+- `handshakes_new_per_sec` → **TLS 1.3** handshakes with RSA certificates (not TLS 1.2!)
+- `handshakes_resume_per_sec` → **TLS 1.3** resumed connections with RSA certificates
+
+**Why This Matters:** These metrics have ambiguous names that don't indicate the protocol version. They are maintained for backward compatibility but should not be used for new analysis.
+
+**Use These Instead:**
+- `tls1_3_rsa_new_cps` - Explicit TLS 1.3 new connections
+- `tls1_3_rsa_resume_cps` - Explicit TLS 1.3 resumed connections  
+- `tls1_2_ecdhe_rsa_aes128gcm_cps` - Explicit TLS 1.2 ECDHE-RSA
+- `tls1_2_ecdhe_ecdsa_aes128gcm_cps` - Explicit TLS 1.2 ECDHE-ECDSA
+
+All new visualizations now clearly label which TLS protocol version is being tested.
 
 ## Statistical Iterations
 

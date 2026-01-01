@@ -68,7 +68,9 @@ echo -e "${GREEN}  • results/overview.html${NC}"
 echo -e "${GREEN}  • results/tls-comparison.html${NC}"
 echo -e "${GREEN}  • results/bellingrath.html${NC}"
 echo -e "${GREEN}  • results/schmatz.html${NC}"
-echo -e "${GREEN}  • results/mraz.html${NC}"
+if [ -f "$RESULTS_DIR/mraz.html" ]; then
+    echo -e "${GREEN}  • results/mraz.html${NC}"
+fi
 echo -e "${GREEN}  • results/pqc.html${NC}"
 
 echo ""

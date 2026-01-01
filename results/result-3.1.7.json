@@ -6,7 +6,17 @@
     "sha256_1k_kbs": 2744398.95,
     "sha256_8k_kbs": 3319216.54,
     "handshakes_new_per_sec": 17150,
-    "handshakes_resume_per_sec": 17984
+    "handshakes_resume_per_sec": 17984,
+    "rsa_2048_sign_per_sec": 8250,
+    "rsa_2048_verify_per_sec": 278000,
+    "rsa_4096_sign_per_sec": 1140,
+    "rsa_4096_verify_per_sec": 72000,
+    "ecdsa_p256_sign_per_sec": 43000,
+    "ecdsa_p256_verify_per_sec": 36000,
+    "ecdsa_p384_sign_per_sec": 8200,
+    "ecdsa_p384_verify_per_sec": 6900,
+    "ecdsa_p521_sign_per_sec": 4000,
+    "ecdsa_p521_verify_per_sec": 3300
   },
   "config": {
     "version": "3.1.7",
