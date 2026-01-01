@@ -218,10 +218,13 @@ parse_asymmetric() {
         return
     fi
     
-    # Extract sign/s (second to last column) and verify/s (last column)
+    # Extract sign/s and verify/s
+    # OpenSSL 3.2+ format: algo bits time1 time2 time3 time4 sign/s verify/s encr./s decr./s
+    # We need fields 6 and 7 (sign/s and verify/s), NOT the last two fields
+    # which are encr./s and decr./s in newer versions
     local sign_rate verify_rate
-    sign_rate=$(echo "$line" | awk '{print $(NF-1)}')
-    verify_rate=$(echo "$line" | awk '{print $NF}')
+    sign_rate=$(echo "$line" | awk '{print $6}')
+    verify_rate=$(echo "$line" | awk '{print $7}')
 
     # Validate that these are numbers (handling +k suffix if present, though rare for ops/s)
     # If they are not numbers (e.g. "in"), return 0
