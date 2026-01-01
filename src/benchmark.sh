@@ -352,47 +352,46 @@ else
 fi
 
 if [ "$IS_PQC" = true ]; then
-    echo "PQC detected. Running ML-KEM-768 speed test..." >&2
+    echo "PQC detected. Running ML-KEM-768 custom benchmark..." >&2
     
-    # Run speed test. capture output.
-    # Try both -evp and without -evp (KEM might not be EVP-based)
-    PQC_OUT=$(openssl speed -seconds 5 ml-kem-768 2>&1)
-    
-    echo "DEBUG PQC OUT (first 10 lines):" >&2
-    echo "$PQC_OUT" | head -n 10 >&2
-    echo "DEBUG PQC OUT (last 5 lines):" >&2
-    echo "$PQC_OUT" | tail -n 5 >&2
-
-    # Parse the output.
-    # Typical output for KEM speed test (format may vary):
-    # ml-kem-768 :  1234.5 op/s
-    # OR table format like other speed tests
-    
-    # Try multiple parsing strategies
-    PQC_LINE=$(echo "$PQC_OUT" | grep -i "ml-kem-768" | tail -1)
-    
-    if [ ! -z "$PQC_LINE" ]; then
-       # Extract the last column as a proxy for "operations per second"
-       PQC_OPS=$(echo "$PQC_LINE" | awk '{print $NF}')
-       
-       # Validate it's a number
-       if [[ "$PQC_OPS" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-           RESULTS=$(echo "$RESULTS" | jq --arg v "${PQC_OPS}" '.metrics.ml_kem_768_ops_sec = ($v | tonumber)')
-           echo "  ✓ Captured ML-KEM-768: $PQC_OPS ops/sec" >&2
-       else
-           echo "WARNING: Could not extract numeric value from: $PQC_OPS" >&2
-           RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_kem_768_ops_sec = 0')
-       fi
+    # Check if our custom benchmark tool exists
+    if [ -f "./mlkem_bench" ]; then
+        echo "  Using custom ML-KEM benchmark tool" >&2
+        PQC_OUT=$(./mlkem_bench 2>&1)
+        
+        echo "DEBUG PQC OUT:" >&2
+        echo "$PQC_OUT" >&2
+        
+        # Parse output: "ml-kem-768 average: 1234.5 ops/sec"
+        PQC_LINE=$(echo "$PQC_OUT" | grep "ml-kem-768 average" | tail -1)
+        
+        if [ ! -z "$PQC_LINE" ]; then
+            # Extract the ops/sec value (second to last field)
+            PQC_OPS=$(echo "$PQC_LINE" | awk '{print $(NF-1)}')
+            
+            # Validate it's a number
+            if [[ "$PQC_OPS" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+                RESULTS=$(echo "$RESULTS" | jq --arg v "${PQC_OPS}" '.metrics.ml_kem_768_ops_sec = ($v | tonumber)')
+                echo "  ✓ Captured ML-KEM-768: $PQC_OPS ops/sec" >&2
+            else
+                echo "WARNING: Could not extract numeric value from: $PQC_OPS" >&2
+                RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_kem_768_ops_sec = 0')
+            fi
+        else
+            echo "WARNING: Could not parse ML-KEM benchmark output." >&2
+            echo "Full Raw Output:" >&2
+            echo "$PQC_OUT" >&2
+            RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_kem_768_ops_sec = 0')
+        fi
     else
-       echo "WARNING: Could not parse ML-KEM output." >&2
-       echo "Full Raw Output:" >&2
-       echo "$PQC_OUT" >&2
-       RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_kem_768_ops_sec = 0')
+        echo "WARNING: Custom ML-KEM benchmark tool not found at ./mlkem_bench" >&2
+        RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_kem_768_ops_sec = 0')
     fi
 else
     echo "PQC (ML-KEM) not detected in this OpenSSL build." >&2
     echo "DEBUG: Checking OpenSSL capabilities:" >&2
     openssl version -a 2>&1 | head -n 5 >&2
+    RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_kem_768_ops_sec = 0')
 fi
 
 # =============================================================================
@@ -445,7 +444,7 @@ if [ -z "$HS_TLS13_RSA_NEW" ] || [ "$HS_TLS13_RSA_NEW" == "0" ]; then
     fi
 fi
 
-RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_NEW:-0}" '.metrics.tls1_3_rsa_new_cps = ($v | tonumber)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_NEW:-0}" '.metrics.tls1_3_rsa_new_cps = (if $v == "" then 0 else ($v | tonumber) end)')
 
 if [ "$IS_OPENSSL_1_1" = "true" ]; then
     echo "TLS 1.3 RSA: Resumed Connections (using auto-negotiation for OpenSSL 1.1.1)..." >&2
@@ -454,7 +453,7 @@ else
     echo "TLS 1.3 RSA: Resumed Connections..." >&2
     HS_TLS13_RSA_RESUME=$(openssl s_time -connect localhost:4433 -reuse -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
 fi
-RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_RESUME:-0}" '.metrics.tls1_3_rsa_resume_cps = ($v | tonumber)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_RESUME:-0}" '.metrics.tls1_3_rsa_resume_cps = (if $v == "" then 0 else ($v | tonumber) end)')
 
 # --- TLS 1.3 with specific cipher (TLS-AES128-GCM-SHA256 from slide) ---
 if [ "$IS_OPENSSL_1_1" = "true" ]; then
@@ -464,23 +463,30 @@ else
     echo "TLS 1.3 RSA: TLS_AES_128_GCM_SHA256..." >&2
     HS_TLS13_AES128=$(openssl s_time -connect localhost:4433 -new -tls1_3 -ciphersuites TLS_AES_128_GCM_SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
 fi
-RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_AES128:-0}" '.metrics.tls1_3_rsa_aes128gcm_cps = ($v | tonumber)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_AES128:-0}" '.metrics.tls1_3_rsa_aes128gcm_cps = (if $v == "" then 0 else ($v | tonumber) end)')
 
 # --- TLS 1.2 with ECDHE-RSA-AES128-GCM-SHA256 (Industry workhorse) ---
 echo "TLS 1.2 RSA: ECDHE-RSA-AES128-GCM-SHA256..." >&2
 # OpenSSL 1.1.1 supports -tls1_2 flag
 HS_TLS12_ECDHE_RSA=$(openssl s_time -connect localhost:4433 -new -tls1_2 -cipher ECDHE-RSA-AES128-GCM-SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
-RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_RSA:-0}" '.metrics.tls1_2_ecdhe_rsa_aes128gcm_cps = ($v | tonumber)')
+
+if [ -z "$HS_TLS12_ECDHE_RSA" ] || [ "$HS_TLS12_ECDHE_RSA" == "0" ]; then
+    echo "WARNING: TLS 1.2 ECDHE-RSA test returned 0 or empty." >&2
+    echo "Raw output sample:" >&2
+    openssl s_time -connect localhost:4433 -new -tls1_2 -cipher ECDHE-RSA-AES128-GCM-SHA256 -time 2 2>&1 | head -n 10 >&2
+fi
+
+RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_RSA:-0}" '.metrics.tls1_2_ecdhe_rsa_aes128gcm_cps = (if $v == "" then 0 else ($v | tonumber) end)')
 
 # --- TLS 1.2 with AES256-GCM-SHA384 (From Bellingrath slide) ---
 echo "TLS 1.2 RSA: AES256-GCM-SHA384..." >&2
 HS_TLS12_AES256=$(openssl s_time -connect localhost:4433 -new -tls1_2 -cipher AES256-GCM-SHA384 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
-RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_AES256:-0}" '.metrics.tls1_2_rsa_aes256gcm_cps = ($v | tonumber)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_AES256:-0}" '.metrics.tls1_2_rsa_aes256gcm_cps = (if $v == "" then 0 else ($v | tonumber) end)')
 
 # --- TLS 1.2 RSA: Session Resumption ---
 echo "TLS 1.2 RSA: Resumed Connections..." >&2
 HS_TLS12_RSA_RESUME=$(openssl s_time -connect localhost:4433 -reuse -tls1_2 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
-RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_RSA_RESUME:-0}" '.metrics.tls1_2_rsa_resume_cps = ($v | tonumber)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_RSA_RESUME:-0}" '.metrics.tls1_2_rsa_resume_cps = (if $v == "" then 0 else ($v | tonumber) end)')
 
 # Kill RSA server
 kill $RSA_SERVER_PID 2>/dev/null
@@ -504,7 +510,7 @@ else
     echo "TLS 1.3 ECDSA: New Connections..." >&2
     HS_TLS13_EC_NEW=$(openssl s_time -connect localhost:4434 -new -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
 fi
-RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_EC_NEW:-0}" '.metrics.tls1_3_ecdsa_new_cps = ($v | tonumber)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_EC_NEW:-0}" '.metrics.tls1_3_ecdsa_new_cps = (if $v == "" then 0 else ($v | tonumber) end)')
 
 if [ "$IS_OPENSSL_1_1" = "true" ]; then
     echo "TLS 1.3 ECDSA: Resumed Connections (using auto-negotiation for OpenSSL 1.1.1)..." >&2
@@ -513,27 +519,30 @@ else
     echo "TLS 1.3 ECDSA: Resumed Connections..." >&2
     HS_TLS13_EC_RESUME=$(openssl s_time -connect localhost:4434 -reuse -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
 fi
-RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_EC_RESUME:-0}" '.metrics.tls1_3_ecdsa_resume_cps = ($v | tonumber)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_EC_RESUME:-0}" '.metrics.tls1_3_ecdsa_resume_cps = (if $v == "" then 0 else ($v | tonumber) end)')
 
 # --- TLS 1.2 with ECDHE-ECDSA-AES128-GCM-SHA256 (From Bellingrath slide) ---
 echo "TLS 1.2 ECDSA: ECDHE-ECDSA-AES128-GCM-SHA256..." >&2
 HS_TLS12_ECDHE_ECDSA=$(openssl s_time -connect localhost:4434 -new -tls1_2 -cipher ECDHE-ECDSA-AES128-GCM-SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
-RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_ECDSA:-0}" '.metrics.tls1_2_ecdhe_ecdsa_aes128gcm_cps = ($v | tonumber)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_ECDSA:-0}" '.metrics.tls1_2_ecdhe_ecdsa_aes128gcm_cps = (if $v == "" then 0 else ($v | tonumber) end)')
 
 # --- TLS 1.2 ECDSA: Session Resumption ---
 echo "TLS 1.2 ECDSA: Resumed Connections..." >&2
 HS_TLS12_EC_RESUME=$(openssl s_time -connect localhost:4434 -reuse -tls1_2 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
-RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_EC_RESUME:-0}" '.metrics.tls1_2_ecdsa_resume_cps = ($v | tonumber)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_EC_RESUME:-0}" '.metrics.tls1_2_ecdsa_resume_cps = (if $v == "" then 0 else ($v | tonumber) end)')
 
 # Kill ECDSA server
 kill $EC_SERVER_PID 2>/dev/null
 
 # =============================================================================
 # Legacy metric names for backward compatibility with existing report
+# WARNING: These are TLS 1.3 metrics (not TLS 1.2)
 # =============================================================================
-RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_NEW:-0}" '.metrics.handshakes_new_per_sec = ($v | tonumber)')
-RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_RESUME:-0}" '.metrics.handshakes_resume_per_sec = ($v | tonumber)')
-RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_RSA:-0}" '.metrics.handshakes_new_tls1_2_per_sec = ($v | tonumber)')
+# DEPRECATED: handshakes_new_per_sec and handshakes_resume_per_sec are TLS 1.3 RSA certificate handshakes
+# Use the explicit tls1_3_rsa_* metrics instead for clarity
+RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_NEW:-0}" '.metrics.handshakes_new_per_sec = (if $v == "" then 0 else ($v | tonumber) end)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_RESUME:-0}" '.metrics.handshakes_resume_per_sec = (if $v == "" then 0 else ($v | tonumber) end)')
+RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_RSA:-0}" '.metrics.handshakes_new_tls1_2_per_sec = (if $v == "" then 0 else ($v | tonumber) end)')
 
 # =============================================================================
 # OPTIMIZED TESTS (Based on Tomáš Mráz's recommendations)
@@ -575,12 +584,12 @@ if [ "$IS_OPENSSL_3" = "true" ]; then
         # --- Optimized TLS 1.3 Handshake ---
         echo "OPTIMIZED TLS 1.3 RSA: New Connections..." >&2
         OPT_TLS13=$(OPENSSL_CONF="$OPTIMIZED_CONF" openssl s_time -connect localhost:4435 -new -tls1_3 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
-        RESULTS=$(echo "$RESULTS" | jq --arg v "${OPT_TLS13:-0}" '.metrics.optimized_tls1_3_rsa_new_cps = ($v | tonumber)')
+        RESULTS=$(echo "$RESULTS" | jq --arg v "${OPT_TLS13:-0}" '.metrics.optimized_tls1_3_rsa_new_cps = (if $v == "" then 0 else ($v | tonumber) end)')
         
         # --- Optimized TLS 1.2 Handshake ---
         echo "OPTIMIZED TLS 1.2 RSA: ECDHE-RSA-AES128..." >&2
         OPT_TLS12=$(OPENSSL_CONF="$OPTIMIZED_CONF" openssl s_time -connect localhost:4435 -new -tls1_2 -cipher ECDHE-RSA-AES128-GCM-SHA256 -time 10 2>&1 | grep "connections/user sec" | awk '{print $1}')
-        RESULTS=$(echo "$RESULTS" | jq --arg v "${OPT_TLS12:-0}" '.metrics.optimized_tls1_2_ecdhe_rsa_cps = ($v | tonumber)')
+        RESULTS=$(echo "$RESULTS" | jq --arg v "${OPT_TLS12:-0}" '.metrics.optimized_tls1_2_ecdhe_rsa_cps = (if $v == "" then 0 else ($v | tonumber) end)')
         
         # --- Optimized AES Throughput ---
         echo "OPTIMIZED AES-256-GCM Throughput..." >&2
@@ -588,7 +597,7 @@ if [ "$IS_OPENSSL_3" = "true" ]; then
         OPT_AES_LINE=$(echo "$OPT_AES_OUT" | grep -i "^aes-256-gcm")
         if [ ! -z "$OPT_AES_LINE" ]; then
             OPT_AES_8K=$(echo "$OPT_AES_LINE" | awk '{print $6}' | sed 's/k$//')
-            RESULTS=$(echo "$RESULTS" | jq --arg v "${OPT_AES_8K:-0}" '.metrics.optimized_aes_256_gcm_8k_kbs = ($v | tonumber)')
+            RESULTS=$(echo "$RESULTS" | jq --arg v "${OPT_AES_8K:-0}" '.metrics.optimized_aes_256_gcm_8k_kbs = (if $v == "" then 0 else ($v | tonumber) end)')
         fi
         
         # Kill optimized server

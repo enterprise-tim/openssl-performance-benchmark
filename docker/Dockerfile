@@ -39,6 +39,15 @@ ENV PATH="/opt/openssl/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/opt/openssl/lib64:/opt/openssl/lib:${LD_LIBRARY_PATH}"
 
 WORKDIR /benchmark
+
+# Compile ML-KEM benchmark tool
+COPY src/mlkem_bench.c .
+RUN gcc -o mlkem_bench mlkem_bench.c \
+    -I/opt/openssl/include \
+    -L/opt/openssl/lib64 -L/opt/openssl/lib \
+    -lcrypto -Wl,-rpath,/opt/openssl/lib64 -Wl,-rpath,/opt/openssl/lib \
+    && chmod +x mlkem_bench
+
 COPY src/benchmark.sh .
 RUN chmod +x benchmark.sh
 
