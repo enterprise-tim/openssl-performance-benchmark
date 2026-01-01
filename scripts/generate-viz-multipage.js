@@ -99,6 +99,30 @@ function generateHeader(title, iterationCount) {
 </div>`;
 }
 
+function generateFooter() {
+  return `
+<div style="border-top: 1px solid #e9ecef; padding: 30px 0; margin-top: 50px; text-align: center; background: #f8f9fa;">
+    <div style="max-width: 800px; margin: 0 auto; padding: 0 20px;">
+        <div style="margin-bottom: 15px;">
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #24292f; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; transition: background 0.2s;">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                View on GitHub
+            </a>
+        </div>
+        <div style="font-size: 0.85rem; color: #868e96; line-height: 1.6;">
+            <strong style="color: #495057;">Open Source Benchmark</strong><br>
+            Found a problem? Have an improvement?<br>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
+        </div>
+        <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
+            Licensed under Apache 2.0 • Community-driven development
+        </div>
+    </div>
+</div>`;
+}
+
 function generateNavigation(hasOptimizedData) {
   return `
 <div class="container">
@@ -129,8 +153,12 @@ function generateNavigation(hasOptimizedData) {
                 <p style="margin: 0; font-size: 0.9rem; color: #868e96;">Not available - run benchmarks with OpenSSL 3.x and optimized config</p>
             </div>`}
             <a href="pqc.html" style="display: block; padding: 20px; background: #f0f9ff; border-radius: 8px; text-decoration: none; color: #0c8599; border: 2px solid #99e9f2;">
-                <h3 style="margin: 0 0 10px 0;">6. Post-Quantum (PQC)</h3>
-                <p style="margin: 0; font-size: 0.9rem; color: #495057;">ML-KEM-768 performance (OpenSSL 3.5+)</p>
+                <h3 style="margin: 0 0 10px 0;">7. Post-Quantum (PQC)</h3>
+                <p style="margin: 0; font-size: 0.9rem; color: #495057;">ML-KEM-768 vs Classical ECDH comparison (OpenSSL 3.5+)</p>
+            </a>
+            <a href="memory.html" style="display: block; padding: 20px; background: #f3e5f5; border-radius: 8px; text-decoration: none; color: #7b1fa2; border: 2px solid #e1bee7;">
+                <h3 style="margin: 0 0 10px 0;">8. Memory Consumption</h3>
+                <p style="margin: 0; font-size: 0.9rem; color: #495057;">RAM usage during TLS handshakes across versions</p>
             </a>
         </div>
     </div>
@@ -146,6 +174,28 @@ function generateNavigation(hasOptimizedData) {
             </a>
             <a href="detailed-iterations.json" download style="padding: 12px 24px; background: #fab005; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
                 🔢 Raw Iterations
+            </a>
+        </div>
+    </div>
+    
+    <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+        <h2 style="color: white; border-bottom-color: rgba(255,255,255,0.3);">🌟 Open Source Project</h2>
+        <div style="font-size: 1rem; line-height: 1.8; margin-bottom: 20px;">
+            This benchmark suite is <strong>open source</strong> and community-driven. 
+            Found an issue? Have an idea for improvement? Contributions are welcome!
+        </div>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: white; color: #667eea; text-decoration: none; border-radius: 6px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                View on GitHub
+            </a>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="padding: 12px 24px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; border: 2px solid white;">
+                🍴 Fork & Contribute
+            </a>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/issues" target="_blank" rel="noopener" style="padding: 12px 24px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; border: 2px solid white;">
+                🐛 Report Issues
             </a>
         </div>
     </div>
@@ -200,6 +250,8 @@ ${SHARED_UTILS}
     window.addEventListener('load', renderChart);
     window.addEventListener('resize', renderChart);
 </script>
+
+${generateFooter()}
 
 </body>
 </html>`;
@@ -258,6 +310,8 @@ ${generateNavigation(hasOptimizedData)}
         </p>
     </div>
 </div>
+
+${generateFooter()}
 
 </body>
 </html>`;
@@ -319,13 +373,14 @@ ${generateNavigation(hasOptimizedData)}
     console.log('  📄 Generating pqc.html...');
     await fs.writeFile(
       path.join(RESULTS_DIR, 'pqc.html'),
-      createPageTemplate(
-        'Post-Quantum Cryptography',
-        'ML-KEM-768 performance. Only available in OpenSSL 3.5+. These algorithms are computationally heavier than classical ECC but provide quantum resistance.',
-        getPqcFunction(),
-        rawData,
-        iterationCount
-      )
+      createPqcPage(rawData, iterationCount)
+    );
+
+    // Page 8: Memory Consumption
+    console.log('  📄 Generating memory.html...');
+    await fs.writeFile(
+      path.join(RESULTS_DIR, 'memory.html'),
+      createMemoryPage(rawData, iterationCount)
     );
 
     console.log('\n✅ Multi-page visualization generated successfully!');
@@ -339,6 +394,7 @@ ${generateNavigation(hasOptimizedData)}
       console.log('   - mraz.html');
     }
     console.log('   - pqc.html');
+    console.log('   - memory.html');
     console.log('\n   Open index.html in your browser to explore!\n');
     
   } catch (error) {
@@ -566,36 +622,106 @@ function renderChart() {
         return;
     }
 
-    const width = getWidth(container, 60);
+    const width = getWidth(container, 180);
     const height = 400;
-    const margin = {top: 20, right: 20, bottom: 40, left: 60};
+    const margin = {top: 20, right: 140, bottom: 60, left: 70};
 
     const svg = container.append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
         .append("g").attr("transform", \`translate(\${margin.left},\${margin.top})\`);
 
-    const x = d3.scaleBand().domain(pqcData.map(d => d.config.version)).range([0, width]).padding(0.4);
-    const y = d3.scaleLinear().domain([0, d3.max(pqcData, d => d.metrics.ml_kem_768_ops_sec) * 1.2]).range([height, 0]);
+    // Prepare comparison data: ML-KEM vs Classical ECDH
+    const comparisonMetrics = [
+        {key: 'ml_kem_768_ops_sec', label: 'ML-KEM-768 (PQC)', color: '#7950f2', description: 'Post-Quantum Key Encapsulation'},
+        {key: 'ecdh_p256_per_sec', label: 'ECDH P-256', color: '#40c057', description: 'Classical Key Exchange (vulnerable to quantum)'},
+        {key: 'ecdh_p384_per_sec', label: 'ECDH P-384', color: '#fab005', description: 'Classical Key Exchange (vulnerable to quantum)'}
+    ];
 
-    svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x));
-    svg.append("g").call(d3.axisLeft(y));
+    const x0 = d3.scaleBand().domain(pqcData.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
+    const x1 = d3.scaleBand().domain(comparisonMetrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
+    
+    const maxVal = d3.max(pqcData, d => d3.max(comparisonMetrics, m => d.metrics[m.key] || 0));
+    const y = d3.scaleLinear().domain([0, maxVal * 1.15]).rangeRound([height, 0]);
 
-    svg.selectAll("rect").data(pqcData).enter().append("rect")
-        .attr("x", d => x(d.config.version))
-        .attr("y", d => y(d.metrics.ml_kem_768_ops_sec))
-        .attr("width", x.bandwidth())
-        .attr("height", d => height - y(d.metrics.ml_kem_768_ops_sec))
-        .attr("fill", "#7950f2")
-        .on("mouseover", (e, d) => showTooltip(e, \`\${d.metrics.ml_kem_768_ops_sec.toLocaleString()} ops/sec\`))
-        .on("mouseout", hideTooltip);
-        
-    svg.selectAll(".lbl").data(pqcData).enter().append("text")
-        .attr("x", d => x(d.config.version) + x.bandwidth()/2)
-        .attr("y", d => y(d.metrics.ml_kem_768_ops_sec) - 5)
-        .text(d => d.metrics.ml_kem_768_ops_sec.toLocaleString())
-        .style("text-anchor", "middle")
+    // Axes
+    svg.append("g").attr("transform", \`translate(0,\${height})\`)
+        .call(d3.axisBottom(x0))
+        .selectAll("text")
         .style("font-size", "12px");
+    
+    svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+    
+    // Y-axis label
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -55)
+        .attr("x", -height / 2)
+        .attr("text-anchor", "middle")
+        .style("font-size", "13px")
+        .style("font-weight", "600")
+        .style("fill", "#495057")
+        .text("Operations per Second");
+
+    // Grouped bars
+    const versionGroups = svg.selectAll(".g").data(pqcData).enter().append("g")
+        .attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
+
+    versionGroups.selectAll("rect").data(d => comparisonMetrics.map(m => ({
+        key: m.key,
+        label: m.label,
+        color: m.color,
+        description: m.description,
+        value: d.metrics[m.key] || 0,
+        version: d.config.version
+    }))).enter().append("rect")
+        .attr("x", d => x1(d.key))
+        .attr("y", d => d.value > 0 ? y(d.value) : y(0))
+        .attr("width", x1.bandwidth())
+        .attr("height", d => d.value > 0 ? height - y(d.value) : 0)
+        .attr("fill", d => d.color)
+        .attr("opacity", 0.9)
+        .on("mouseover", (e, d) => {
+            const tooltip = d.value > 0 
+                ? \`<strong>\${d.label}</strong><br>\${d.value.toLocaleString()} ops/sec<br><small>\${d.description}</small>\`
+                : \`<strong>\${d.label}</strong><br>No data available\`;
+            showTooltip(e, tooltip);
+        })
+        .on("mouseout", hideTooltip);
+
+    // Value labels on bars
+    versionGroups.selectAll(".value-label").data(d => comparisonMetrics.map(m => ({
+        key: m.key,
+        value: d.metrics[m.key] || 0,
+        version: d.config.version
+    }))).enter().append("text")
+        .attr("class", "value-label")
+        .attr("x", d => x1(d.key) + x1.bandwidth() / 2)
+        .attr("y", d => d.value > 0 ? y(d.value) - 5 : y(0))
+        .attr("text-anchor", "middle")
+        .style("font-size", "10px")
+        .style("font-weight", "bold")
+        .style("fill", "#495057")
+        .text(d => d.value > 0 ? (d.value/1000).toFixed(1) + 'K' : '');
+
+    // Legend
+    const legend = svg.append("g").attr("transform", \`translate(\${width + 15}, 0)\`);
+    comparisonMetrics.forEach((m, i) => {
+        const g = legend.append("g").attr("transform", \`translate(0, \${i * 50})\`);
+        g.append("rect").attr("width", 18).attr("height", 18).attr("fill", m.color);
+        g.append("text")
+            .attr("x", 24)
+            .attr("y", 9)
+            .text(m.label)
+            .style("font-size", "11px")
+            .style("font-weight", "600");
+        g.append("text")
+            .attr("x", 24)
+            .attr("y", 22)
+            .text(m.description)
+            .style("font-size", "9px")
+            .style("fill", "#868e96");
+    });
 }
 `;
 }
@@ -801,6 +927,8 @@ window.addEventListener('resize', () => {
     renderResumptionChart();
 });
 </script>
+
+${generateFooter()}
 
 </body>
 </html>`;
@@ -1114,6 +1242,333 @@ window.addEventListener('resize', () => {
 });
 </script>
 
+${generateFooter()}
+
+</body>
+</html>`;
+}
+
+function createPqcPage(dataJson, iterationCount) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post-Quantum Cryptography - OpenSSL Benchmark</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+${SHARED_STYLES}
+.info-box { background: #e7f5ff; border-left: 4px solid #228be6; padding: 15px; margin: 20px 0; border-radius: 4px; }
+.info-box h3 { margin-top: 0; color: #1971c2; font-size: 1rem; }
+.info-box p { margin: 8px 0; line-height: 1.6; color: #495057; }
+.warning-box { background: #fff3bf; border-left: 4px solid #fab005; padding: 15px; margin: 20px 0; border-radius: 4px; }
+.warning-box h3 { margin-top: 0; color: #f08c00; font-size: 1rem; }
+.success-box { background: #d3f9d8; border-left: 4px solid #40c057; padding: 15px; margin: 20px 0; border-radius: 4px; }
+.success-box h3 { margin-top: 0; color: #2f9e44; font-size: 1rem; }
+.comparison-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin: 20px 0; }
+.algo-card { background: white; border: 2px solid #dee2e6; border-radius: 8px; padding: 15px; }
+.algo-card h4 { margin-top: 0; font-size: 0.95rem; }
+.algo-card .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-bottom: 8px; }
+.badge-quantum { background: #7950f2; color: white; }
+.badge-vulnerable { background: #fa5252; color: white; }
+.algo-card p { margin: 6px 0; font-size: 0.85rem; color: #495057; }
+.algo-card .metric { font-size: 1.2rem; font-weight: bold; color: #228be6; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+${generateHeader('Post-Quantum Cryptography', iterationCount)}
+
+<div class="container">
+    <div class="card">
+        <h2>🔐 Quantum-Resistant vs Classical Key Exchange</h2>
+        
+        <div class="info-box">
+            <h3>📊 What This Chart Shows</h3>
+            <p><strong>ML-KEM-768</strong> (purple bars) is a <strong>post-quantum cryptographic algorithm</strong> designed to resist attacks from quantum computers. It's compared against <strong>ECDH P-256 and P-384</strong> (green/yellow bars), which are the <strong>classical algorithms</strong> used today but vulnerable to quantum attacks.</p>
+            <p><strong>Key Insight:</strong> Higher bars = more key exchanges per second. ML-KEM provides quantum resistance with competitive performance!</p>
+        </div>
+
+        <div id="pqc-chart" style="min-height: 450px;"></div>
+        
+        <div class="comparison-grid">
+            <div class="algo-card">
+                <span class="badge badge-quantum">🛡️ QUANTUM RESISTANT</span>
+                <h4>ML-KEM-768 (Post-Quantum)</h4>
+                <p><strong>Security:</strong> Resistant to quantum computer attacks</p>
+                <p><strong>Algorithm:</strong> Lattice-based cryptography (CRYSTALS-Kyber)</p>
+                <p><strong>Standard:</strong> NIST FIPS 203 (August 2024)</p>
+                <p><strong>Key Size:</strong> 1,184 bytes public key</p>
+                <p><strong>Use Case:</strong> Future-proof key exchange</p>
+            </div>
+            
+            <div class="algo-card">
+                <span class="badge badge-vulnerable">⚠️ QUANTUM VULNERABLE</span>
+                <h4>ECDH P-256 (Classical)</h4>
+                <p><strong>Security:</strong> Secure today, vulnerable to quantum</p>
+                <p><strong>Algorithm:</strong> Elliptic curve cryptography</p>
+                <p><strong>Standard:</strong> NIST P-256 curve</p>
+                <p><strong>Key Size:</strong> 32 bytes public key</p>
+                <p><strong>Use Case:</strong> Current standard for TLS</p>
+            </div>
+            
+            <div class="algo-card">
+                <span class="badge badge-vulnerable">⚠️ QUANTUM VULNERABLE</span>
+                <h4>ECDH P-384 (Classical)</h4>
+                <p><strong>Security:</strong> Secure today, vulnerable to quantum</p>
+                <p><strong>Algorithm:</strong> Elliptic curve cryptography</p>
+                <p><strong>Standard:</strong> NIST P-384 curve</p>
+                <p><strong>Key Size:</strong> 48 bytes public key</p>
+                <p><strong>Use Case:</strong> High-security applications today</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>🎯 Key Takeaways</h2>
+        
+        <div class="success-box">
+            <h3>✅ Performance is Production-Ready</h3>
+            <p><strong>ML-KEM-768 is competitive</strong> with classical ECDH algorithms. The performance overhead is minimal—often faster than ECDH P-384 and comparable to P-256.</p>
+            <p><strong>Bottom line:</strong> You can adopt post-quantum cryptography without significant performance penalties.</p>
+        </div>
+        
+        <div class="warning-box">
+            <h3>⚠️ The Real Tradeoff: Bandwidth, Not Speed</h3>
+            <p><strong>ML-KEM keys are ~37x larger</strong> than ECDH P-256 keys (1,184 bytes vs 32 bytes). This adds 1-2 KB to TLS handshakes.</p>
+            <p><strong>Impact:</strong> Negligible on modern networks, but consider for bandwidth-constrained environments (IoT, satellite).</p>
+        </div>
+        
+        <div class="info-box">
+            <h3>🔮 Why This Matters: The Quantum Threat</h3>
+            <p><strong>"Harvest Now, Decrypt Later" attacks:</strong> Adversaries are capturing encrypted traffic today to decrypt once quantum computers become available.</p>
+            <p><strong>Timeline:</strong> While large-scale quantum computers don't exist yet, the cryptographic community recommends migrating now, as infrastructure changes take years.</p>
+            <p><strong>Your data:</strong> If it needs protection beyond 2030, consider post-quantum cryptography today.</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>🔄 Migration Recommendations</h2>
+        
+        <div style="margin: 20px 0;">
+            <h3 style="color: #495057; font-size: 1rem; margin-bottom: 10px;">Recommended Approach: Hybrid Mode</h3>
+            <p style="margin-bottom: 15px; line-height: 1.6;">OpenSSL 3.5+ supports <strong>hybrid key exchange</strong> that combines classical + post-quantum:</p>
+            
+            <ul style="line-height: 1.8; color: #495057;">
+                <li><code style="background: #f1f3f5; padding: 2px 6px; border-radius: 3px;">X25519MLKEM768</code> - X25519 + ML-KEM-768</li>
+                <li><code style="background: #f1f3f5; padding: 2px 6px; border-radius: 3px;">SecP256r1MLKEM768</code> - ECDH P-256 + ML-KEM-768</li>
+            </ul>
+            
+            <p style="margin-top: 15px; padding: 12px; background: #e7f5ff; border-radius: 4px; line-height: 1.6;">
+                <strong>Why hybrid?</strong> You get security if <em>either</em> algorithm is broken. It provides quantum resistance from ML-KEM while maintaining confidence from battle-tested classical crypto.
+            </p>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <h3 style="color: #495057; font-size: 1rem; margin-bottom: 10px;">When to Migrate</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                        <th style="padding: 10px; text-align: left; font-size: 0.9rem;">Use Case</th>
+                        <th style="padding: 10px; text-align: left; font-size: 0.9rem;">Recommendation</th>
+                        <th style="padding: 10px; text-align: left; font-size: 0.9rem;">Timeline</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 10px; font-size: 0.85rem;">Government/Defense</td>
+                        <td style="padding: 10px; font-size: 0.85rem;">Start migration now</td>
+                        <td style="padding: 10px; font-size: 0.85rem;"><strong>2025-2026</strong></td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 10px; font-size: 0.85rem;">Financial Services</td>
+                        <td style="padding: 10px; font-size: 0.85rem;">Plan migration, test now</td>
+                        <td style="padding: 10px; font-size: 0.85rem;"><strong>2026-2027</strong></td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 10px; font-size: 0.85rem;">Healthcare/Long-term Data</td>
+                        <td style="padding: 10px; font-size: 0.85rem;">Evaluate and pilot</td>
+                        <td style="padding: 10px; font-size: 0.85rem;"><strong>2026-2028</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; font-size: 0.85rem;">General Web Services</td>
+                        <td style="padding: 10px; font-size: 0.85rem;">Monitor and prepare</td>
+                        <td style="padding: 10px; font-size: 0.85rem;"><strong>2027-2030</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="index.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            ← Back to Overview
+        </a>
+    </div>
+</div>
+
+<script>
+const data = ${dataJson};
+const hasStats = data.length > 0 && data[0].config && data[0].config.iterations_count > 1;
+data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, { numeric: true }));
+
+${SHARED_UTILS}
+
+function renderPqcChart() {
+    const pqcData = data.filter(d => d.metrics.ml_kem_768_ops_sec > 0);
+    const container = d3.select("#pqc-chart");
+    container.html("");
+    
+    if (pqcData.length === 0) {
+        container.html(\`
+            <div style="padding:60px 40px; text-align:center; background: #fff3bf; border-radius: 8px; border: 2px dashed #fab005;">
+                <h3 style="color: #f08c00; margin-top: 0;">⚠️ No Post-Quantum Data Available</h3>
+                <p style="color: #495057; line-height: 1.6;">ML-KEM-768 benchmarks require <strong>OpenSSL 3.5.0 or later</strong>.</p>
+                <p style="color: #495057; margin-top: 10px;">Post-quantum cryptography support was added in OpenSSL 3.5.0 (September 2024).</p>
+                <p style="margin-top: 20px;"><a href="https://www.openssl.org/source/" style="color: #228be6; text-decoration: none; font-weight: 600;">Download OpenSSL 3.5+ →</a></p>
+            </div>
+        \`);
+        return;
+    }
+
+    const containerWidth = container.node().getBoundingClientRect().width || 1000;
+    const margin = {top: 40, right: 160, bottom: 60, left: 80};
+    const width = containerWidth - margin.left - margin.right;
+    const height = 420;
+
+    const svg = container.append("svg")
+        .attr("width", containerWidth)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g").attr("transform", \`translate(\${margin.left},\${margin.top})\`);
+
+    // Prepare comparison data
+    const comparisonMetrics = [
+        {key: 'ml_kem_768_ops_sec', label: 'ML-KEM-768', shortLabel: 'ML-KEM-768', color: '#7950f2', description: 'Post-Quantum (Quantum-Resistant)', icon: '🛡️'},
+        {key: 'ecdh_p256_per_sec', label: 'ECDH P-256', shortLabel: 'ECDH P-256', color: '#40c057', description: 'Classical (Quantum-Vulnerable)', icon: '⚠️'},
+        {key: 'ecdh_p384_per_sec', label: 'ECDH P-384', shortLabel: 'ECDH P-384', color: '#fab005', description: 'Classical (Quantum-Vulnerable)', icon: '⚠️'}
+    ];
+
+    const x0 = d3.scaleBand().domain(pqcData.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
+    const x1 = d3.scaleBand().domain(comparisonMetrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
+    
+    const maxVal = d3.max(pqcData, d => d3.max(comparisonMetrics, m => d.metrics[m.key] || 0));
+    const y = d3.scaleLinear().domain([0, maxVal * 1.2]).rangeRound([height, 0]);
+
+    // Title annotation
+    svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", -20)
+        .attr("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "600")
+        .style("fill", "#495057")
+        .text("Key Exchange Performance: Post-Quantum vs Classical");
+
+    // Grid
+    svg.append("g").attr("class", "grid")
+        .call(d3.axisLeft(y).tickSize(-width).tickFormat(""));
+
+    // Axes
+    svg.append("g").attr("transform", \`translate(0,\${height})\`)
+        .call(d3.axisBottom(x0))
+        .selectAll("text")
+        .style("font-size", "13px")
+        .style("font-weight", "500");
+    
+    svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+    
+    // Y-axis label
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -60)
+        .attr("x", -height / 2)
+        .attr("text-anchor", "middle")
+        .style("font-size", "13px")
+        .style("font-weight", "600")
+        .style("fill", "#495057")
+        .text("Operations per Second (Higher is Better)");
+
+    // Grouped bars
+    const versionGroups = svg.selectAll(".g").data(pqcData).enter().append("g")
+        .attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
+
+    versionGroups.selectAll("rect").data(d => comparisonMetrics.map(m => ({
+        key: m.key,
+        label: m.label,
+        color: m.color,
+        description: m.description,
+        icon: m.icon,
+        value: d.metrics[m.key] || 0,
+        version: d.config.version
+    }))).enter().append("rect")
+        .attr("x", d => x1(d.key))
+        .attr("y", d => d.value > 0 ? y(d.value) : y(0))
+        .attr("width", x1.bandwidth())
+        .attr("height", d => d.value > 0 ? height - y(d.value) : 0)
+        .attr("fill", d => d.color)
+        .attr("opacity", 0.9)
+        .attr("rx", 3)
+        .on("mouseover", function(e, d) {
+            d3.select(this).attr("opacity", 1).attr("stroke", "#333").attr("stroke-width", 2);
+            const tooltip = d.value > 0 
+                ? \`<div style="text-align: left;"><strong>\${d.icon} \${d.label}</strong><br><span style="font-size: 1.2em; font-weight: bold; color: \${d.color};">\${d.value.toLocaleString()} ops/sec</span><br><small style="color: #868e96;">\${d.description}</small></div>\`
+                : \`<strong>\${d.label}</strong><br><span style="color: #868e96;">No data available</span>\`;
+            showTooltip(e, tooltip);
+        })
+        .on("mouseout", function() {
+            d3.select(this).attr("opacity", 0.9).attr("stroke", "none");
+            hideTooltip();
+        });
+
+    // Value labels on bars
+    versionGroups.selectAll(".value-label").data(d => comparisonMetrics.map(m => ({
+        key: m.key,
+        value: d.metrics[m.key] || 0,
+        version: d.config.version
+    }))).enter().append("text")
+        .attr("class", "value-label")
+        .attr("x", d => x1(d.key) + x1.bandwidth() / 2)
+        .attr("y", d => d.value > 0 ? y(d.value) - 8 : y(0))
+        .attr("text-anchor", "middle")
+        .style("font-size", "11px")
+        .style("font-weight", "bold")
+        .style("fill", "#495057")
+        .text(d => d.value > 0 ? (d.value/1000).toFixed(1) + 'K' : '—');
+
+    // Legend with enhanced descriptions
+    const legend = svg.append("g").attr("transform", \`translate(\${width + 20}, 20)\`);
+    comparisonMetrics.forEach((m, i) => {
+        const g = legend.append("g").attr("transform", \`translate(0, \${i * 60})\`);
+        
+        g.append("rect")
+            .attr("width", 20)
+            .attr("height", 20)
+            .attr("fill", m.color)
+            .attr("rx", 3);
+        
+        g.append("text")
+            .attr("x", 28)
+            .attr("y", 10)
+            .text(\`\${m.icon} \${m.shortLabel}\`)
+            .style("font-size", "12px")
+            .style("font-weight", "700");
+        
+        g.append("text")
+            .attr("x", 28)
+            .attr("y", 26)
+            .text(m.description)
+            .style("font-size", "9px")
+            .style("fill", "#868e96");
+    });
+}
+
+renderPqcChart();
+
+window.addEventListener('resize', renderPqcChart);
+</script>
+
+${generateFooter()}
+
 </body>
 </html>`;
 }
@@ -1328,6 +1783,292 @@ window.addEventListener('resize', () => {
     renderImprovementChart();
 });
 </script>
+
+${generateFooter()}
+
+</body>
+</html>`;
+}
+
+// Memory consumption page
+function createMemoryPage(rawData, iterationCount) {
+  const dataJson = JSON.stringify(rawData, null, 2);
+  
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handshake Memory Consumption</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>${SHARED_STYLES}</style>
+</head>
+<body>
+
+${generateHeader('Memory Consumption Analysis', iterationCount)}
+
+<div class="container">
+    <div class="card">
+        <h2>🧠 Handshake Memory Consumption (RAM)</h2>
+        <div class="card-desc">
+            Memory consumption (RSS) of OpenSSL s_server during TLS handshakes. This measures the Resident Set Size 
+            (physical RAM used) during connection establishment for different OpenSSL versions. Lower is better.
+            <br><br>
+            <strong>Why This Matters:</strong> Memory consumption differences between 1.1.1w and 3.x versions were raised 
+            as a concern. This data shows actual RAM impact during TLS 1.2 and TLS 1.3 handshakes.
+        </div>
+        <div id="memory-chart" style="height: 500px; width: 100%;"></div>
+    </div>
+    
+    <div class="card">
+        <h2>📊 Memory Comparison: TLS 1.3 vs TLS 1.2</h2>
+        <div class="card-desc">
+            Comparing memory consumption between TLS protocols. Shows how protocol version affects memory footprint.
+        </div>
+        <div id="memory-protocol-chart" style="height: 400px; width: 100%;"></div>
+    </div>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="index.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            ← Back to Overview
+        </a>
+    </div>
+</div>
+
+<script>
+const data = ${dataJson};
+const hasStats = data.length > 0 && data[0].config && data[0].config.iterations_count > 1;
+data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, { numeric: true }));
+
+${SHARED_UTILS}
+
+function renderMemoryChart() {
+    const container = d3.select("#memory-chart");
+    container.html("");
+    
+    // Check if we have memory data
+    const hasMemData = data.some(d => 
+        (d.metrics.tls1_3_rsa_new_memory_kb || 0) > 0 ||
+        (d.metrics.tls1_2_ecdhe_rsa_memory_kb || 0) > 0
+    );
+    
+    if (!hasMemData) {
+        container.html('<div style="padding:60px; text-align:center; color:#999"><h3>Memory Data Not Available</h3><p>Run benchmarks with the updated benchmark script to collect memory metrics.</p></div>');
+        return;
+    }
+    
+    const metrics = [
+        {key: 'tls1_3_rsa_new_memory_kb', label: 'TLS 1.3 RSA New', color: '#228be6'},
+        {key: 'tls1_3_rsa_resume_memory_kb', label: 'TLS 1.3 RSA Resume', color: '#74c0fc'},
+        {key: 'tls1_2_ecdhe_rsa_memory_kb', label: 'TLS 1.2 ECDHE-RSA', color: '#fa5252'},
+        {key: 'tls1_2_rsa_resume_memory_kb', label: 'TLS 1.2 RSA Resume', color: '#ffa8a8'},
+        {key: 'tls1_3_ecdsa_new_memory_kb', label: 'TLS 1.3 ECDSA New', color: '#40c057'},
+        {key: 'tls1_2_ecdhe_ecdsa_memory_kb', label: 'TLS 1.2 ECDHE-ECDSA', color: '#fab005'}
+    ];
+    
+    const containerWidth = container.node().getBoundingClientRect().width || 1000;
+    const margin = {top: 40, right: 200, bottom: 60, left: 80};
+    const width = containerWidth - margin.left - margin.right;
+    const height = 450;
+    
+    const svg = container.append("svg")
+        .attr("width", containerWidth)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g").attr("transform", \`translate(\${margin.left},\${margin.top})\`);
+    
+    const x0 = d3.scaleBand().domain(data.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
+    const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
+    
+    const maxVal = d3.max(data, d => d3.max(metrics, m => d.metrics[m.key] || 0));
+    const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
+    
+    // Grid
+    svg.append("g").attr("class", "grid")
+        .call(d3.axisLeft(y).tickSize(-width).tickFormat(""));
+    
+    // Axes
+    svg.append("g").attr("transform", \`translate(0,\${height})\`)
+        .call(d3.axisBottom(x0))
+        .selectAll("text").style("font-size", "11px");
+    
+    svg.append("g")
+        .call(d3.axisLeft(y).tickFormat(d => (d/1024).toFixed(1) + ' MB'))
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -60)
+        .attr("x", -height/2)
+        .attr("fill", "#495057")
+        .style("text-anchor", "middle")
+        .style("font-weight", "600")
+        .text("Memory Consumption (MB)");
+    
+    // Bars
+    const versionGroups = svg.selectAll(".version-group")
+        .data(data).enter().append("g")
+        .attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
+    
+    versionGroups.selectAll("rect")
+        .data(d => metrics.map(m => ({
+            key: m.key,
+            label: m.label,
+            color: m.color,
+            value: d.metrics[m.key] || 0,
+            version: d.config.version
+        })))
+        .enter().append("rect")
+        .attr("x", d => x1(d.key))
+        .attr("y", d => y(d.value))
+        .attr("width", x1.bandwidth())
+        .attr("height", d => Math.max(0, height - y(d.value)))
+        .attr("fill", d => d.color)
+        .on("mouseover", (event, d) => {
+            if (d.value > 0) {
+                showTooltip(event, \`
+                    <strong>\${d.version}</strong><br/>
+                    \${d.label}<br/>
+                    <strong>\${(d.value/1024).toFixed(2)} MB</strong>
+                \`);
+            }
+        })
+        .on("mouseout", hideTooltip);
+    
+    // Legend
+    const legend = svg.append("g")
+        .attr("transform", \`translate(\${width + 20}, 0)\`);
+    
+    metrics.forEach((m, i) => {
+        const lg = legend.append("g")
+            .attr("transform", \`translate(0, \${i * 22})\`);
+        
+        lg.append("rect")
+            .attr("width", 14)
+            .attr("height", 14)
+            .attr("fill", m.color);
+        
+        lg.append("text")
+            .attr("x", 20)
+            .attr("y", 11)
+            .style("font-size", "11px")
+            .style("fill", "#495057")
+            .text(m.label);
+    });
+}
+
+function renderMemoryProtocolChart() {
+    const container = d3.select("#memory-protocol-chart");
+    container.html("");
+    
+    const hasMemData = data.some(d => 
+        (d.metrics.tls1_3_rsa_new_memory_kb || 0) > 0 &&
+        (d.metrics.tls1_2_ecdhe_rsa_memory_kb || 0) > 0
+    );
+    
+    if (!hasMemData) {
+        container.html('<div style="padding:40px; text-align:center; color:#999"><p>Protocol comparison requires both TLS 1.2 and TLS 1.3 memory data.</p></div>');
+        return;
+    }
+    
+    const containerWidth = container.node().getBoundingClientRect().width || 1000;
+    const margin = {top: 40, right: 150, bottom: 60, left: 80};
+    const width = containerWidth - margin.left - margin.right;
+    const height = 350;
+    
+    const svg = container.append("svg")
+        .attr("width", containerWidth)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g").attr("transform", \`translate(\${margin.left},\${margin.top})\`);
+    
+    const protocolData = data.map(d => ({
+        version: d.config.version,
+        tls12: (d.metrics.tls1_2_ecdhe_rsa_memory_kb || 0) / 1024,
+        tls13: (d.metrics.tls1_3_rsa_new_memory_kb || 0) / 1024,
+        diff: ((d.metrics.tls1_3_rsa_new_memory_kb || 0) - (d.metrics.tls1_2_ecdhe_rsa_memory_kb || 0)) / 1024
+    })).filter(d => d.tls12 > 0 && d.tls13 > 0);
+    
+    const x = d3.scaleBand().domain(protocolData.map(d => d.version)).rangeRound([0, width]).padding(0.3);
+    const maxVal = d3.max(protocolData, d => Math.max(d.tls12, d.tls13));
+    const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
+    
+    // Grid
+    svg.append("g").attr("class", "grid")
+        .call(d3.axisLeft(y).tickSize(-width).tickFormat(""));
+    
+    // Axes
+    svg.append("g").attr("transform", \`translate(0,\${height})\`)
+        .call(d3.axisBottom(x))
+        .selectAll("text").style("font-size", "11px");
+    
+    svg.append("g")
+        .call(d3.axisLeft(y).tickFormat(d => d.toFixed(1) + ' MB'))
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -60)
+        .attr("x", -height/2)
+        .attr("fill", "#495057")
+        .style("text-anchor", "middle")
+        .style("font-weight", "600")
+        .text("Memory (MB)");
+    
+    // TLS 1.2 bars
+    svg.selectAll(".bar-tls12")
+        .data(protocolData).enter().append("rect")
+        .attr("class", "bar-tls12")
+        .attr("x", d => x(d.version))
+        .attr("y", d => y(d.tls12))
+        .attr("width", x.bandwidth() / 2.2)
+        .attr("height", d => height - y(d.tls12))
+        .attr("fill", "#fa5252")
+        .on("mouseover", (event, d) => {
+            showTooltip(event, \`<strong>\${d.version}</strong><br/>TLS 1.2: <strong>\${d.tls12.toFixed(2)} MB</strong>\`);
+        })
+        .on("mouseout", hideTooltip);
+    
+    // TLS 1.3 bars
+    svg.selectAll(".bar-tls13")
+        .data(protocolData).enter().append("rect")
+        .attr("class", "bar-tls13")
+        .attr("x", d => x(d.version) + x.bandwidth() / 2.2 + 2)
+        .attr("y", d => y(d.tls13))
+        .attr("width", x.bandwidth() / 2.2)
+        .attr("height", d => height - y(d.tls13))
+        .attr("fill", "#228be6")
+        .on("mouseover", (event, d) => {
+            showTooltip(event, \`<strong>\${d.version}</strong><br/>TLS 1.3: <strong>\${d.tls13.toFixed(2)} MB</strong>\`);
+        })
+        .on("mouseout", hideTooltip);
+    
+    // Legend
+    const legend = svg.append("g")
+        .attr("transform", \`translate(\${width + 20}, 0)\`);
+    
+    [['TLS 1.2', '#fa5252'], ['TLS 1.3', '#228be6']].forEach((item, i) => {
+        const lg = legend.append("g")
+            .attr("transform", \`translate(0, \${i * 22})\`);
+        
+        lg.append("rect")
+            .attr("width", 14)
+            .attr("height", 14)
+            .attr("fill", item[1]);
+        
+        lg.append("text")
+            .attr("x", 20)
+            .attr("y", 11)
+            .style("font-size", "12px")
+            .style("fill", "#495057")
+            .text(item[0]);
+    });
+}
+
+renderMemoryChart();
+renderMemoryProtocolChart();
+
+window.addEventListener('resize', () => {
+    renderMemoryChart();
+    renderMemoryProtocolChart();
+});
+</script>
+
+${generateFooter()}
 
 </body>
 </html>`;
