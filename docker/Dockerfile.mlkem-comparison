@@ -1,0 +1,62 @@
+# Dockerfile for ML-KEM Hypothesis Testing
+# 
+# This Dockerfile builds two versions of OpenSSL 3.5.x:
+# 1. With default settings (ML-KEM enabled, preferred in TLS keyshares)
+# 2. Without ML-KEM support (no-ml-kem configure option)
+#
+# This allows direct comparison to test the hypothesis that ML-KEM
+# is the primary contributor to performance degradation in 3.5.x
+
+FROM debian:bookworm-slim
+
+ARG OPENSSL_VERSION=3.5.3
+ARG OPENSSL_URL=https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    perl \
+    zlib1g-dev \
+    jq \
+    bc \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /usr/local/src
+
+# Download OpenSSL source
+RUN echo "Downloading OpenSSL ${OPENSSL_VERSION}" && \
+    curl -L -o openssl.tar.gz "${OPENSSL_URL}" && \
+    mkdir -p openssl-source && \
+    tar -xf openssl.tar.gz -C openssl-source --strip-components=1
+
+# Build 1: With default settings (ML-KEM enabled)
+RUN echo "Building OpenSSL with DEFAULT settings (ML-KEM enabled)" && \
+    cp -r openssl-source openssl-default && \
+    cd openssl-default && \
+    ./config --prefix=/opt/openssl-default --openssldir=/opt/openssl-default/ssl \
+        enable-ktls enable-ec_nistp_64_gcc_128 \
+        -Wl,-rpath,/opt/openssl-default/lib64 -Wl,-rpath,/opt/openssl-default/lib && \
+    make -j$(nproc) && \
+    make install_sw
+
+# Build 2: Without ML-KEM support
+RUN echo "Building OpenSSL WITHOUT ML-KEM (no-ml-kem)" && \
+    cp -r openssl-source openssl-no-mlkem && \
+    cd openssl-no-mlkem && \
+    ./config --prefix=/opt/openssl-no-mlkem --openssldir=/opt/openssl-no-mlkem/ssl \
+        enable-ktls enable-ec_nistp_64_gcc_128 no-ml-kem \
+        -Wl,-rpath,/opt/openssl-no-mlkem/lib64 -Wl,-rpath,/opt/openssl-no-mlkem/lib && \
+    make -j$(nproc) && \
+    make install_sw
+
+WORKDIR /benchmark
+
+# Copy benchmark script
+COPY src/mlkem_comparison_bench.sh .
+RUN chmod +x mlkem_comparison_bench.sh
+
+ENTRYPOINT ["./mlkem_comparison_bench.sh"]
+

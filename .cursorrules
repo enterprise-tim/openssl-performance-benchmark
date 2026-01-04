@@ -1,0 +1,30 @@
+# Cursor AI Rules for OpenSSL Performance Benchmark Project
+
+## Version Management
+- **NEVER modify the version number in package.json**
+- The project maintainer handles all version bumps manually
+- Do not suggest or make version changes, even for releases
+
+## Documentation
+- **NEVER create CHANGELOG files** (CHANGELOG.md, CHANGELOG_*.md, etc.)
+- The maintainer manages release notes and changelogs manually
+- Do not create version-specific documentation files unless explicitly requested
+
+## Emoticons and Emoji
+- **NEVER use emoticons or emoji** in code, HTML, documentation, or console output
+- Emoticons are annoying
+- Use plain text for headers, labels, and status messages
+- Exception: Only use emoticons if explicitly requested by the user
+
+## Linking to Project Resources
+- **ALWAYS provide direct links to relevant GitHub repositories, commits, issues, and discussions** when referencing OpenSSL or other project resources
+- Links should point directly to official project pages (e.g., github.com/openssl/openssl)
+- When analyzing code changes, include links to specific commits, pull requests, and issues
+- When discussing releases, link to the official release pages
+- For any external project references, prefer linking to primary sources over secondary documentation
+
+## General Guidelines
+- Make only the changes explicitly requested by the user
+- Ask before creating new documentation files
+- Avoid being "proactive" with project management tasks (versioning, changelogs, release notes)
+

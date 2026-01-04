@@ -19,30 +19,65 @@ const VERSION_INFO = {
     series: '3.0',
     features: 'LTS release. Introduced the Provider architecture (FIPS 140-2). Major architectural overhaul often cited as the cause of performance regressions.'
   },
+  '3.0.18': {
+    date: '2025-09-30',
+    series: '3.0',
+    features: 'Security patch release. CVE-2025-9230, CVE-2025-9232 fixes.'
+  },
   '3.1.7': {
     date: '2024-09-03',
     series: '3.1',
     features: 'FIPS 140-3 compliance. Focused on performance improvements over 3.0 and addressing initial regressions.'
+  },
+  '3.1.8': {
+    date: '2025-02-11',
+    series: '3.1',
+    features: 'Security patch release. CVE-2024-13176, CVE-2024-9143 fixes.'
   },
   '3.2.3': {
     date: '2024-09-03',
     series: '3.2',
     features: 'Client-side QUIC support. TLS certificate compression (RFC 8879). Deterministic ECDSA (RFC 6979).'
   },
+  '3.2.6': {
+    date: '2025-09-30',
+    series: '3.2',
+    features: 'Security patch release. CVE-2025-9230, CVE-2025-9231, CVE-2025-9232 fixes.'
+  },
   '3.3.2': {
     date: '2024-09-03',
     series: '3.3',
     features: 'QUIC trace and polling improvements. New EVP_DigestSqueeze API. Further performance tuning.'
+  },
+  '3.3.5': {
+    date: '2025-09-30',
+    series: '3.3',
+    features: 'Security patch release. CVE-2025-9230, CVE-2025-9231, CVE-2025-9232 fixes.'
   },
   '3.4.0': {
     date: '2024-10-22',
     series: '3.4',
     features: 'FIPS indicators. Composite signature algorithms. PBMAC1 support. New integrity checks.'
   },
-  '3.5.3': { // Note: 3.5.0 was released April 2025 (in future context of user prompt but "current" for me now)
-    date: '2025-10-22', // Estimated based on 3.5.0 date of April 2025
+  '3.4.3': {
+    date: '2025-09-30',
+    series: '3.4',
+    features: 'Security patch release. CVE-2025-9230, CVE-2025-9231, CVE-2025-9232 fixes.'
+  },
+  '3.5.3': {
+    date: '2025-09-16',
     series: '3.5',
-    features: 'LTS release. Post-Quantum Cryptography (ML-KEM, ML-DSA). Significant performance work to match 1.1.1 baseline.'
+    features: 'Post-Quantum Cryptography (ML-KEM, ML-DSA). QUIC server support.'
+  },
+  '3.5.4': {
+    date: '2025-09-30',
+    series: '3.5',
+    features: 'Security patch release. CVE-2025-9230, CVE-2025-9231, CVE-2025-9232 fixes.'
+  },
+  '3.6.0': {
+    date: '2025-10-01',
+    series: '3.6',
+    features: 'EVP_SKEY opaque symmetric keys. LMS signature verification. FIPS 186-5 deterministic ECDSA. C-99 required.'
   }
 };
 
@@ -371,7 +406,7 @@ async function generateMarkdownReport(results) {
   const sysInfo = getSystemInfo();
 
   let md = `# OpenSSL Performance Benchmark Results\n\n`;
-  md += `Analysis of OpenSSL performance regressions and improvements across versions 1.1.1 through 3.5.3.\n\n`;
+  md += `Analysis of OpenSSL performance regressions and improvements across versions 1.1.1 through 3.6.0.\n\n`;
   
   // Get iteration count from first result
   const iterationCount = results[0]?.config?.iterations_count || 1;

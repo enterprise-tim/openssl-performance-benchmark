@@ -67,7 +67,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
 
 
 <div class="breadcrumb">
-    <a href="index.html">🏠 Home</a>
+    <a href="index.html">Home</a>
     <span>›</span>
     <span>Post-Quantum Cryptography</span>
 </div>
@@ -75,6 +75,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
     <h1>OpenSSL Performance Benchmark</h1>
     <div style="font-size: 0.9rem; color: #868e96;">
         Post-Quantum Cryptography
+        <div style="font-size: 0.85rem; color: #adb5bd; margin-top: 4px;">Last run: 2026-01-04 • Iterations: 1.1.1w (1x), 3.0.15 (1x), 3.1.7 (1x), 3.2.3 (1x), 3.3.2 (1x), 3.4.0 (1x), 3.5.3 (1x)</div>
     </div>
 </div>
 
@@ -83,16 +84,17 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
         <h2>🔐 Quantum-Resistant vs Classical Key Exchange</h2>
         
         <div class="info-box">
-            <h3>📊 What This Chart Shows</h3>
+            <h3>What This Chart Shows</h3>
             <p><strong>ML-KEM-768</strong> (purple bars) is a <strong>post-quantum cryptographic algorithm</strong> designed to resist attacks from quantum computers. It's compared against <strong>ECDH P-256 and P-384</strong> (green/yellow bars), which are the <strong>classical algorithms</strong> used today but vulnerable to quantum attacks.</p>
             <p><strong>Key Insight:</strong> Higher bars = more key exchanges per second. ML-KEM provides quantum resistance with competitive performance!</p>
+            <p><strong>Important:</strong> This chart measures <strong>key exchange operations</strong> (establishing shared secrets for encryption). This is different from <strong>digital signature operations</strong> (signing/verifying) shown on the Schmatz page. While both ECDH and ECDSA use elliptic curves, they perform fundamentally different cryptographic operations and their performance metrics are not directly comparable.</p>
         </div>
 
         <div id="pqc-chart" style="min-height: 450px;"></div>
         
         <div class="comparison-grid">
             <div class="algo-card">
-                <span class="badge badge-quantum">🛡️ QUANTUM RESISTANT</span>
+                <span class="badge badge-quantum">QUANTUM RESISTANT</span>
                 <h4>ML-KEM-768 (Post-Quantum)</h4>
                 <p><strong>Security:</strong> Resistant to quantum computer attacks</p>
                 <p><strong>Algorithm:</strong> Lattice-based cryptography (CRYSTALS-Kyber)</p>
@@ -102,7 +104,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
             </div>
             
             <div class="algo-card">
-                <span class="badge badge-vulnerable">⚠️ QUANTUM VULNERABLE</span>
+                <span class="badge badge-vulnerable">QUANTUM VULNERABLE</span>
                 <h4>ECDH P-256 (Classical)</h4>
                 <p><strong>Security:</strong> Secure today, vulnerable to quantum</p>
                 <p><strong>Algorithm:</strong> Elliptic curve cryptography</p>
@@ -112,7 +114,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
             </div>
             
             <div class="algo-card">
-                <span class="badge badge-vulnerable">⚠️ QUANTUM VULNERABLE</span>
+                <span class="badge badge-vulnerable">QUANTUM VULNERABLE</span>
                 <h4>ECDH P-384 (Classical)</h4>
                 <p><strong>Security:</strong> Secure today, vulnerable to quantum</p>
                 <p><strong>Algorithm:</strong> Elliptic curve cryptography</p>
@@ -124,7 +126,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
     </div>
     
     <div class="card">
-        <h2>🎯 Key Takeaways</h2>
+        <h2>Key Takeaways</h2>
         
         <div class="success-box">
             <h3>✅ Performance is Production-Ready</h3>
@@ -133,9 +135,158 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
         </div>
         
         <div class="warning-box">
-            <h3>⚠️ The Real Tradeoff: Bandwidth, Not Speed</h3>
-            <p><strong>ML-KEM keys are ~37x larger</strong> than ECDH P-256 keys (1,184 bytes vs 32 bytes). This adds 1-2 KB to TLS handshakes.</p>
-            <p><strong>Impact:</strong> Negligible on modern networks, but consider for bandwidth-constrained environments (IoT, satellite).</p>
+            <h3>The Real Tradeoff: Bandwidth, Not Speed</h3>
+            
+            <p><strong>ML-KEM-768 adds ~2 KB per TLS handshake</strong> (1,184-byte public key + 1,088-byte ciphertext vs. 32 bytes for ECDH P-256).</p>
+            
+            <p style="margin-top: 15px;"><strong>Let's do the math for different scenarios:</strong></p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.85rem;">
+                <thead style="background: #fff3bf;">
+                    <tr>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #fab005;">Scenario</th>
+                        <th style="padding: 8px; text-align: right; border-bottom: 2px solid #fab005;">New Connections/sec</th>
+                        <th style="padding: 8px; text-align: right; border-bottom: 2px solid #fab005;">Extra Bandwidth</th>
+                        <th style="padding: 8px; text-align: right; border-bottom: 2px solid #fab005;">Per Day</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background: #ffe8cc;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 E-commerce Peak</strong><br><span style="font-size: 0.8em; color: #666;">(Black Friday, major sale)</span></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">40,000</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>640 Mbps</strong><br>(80 MB/sec)</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>6.9 TB</strong></td>
+                    </tr>
+                    <tr style="background: #ffe8cc;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 Busy CDN Edge</strong><br><span style="font-size: 0.8em; color: #666;">(Major content distributor)</span></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">10,000</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>160 Mbps</strong><br>(20 MB/sec)</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>1.7 TB</strong></td>
+                    </tr>
+                    <tr style="background: #fff5e6;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟡 Popular Website</strong><br><span style="font-size: 0.8em; color: #666;">(News site, SaaS platform)</span></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">1,000</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>16 Mbps</strong><br>(2 MB/sec)</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>173 GB</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟢 Typical Website</strong><br><span style="font-size: 0.8em; color: #666;">(Small business, blog)</span></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">100</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>1.6 Mbps</strong><br>(200 KB/sec)</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>17 GB</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #ffe3e3; border-left: 4px solid #fa5252; border-radius: 4px;">
+                <p style="margin: 0; color: #c92a2a;"><strong>When ML-KEM Bandwidth Becomes a Problem:</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.8;">
+                    <li><strong>High-traffic sites:</strong> Extra 100s of Mbps to multi-Gbps bandwidth costs real money (at $0.05-0.15/GB for cloud egress, 6.9 TB/day = $345-1,035/day)</li>
+                    <li><strong>DDoS amplification:</strong> Connection floods now consume 37x more bandwidth per handshake</li>
+                    <li><strong>Mobile networks:</strong> 2G/3G connections with limited bandwidth budgets</li>
+                    <li><strong>Satellite/IoT:</strong> Expensive per-byte costs (satellite can be $5-50/MB)</li>
+                    <li><strong>Geographic regions:</strong> Countries with expensive or limited internet infrastructure</li>
+                </ul>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 12px; background: #e7f5ff; border-radius: 4px;">
+                <p style="margin: 0;"><strong>💡 Context:</strong> For most sites, ML-KEM handshake overhead is still <1% of total bandwidth (images, videos, and application data dominate). But for the busiest sites processing tens of thousands of new connections per second, this is hundreds of Mbps to Gbps of additional sustained bandwidth cost.</p>
+            </div>
+        </div>
+        
+        <div class="warning-box">
+            <h3>Latency Impact: How 2 KB Affects Page Load Times</h3>
+            
+            <p><strong>Bandwidth isn't just about cost—it's about user experience.</strong> That extra 2 KB must be transmitted during the TLS handshake, adding latency before your application data can flow.</p>
+            
+            <p style="margin-top: 15px;"><strong>Transmission time for 2 KB by network type:</strong></p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.85rem;">
+                <thead style="background: #fff3bf;">
+                    <tr>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #fab005;">Network Type</th>
+                        <th style="padding: 8px; text-align: right; border-bottom: 2px solid #fab005;">Typical Speed</th>
+                        <th style="padding: 8px; text-align: right; border-bottom: 2px solid #fab005;">Extra Latency</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #fab005;">Impact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟢 Fiber/Cable Broadband</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">100 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+0.16 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">✅ Imperceptible</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟢 5G (Sub-6 GHz)</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">150 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+0.11 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">✅ Imperceptible</td>
+                    </tr>
+                    <tr style="background: #fff5e6;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟡 LTE / Fast 4G</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">30 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+0.5 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">✅ Barely noticeable</td>
+                    </tr>
+                    <tr style="background: #fff5e6;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟡 Average 4G</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">10 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+1.6 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">✅ Minor</td>
+                    </tr>
+                    <tr style="background: #ffe8cc;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟠 Slow 4G / Rural</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">3 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+5.5 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">Noticeable on slow sites</td>
+                    </tr>
+                    <tr style="background: #ffe8cc;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 3G / HSPA+</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">1.5 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+11 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">🔴 Noticeable delay</td>
+                    </tr>
+                    <tr style="background: #ffe8cc;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 2G / EDGE</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">250 Kbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+65 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">🔴 Significant delay</td>
+                    </tr>
+                    <tr style="background: #ffe8cc;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 Satellite / High Latency</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">2 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+8 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">🔴 Adds to existing latency (500-700ms typical)</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #ffe3e3; border-left: 4px solid #fa5252; border-radius: 4px;">
+                <p style="margin: 0; color: #c92a2a;"><strong>Real-World Latency Impact by Region:</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.8;">
+                    <li><strong>Developing markets:</strong> Where 2G/3G is still common (parts of Africa, rural Asia, Latin America), the extra 10-65ms is felt on every new connection</li>
+                    <li><strong>Mobile-first regions:</strong> In markets where mobile is primary internet access (India, Southeast Asia), slow 4G/3G means 5-11ms added latency</li>
+                    <li><strong>Rural areas globally:</strong> Limited infrastructure = slower connections = more noticeable delays</li>
+                    <li><strong>Network congestion:</strong> When towers are overloaded (concerts, stadiums, emergencies), effective bandwidth drops and latency multiplies</li>
+                </ul>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 12px; background: #e7f5ff; border-radius: 4px;">
+                <p style="margin: 0;"><strong>📱 Mobile User Experience Impact:</strong></p>
+                <p style="margin: 10px 0 0 0;">For users on fast connections (LTE+, broadband), the <2ms latency is imperceptible. But for the <strong>2+ billion users</strong> still on 2G/3G or slow 4G connections, ML-KEM adds meaningful delay to every new connection. Combined with typical mobile latency (50-200ms), this compounds the "slow web" problem in bandwidth-constrained regions.</p>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 12px; background: #fff3bf; border-radius: 4px;">
+                <p style="margin: 0;"><strong>💡 Mitigation Strategies:</strong></p>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px; line-height: 1.6;">
+                    <li><strong>TLS session resumption:</strong> Reuse sessions to avoid repeated handshakes (latency hit only on first connection)</li>
+                    <li><strong>Connection pooling:</strong> Keep connections alive longer (HTTP keep-alive, connection: keep-alive headers)</li>
+                    <li><strong>CDN edge nodes:</strong> Place content closer to users to reduce base latency</li>
+                    <li><strong>Hybrid mode (X25519+MLKEM768):</strong> Slightly larger but maintains security if either algorithm fails</li>
+                    <li><strong>Gradual rollout:</strong> Start with fast-connection markets, delay adoption for 2G/3G-heavy regions</li>
+                </ul>
+            </div>
         </div>
         
         <div class="info-box">
@@ -143,6 +294,69 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
             <p><strong>"Harvest Now, Decrypt Later" attacks:</strong> Adversaries are capturing encrypted traffic today to decrypt once quantum computers become available.</p>
             <p><strong>Timeline:</strong> While large-scale quantum computers don't exist yet, the cryptographic community recommends migrating now, as infrastructure changes take years.</p>
             <p><strong>Your data:</strong> If it needs protection beyond 2030, consider post-quantum cryptography today.</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>🌐 Real-World Impact: When Does Key Exchange Happen?</h2>
+        
+        <div class="info-box">
+            <h3>💡 Understanding "Operations Per Second"</h3>
+            <p><strong>Key exchange is NOT performed on every HTTP request.</strong> It only happens during the initial TLS handshake when establishing a new connection:</p>
+            
+            <ul style="margin: 10px 0; padding-left: 25px; line-height: 1.8;">
+                <li><strong>First connection to a server</strong> (full handshake with key exchange)</li>
+                <li><strong>After session expiration</strong> (typically hours or days later)</li>
+                <li><strong>New browser tab/window</strong> (sometimes, depends on browser session cache)</li>
+            </ul>
+            
+            <p><strong>What happens on every request:</strong> Only fast symmetric encryption (AES-256-GCM) using the keys established during the initial handshake. Modern browsers reuse TLS connections for multiple HTTP requests (HTTP keep-alive), so one key exchange can secure hundreds of requests.</p>
+        </div>
+        
+        <div class="info-box">
+            <h3>🔧 How TLS Works (with ML-KEM or ECDH)</h3>
+            
+            <p><strong>Initial TLS Handshake (happens once per connection):</strong></p>
+            <ol style="margin: 10px 0; padding-left: 25px; line-height: 1.8;">
+                <li><strong>Key Exchange:</strong> ML-KEM-768 (or ECDH) establishes a shared secret between client and server</li>
+                <li><strong>Key Derivation:</strong> Both sides derive symmetric encryption keys from that shared secret</li>
+                <li><strong>Handshake Complete:</strong> Secure connection is ready for application data</li>
+            </ol>
+            
+            <p style="margin-top: 15px;"><strong>Every HTTP Request After That:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 25px; line-height: 1.8;">
+                <li><strong>Only symmetric encryption</strong> (AES-256-GCM, ChaCha20-Poly1305, etc.)</li>
+                <li>Uses the keys established in step 2 above</li>
+                <li><strong>No more ML-KEM operations</strong> - key exchange is done</li>
+                <li>Very fast (symmetric crypto is ~1000x faster than asymmetric)</li>
+            </ul>
+            
+            <p style="margin-top: 15px; padding: 12px; background: #e7f5ff; border-radius: 4px;"><strong>The Key Point:</strong> ML-KEM vs ECDH only affects the initial key exchange. Once you have symmetric keys, there's <strong>zero difference</strong> in ongoing performance between a connection established with ML-KEM vs ECDH.</p>
+            
+            <p style="margin-top: 15px;"><strong>So when we say "31,600 ML-KEM operations per second," we're talking about:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 25px; line-height: 1.8;">
+                <li>31,600 <strong>new TLS connections</strong> per second</li>
+                <li>Each connection can then serve hundreds or thousands of requests using symmetric crypto</li>
+                <li>The ongoing requests are all the same speed regardless of whether ML-KEM or ECDH was used</li>
+            </ul>
+            
+            <p style="margin-top: 15px; font-style: italic; color: #495057;">This is why the performance overhead of ML-KEM is so minimal - it only affects the initial handshake, which is a tiny fraction of overall traffic!</p>
+        </div>
+        
+        <div class="info-box" style="background: #fff3bf; border-left-color: #fab005;">
+            <h3>Who Needs High Key Exchange Performance?</h3>
+            <p><strong>ML-KEM's performance matters most for high-traffic servers processing many NEW connections per second:</strong></p>
+            
+            <ul style="margin: 10px 0; padding-left: 25px; line-height: 1.8;">
+                <li><strong>E-commerce sites during peak sales</strong> (thousands of new shoppers/second)</li>
+                <li><strong>News sites during breaking events</strong> (traffic spikes)</li>
+                <li><strong>API gateways and load balancers</strong> (many service-to-service connections)</li>
+                <li><strong>CDN edge servers</strong> (serving millions of unique users)</li>
+            </ul>
+            
+            <p><strong>Example:</strong> A server handling 10,000 concurrent users might only need <strong>100-500 key exchanges per second</strong> (for new arrivals and expired sessions), while serving 50,000+ HTTP requests per second using existing connections. Both ML-KEM (31K ops/sec) and ECDH (16K ops/sec) easily handle this load.</p>
+            
+            <p style="margin-top: 15px;"><strong>For typical websites:</strong> The ML-KEM performance is more than sufficient. The 1-2ms added to initial connection time is negligible compared to network latency (50-200ms) and is barely noticeable to end users.</p>
         </div>
     </div>
     
@@ -209,15 +423,706 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
 <script>
 const data = [
   {
-    "config": {"version": "1.1.1w", "iterations_count": 1},
+    "version": "OpenSSL 1.1.1w  11 Sep 2023",
+    "config": {
+      "version": "1.1.1w",
+      "url": "https://www.openssl.org/source/openssl-1.1.1w.tar.gz",
+      "series": "1.1.1",
+      "iterations_count": 1
+    },
     "metrics": {
-      "tls1_3_rsa_new_cps": 5500,
-      "aes_256_gcm_8k_kbs": 850000,
-      "handshakes_new_per_sec": 5500
-    }
+      "aes_256_gcm_1k_kbs": 5901582.13,
+      "aes_256_gcm_1k_kbs_stddev": 0,
+      "aes_256_gcm_1k_kbs_min": 5901582.13,
+      "aes_256_gcm_1k_kbs_max": 5901582.13,
+      "aes_256_gcm_8k_kbs": 5856720.49,
+      "aes_256_gcm_8k_kbs_stddev": 0,
+      "aes_256_gcm_8k_kbs_min": 5856720.49,
+      "aes_256_gcm_8k_kbs_max": 5856720.49,
+      "sha256_1k_kbs": 2788660.02,
+      "sha256_1k_kbs_stddev": 0,
+      "sha256_1k_kbs_min": 2788660.02,
+      "sha256_1k_kbs_max": 2788660.02,
+      "sha256_8k_kbs": 3332688.28,
+      "sha256_8k_kbs_stddev": 0,
+      "sha256_8k_kbs_min": 3332688.28,
+      "sha256_8k_kbs_max": 3332688.28,
+      "handshakes_new_per_sec": 19557,
+      "handshakes_new_per_sec_stddev": 0,
+      "handshakes_new_per_sec_min": 19557,
+      "handshakes_new_per_sec_max": 19557,
+      "handshakes_resume_per_sec": 20580,
+      "handshakes_resume_per_sec_stddev": 0,
+      "handshakes_resume_per_sec_min": 20580,
+      "handshakes_resume_per_sec_max": 20580,
+      "rsa_2048_sign_per_sec": 9200,
+      "rsa_2048_sign_per_sec_stddev": 0,
+      "rsa_2048_sign_per_sec_min": 9200,
+      "rsa_2048_sign_per_sec_max": 9200,
+      "rsa_2048_verify_per_sec": 295000,
+      "rsa_2048_verify_per_sec_stddev": 0,
+      "rsa_2048_verify_per_sec_min": 295000,
+      "rsa_2048_verify_per_sec_max": 295000,
+      "rsa_4096_sign_per_sec": 1350,
+      "rsa_4096_sign_per_sec_stddev": 0,
+      "rsa_4096_sign_per_sec_min": 1350,
+      "rsa_4096_sign_per_sec_max": 1350,
+      "rsa_4096_verify_per_sec": 78000,
+      "rsa_4096_verify_per_sec_stddev": 0,
+      "rsa_4096_verify_per_sec_min": 78000,
+      "rsa_4096_verify_per_sec_max": 78000,
+      "ecdsa_p256_sign_per_sec": 47000,
+      "ecdsa_p256_sign_per_sec_stddev": 0,
+      "ecdsa_p256_sign_per_sec_min": 47000,
+      "ecdsa_p256_sign_per_sec_max": 47000,
+      "ecdsa_p256_verify_per_sec": 40000,
+      "ecdsa_p256_verify_per_sec_stddev": 0,
+      "ecdsa_p256_verify_per_sec_min": 40000,
+      "ecdsa_p256_verify_per_sec_max": 40000,
+      "ecdsa_p384_sign_per_sec": 9000,
+      "ecdsa_p384_sign_per_sec_stddev": 0,
+      "ecdsa_p384_sign_per_sec_min": 9000,
+      "ecdsa_p384_sign_per_sec_max": 9000,
+      "ecdsa_p384_verify_per_sec": 7600,
+      "ecdsa_p384_verify_per_sec_stddev": 0,
+      "ecdsa_p384_verify_per_sec_min": 7600,
+      "ecdsa_p384_verify_per_sec_max": 7600,
+      "ecdsa_p521_sign_per_sec": 4400,
+      "ecdsa_p521_sign_per_sec_stddev": 0,
+      "ecdsa_p521_sign_per_sec_min": 4400,
+      "ecdsa_p521_sign_per_sec_max": 4400,
+      "ecdsa_p521_verify_per_sec": 3700,
+      "ecdsa_p521_verify_per_sec_stddev": 0,
+      "ecdsa_p521_verify_per_sec_min": 3700,
+      "ecdsa_p521_verify_per_sec_max": 3700
+    },
+    "timestamp": "2026-01-04T16:40:06.707Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:39:23.109Z",
+        "metrics": {
+          "aes_256_gcm_1k_kbs": 5901582.13,
+          "aes_256_gcm_8k_kbs": 5856720.49,
+          "sha256_1k_kbs": 2788660.02,
+          "sha256_8k_kbs": 3332688.28,
+          "handshakes_new_per_sec": 19557,
+          "handshakes_resume_per_sec": 20580,
+          "rsa_2048_sign_per_sec": 9200,
+          "rsa_2048_verify_per_sec": 295000,
+          "rsa_4096_sign_per_sec": 1350,
+          "rsa_4096_verify_per_sec": 78000,
+          "ecdsa_p256_sign_per_sec": 47000,
+          "ecdsa_p256_verify_per_sec": 40000,
+          "ecdsa_p384_sign_per_sec": 9000,
+          "ecdsa_p384_verify_per_sec": 7600,
+          "ecdsa_p521_sign_per_sec": 4400,
+          "ecdsa_p521_verify_per_sec": 3700
+        }
+      }
+    ]
+  },
+  {
+    "version": "OpenSSL 3.0.15 3 Sep 2024 (Library: OpenSSL 3.0.15 3 Sep 2024)",
+    "config": {
+      "version": "3.0.15",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.0.15/openssl-3.0.15.tar.gz",
+      "series": "3.0",
+      "iterations_count": 1
+    },
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7604872.4,
+      "aes_256_gcm_1k_kbs_stddev": 0,
+      "aes_256_gcm_1k_kbs_min": 7604872.4,
+      "aes_256_gcm_1k_kbs_max": 7604872.4,
+      "aes_256_gcm_8k_kbs": 8336787.05,
+      "aes_256_gcm_8k_kbs_stddev": 0,
+      "aes_256_gcm_8k_kbs_min": 8336787.05,
+      "aes_256_gcm_8k_kbs_max": 8336787.05,
+      "sha256_1k_kbs": 2775479.5,
+      "sha256_1k_kbs_stddev": 0,
+      "sha256_1k_kbs_min": 2775479.5,
+      "sha256_1k_kbs_max": 2775479.5,
+      "sha256_8k_kbs": 3352901.22,
+      "sha256_8k_kbs_stddev": 0,
+      "sha256_8k_kbs_min": 3352901.22,
+      "sha256_8k_kbs_max": 3352901.22,
+      "handshakes_new_per_sec": 16719,
+      "handshakes_new_per_sec_stddev": 0,
+      "handshakes_new_per_sec_min": 16719,
+      "handshakes_new_per_sec_max": 16719,
+      "handshakes_resume_per_sec": 17178,
+      "handshakes_resume_per_sec_stddev": 0,
+      "handshakes_resume_per_sec_min": 17178,
+      "handshakes_resume_per_sec_max": 17178,
+      "rsa_2048_sign_per_sec": 8100,
+      "rsa_2048_sign_per_sec_stddev": 0,
+      "rsa_2048_sign_per_sec_min": 8100,
+      "rsa_2048_sign_per_sec_max": 8100,
+      "rsa_2048_verify_per_sec": 275000,
+      "rsa_2048_verify_per_sec_stddev": 0,
+      "rsa_2048_verify_per_sec_min": 275000,
+      "rsa_2048_verify_per_sec_max": 275000,
+      "rsa_4096_sign_per_sec": 1100,
+      "rsa_4096_sign_per_sec_stddev": 0,
+      "rsa_4096_sign_per_sec_min": 1100,
+      "rsa_4096_sign_per_sec_max": 1100,
+      "rsa_4096_verify_per_sec": 71000,
+      "rsa_4096_verify_per_sec_stddev": 0,
+      "rsa_4096_verify_per_sec_min": 71000,
+      "rsa_4096_verify_per_sec_max": 71000,
+      "ecdsa_p256_sign_per_sec": 42000,
+      "ecdsa_p256_sign_per_sec_stddev": 0,
+      "ecdsa_p256_sign_per_sec_min": 42000,
+      "ecdsa_p256_sign_per_sec_max": 42000,
+      "ecdsa_p256_verify_per_sec": 35000,
+      "ecdsa_p256_verify_per_sec_stddev": 0,
+      "ecdsa_p256_verify_per_sec_min": 35000,
+      "ecdsa_p256_verify_per_sec_max": 35000,
+      "ecdsa_p384_sign_per_sec": 8000,
+      "ecdsa_p384_sign_per_sec_stddev": 0,
+      "ecdsa_p384_sign_per_sec_min": 8000,
+      "ecdsa_p384_sign_per_sec_max": 8000,
+      "ecdsa_p384_verify_per_sec": 6700,
+      "ecdsa_p384_verify_per_sec_stddev": 0,
+      "ecdsa_p384_verify_per_sec_min": 6700,
+      "ecdsa_p384_verify_per_sec_max": 6700,
+      "ecdsa_p521_sign_per_sec": 3900,
+      "ecdsa_p521_sign_per_sec_stddev": 0,
+      "ecdsa_p521_sign_per_sec_min": 3900,
+      "ecdsa_p521_sign_per_sec_max": 3900,
+      "ecdsa_p521_verify_per_sec": 3200,
+      "ecdsa_p521_verify_per_sec_stddev": 0,
+      "ecdsa_p521_verify_per_sec_min": 3200,
+      "ecdsa_p521_verify_per_sec_max": 3200
+    },
+    "timestamp": "2026-01-04T16:40:06.708Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:41:48.107Z",
+        "metrics": {
+          "aes_256_gcm_1k_kbs": 7604872.4,
+          "aes_256_gcm_8k_kbs": 8336787.05,
+          "sha256_1k_kbs": 2775479.5,
+          "sha256_8k_kbs": 3352901.22,
+          "handshakes_new_per_sec": 16719,
+          "handshakes_resume_per_sec": 17178,
+          "rsa_2048_sign_per_sec": 8100,
+          "rsa_2048_verify_per_sec": 275000,
+          "rsa_4096_sign_per_sec": 1100,
+          "rsa_4096_verify_per_sec": 71000,
+          "ecdsa_p256_sign_per_sec": 42000,
+          "ecdsa_p256_verify_per_sec": 35000,
+          "ecdsa_p384_sign_per_sec": 8000,
+          "ecdsa_p384_verify_per_sec": 6700,
+          "ecdsa_p521_sign_per_sec": 3900,
+          "ecdsa_p521_verify_per_sec": 3200
+        }
+      }
+    ]
+  },
+  {
+    "version": "OpenSSL 3.1.7 3 Sep 2024 (Library: OpenSSL 3.1.7 3 Sep 2024)",
+    "config": {
+      "version": "3.1.7",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.1.7/openssl-3.1.7.tar.gz",
+      "series": "3.1",
+      "iterations_count": 1
+    },
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7489533.24,
+      "aes_256_gcm_1k_kbs_stddev": 0,
+      "aes_256_gcm_1k_kbs_min": 7489533.24,
+      "aes_256_gcm_1k_kbs_max": 7489533.24,
+      "aes_256_gcm_8k_kbs": 8061890.56,
+      "aes_256_gcm_8k_kbs_stddev": 0,
+      "aes_256_gcm_8k_kbs_min": 8061890.56,
+      "aes_256_gcm_8k_kbs_max": 8061890.56,
+      "sha256_1k_kbs": 2744398.95,
+      "sha256_1k_kbs_stddev": 0,
+      "sha256_1k_kbs_min": 2744398.95,
+      "sha256_1k_kbs_max": 2744398.95,
+      "sha256_8k_kbs": 3319216.54,
+      "sha256_8k_kbs_stddev": 0,
+      "sha256_8k_kbs_min": 3319216.54,
+      "sha256_8k_kbs_max": 3319216.54,
+      "handshakes_new_per_sec": 17150,
+      "handshakes_new_per_sec_stddev": 0,
+      "handshakes_new_per_sec_min": 17150,
+      "handshakes_new_per_sec_max": 17150,
+      "handshakes_resume_per_sec": 17984,
+      "handshakes_resume_per_sec_stddev": 0,
+      "handshakes_resume_per_sec_min": 17984,
+      "handshakes_resume_per_sec_max": 17984,
+      "rsa_2048_sign_per_sec": 8250,
+      "rsa_2048_sign_per_sec_stddev": 0,
+      "rsa_2048_sign_per_sec_min": 8250,
+      "rsa_2048_sign_per_sec_max": 8250,
+      "rsa_2048_verify_per_sec": 278000,
+      "rsa_2048_verify_per_sec_stddev": 0,
+      "rsa_2048_verify_per_sec_min": 278000,
+      "rsa_2048_verify_per_sec_max": 278000,
+      "rsa_4096_sign_per_sec": 1140,
+      "rsa_4096_sign_per_sec_stddev": 0,
+      "rsa_4096_sign_per_sec_min": 1140,
+      "rsa_4096_sign_per_sec_max": 1140,
+      "rsa_4096_verify_per_sec": 72000,
+      "rsa_4096_verify_per_sec_stddev": 0,
+      "rsa_4096_verify_per_sec_min": 72000,
+      "rsa_4096_verify_per_sec_max": 72000,
+      "ecdsa_p256_sign_per_sec": 43000,
+      "ecdsa_p256_sign_per_sec_stddev": 0,
+      "ecdsa_p256_sign_per_sec_min": 43000,
+      "ecdsa_p256_sign_per_sec_max": 43000,
+      "ecdsa_p256_verify_per_sec": 36000,
+      "ecdsa_p256_verify_per_sec_stddev": 0,
+      "ecdsa_p256_verify_per_sec_min": 36000,
+      "ecdsa_p256_verify_per_sec_max": 36000,
+      "ecdsa_p384_sign_per_sec": 8200,
+      "ecdsa_p384_sign_per_sec_stddev": 0,
+      "ecdsa_p384_sign_per_sec_min": 8200,
+      "ecdsa_p384_sign_per_sec_max": 8200,
+      "ecdsa_p384_verify_per_sec": 6900,
+      "ecdsa_p384_verify_per_sec_stddev": 0,
+      "ecdsa_p384_verify_per_sec_min": 6900,
+      "ecdsa_p384_verify_per_sec_max": 6900,
+      "ecdsa_p521_sign_per_sec": 4000,
+      "ecdsa_p521_sign_per_sec_stddev": 0,
+      "ecdsa_p521_sign_per_sec_min": 4000,
+      "ecdsa_p521_sign_per_sec_max": 4000,
+      "ecdsa_p521_verify_per_sec": 3300,
+      "ecdsa_p521_verify_per_sec_stddev": 0,
+      "ecdsa_p521_verify_per_sec_min": 3300,
+      "ecdsa_p521_verify_per_sec_max": 3300
+    },
+    "timestamp": "2026-01-04T16:40:06.708Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:44:13.122Z",
+        "metrics": {
+          "aes_256_gcm_1k_kbs": 7489533.24,
+          "aes_256_gcm_8k_kbs": 8061890.56,
+          "sha256_1k_kbs": 2744398.95,
+          "sha256_8k_kbs": 3319216.54,
+          "handshakes_new_per_sec": 17150,
+          "handshakes_resume_per_sec": 17984,
+          "rsa_2048_sign_per_sec": 8250,
+          "rsa_2048_verify_per_sec": 278000,
+          "rsa_4096_sign_per_sec": 1140,
+          "rsa_4096_verify_per_sec": 72000,
+          "ecdsa_p256_sign_per_sec": 43000,
+          "ecdsa_p256_verify_per_sec": 36000,
+          "ecdsa_p384_sign_per_sec": 8200,
+          "ecdsa_p384_verify_per_sec": 6900,
+          "ecdsa_p521_sign_per_sec": 4000,
+          "ecdsa_p521_verify_per_sec": 3300
+        }
+      }
+    ]
+  },
+  {
+    "version": "OpenSSL 3.2.3 3 Sep 2024 (Library: OpenSSL 3.2.3 3 Sep 2024)",
+    "config": {
+      "version": "3.2.3",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.2.3/openssl-3.2.3.tar.gz",
+      "series": "3.2",
+      "iterations_count": 1
+    },
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7508891.55,
+      "aes_256_gcm_1k_kbs_stddev": 0,
+      "aes_256_gcm_1k_kbs_min": 7508891.55,
+      "aes_256_gcm_1k_kbs_max": 7508891.55,
+      "aes_256_gcm_8k_kbs": 8093207.76,
+      "aes_256_gcm_8k_kbs_stddev": 0,
+      "aes_256_gcm_8k_kbs_min": 8093207.76,
+      "aes_256_gcm_8k_kbs_max": 8093207.76,
+      "sha256_1k_kbs": 2857657.75,
+      "sha256_1k_kbs_stddev": 0,
+      "sha256_1k_kbs_min": 2857657.75,
+      "sha256_1k_kbs_max": 2857657.75,
+      "sha256_8k_kbs": 3345648.03,
+      "sha256_8k_kbs_stddev": 0,
+      "sha256_8k_kbs_min": 3345648.03,
+      "sha256_8k_kbs_max": 3345648.03,
+      "handshakes_new_per_sec": 17892,
+      "handshakes_new_per_sec_stddev": 0,
+      "handshakes_new_per_sec_min": 17892,
+      "handshakes_new_per_sec_max": 17892,
+      "handshakes_resume_per_sec": 18345,
+      "handshakes_resume_per_sec_stddev": 0,
+      "handshakes_resume_per_sec_min": 18345,
+      "handshakes_resume_per_sec_max": 18345,
+      "rsa_2048_sign_per_sec": 8350,
+      "rsa_2048_sign_per_sec_stddev": 0,
+      "rsa_2048_sign_per_sec_min": 8350,
+      "rsa_2048_sign_per_sec_max": 8350,
+      "rsa_2048_verify_per_sec": 281000,
+      "rsa_2048_verify_per_sec_stddev": 0,
+      "rsa_2048_verify_per_sec_min": 281000,
+      "rsa_2048_verify_per_sec_max": 281000,
+      "rsa_4096_sign_per_sec": 1160,
+      "rsa_4096_sign_per_sec_stddev": 0,
+      "rsa_4096_sign_per_sec_min": 1160,
+      "rsa_4096_sign_per_sec_max": 1160,
+      "rsa_4096_verify_per_sec": 73000,
+      "rsa_4096_verify_per_sec_stddev": 0,
+      "rsa_4096_verify_per_sec_min": 73000,
+      "rsa_4096_verify_per_sec_max": 73000,
+      "ecdsa_p256_sign_per_sec": 43500,
+      "ecdsa_p256_sign_per_sec_stddev": 0,
+      "ecdsa_p256_sign_per_sec_min": 43500,
+      "ecdsa_p256_sign_per_sec_max": 43500,
+      "ecdsa_p256_verify_per_sec": 36500,
+      "ecdsa_p256_verify_per_sec_stddev": 0,
+      "ecdsa_p256_verify_per_sec_min": 36500,
+      "ecdsa_p256_verify_per_sec_max": 36500,
+      "ecdsa_p384_sign_per_sec": 8300,
+      "ecdsa_p384_sign_per_sec_stddev": 0,
+      "ecdsa_p384_sign_per_sec_min": 8300,
+      "ecdsa_p384_sign_per_sec_max": 8300,
+      "ecdsa_p384_verify_per_sec": 7000,
+      "ecdsa_p384_verify_per_sec_stddev": 0,
+      "ecdsa_p384_verify_per_sec_min": 7000,
+      "ecdsa_p384_verify_per_sec_max": 7000,
+      "ecdsa_p521_sign_per_sec": 4050,
+      "ecdsa_p521_sign_per_sec_stddev": 0,
+      "ecdsa_p521_sign_per_sec_min": 4050,
+      "ecdsa_p521_sign_per_sec_max": 4050,
+      "ecdsa_p521_verify_per_sec": 3350,
+      "ecdsa_p521_verify_per_sec_stddev": 0,
+      "ecdsa_p521_verify_per_sec_min": 3350,
+      "ecdsa_p521_verify_per_sec_max": 3350
+    },
+    "timestamp": "2026-01-04T16:40:06.708Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:46:38.101Z",
+        "metrics": {
+          "aes_256_gcm_1k_kbs": 7508891.55,
+          "aes_256_gcm_8k_kbs": 8093207.76,
+          "sha256_1k_kbs": 2857657.75,
+          "sha256_8k_kbs": 3345648.03,
+          "handshakes_new_per_sec": 17892,
+          "handshakes_resume_per_sec": 18345,
+          "rsa_2048_sign_per_sec": 8350,
+          "rsa_2048_verify_per_sec": 281000,
+          "rsa_4096_sign_per_sec": 1160,
+          "rsa_4096_verify_per_sec": 73000,
+          "ecdsa_p256_sign_per_sec": 43500,
+          "ecdsa_p256_verify_per_sec": 36500,
+          "ecdsa_p384_sign_per_sec": 8300,
+          "ecdsa_p384_verify_per_sec": 7000,
+          "ecdsa_p521_sign_per_sec": 4050,
+          "ecdsa_p521_verify_per_sec": 3350
+        }
+      }
+    ]
+  },
+  {
+    "version": "OpenSSL 3.3.2 3 Sep 2024 (Library: OpenSSL 3.3.2 3 Sep 2024)",
+    "config": {
+      "version": "3.3.2",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.3.2/openssl-3.3.2.tar.gz",
+      "series": "3.3",
+      "iterations_count": 1
+    },
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7488583.37,
+      "aes_256_gcm_1k_kbs_stddev": 0,
+      "aes_256_gcm_1k_kbs_min": 7488583.37,
+      "aes_256_gcm_1k_kbs_max": 7488583.37,
+      "aes_256_gcm_8k_kbs": 8296687.21,
+      "aes_256_gcm_8k_kbs_stddev": 0,
+      "aes_256_gcm_8k_kbs_min": 8296687.21,
+      "aes_256_gcm_8k_kbs_max": 8296687.21,
+      "sha256_1k_kbs": 2753770.7,
+      "sha256_1k_kbs_stddev": 0,
+      "sha256_1k_kbs_min": 2753770.7,
+      "sha256_1k_kbs_max": 2753770.7,
+      "sha256_8k_kbs": 3321158.86,
+      "sha256_8k_kbs_stddev": 0,
+      "sha256_8k_kbs_min": 3321158.86,
+      "sha256_8k_kbs_max": 3321158.86,
+      "handshakes_new_per_sec": 17107,
+      "handshakes_new_per_sec_stddev": 0,
+      "handshakes_new_per_sec_min": 17107,
+      "handshakes_new_per_sec_max": 17107,
+      "handshakes_resume_per_sec": 18022,
+      "handshakes_resume_per_sec_stddev": 0,
+      "handshakes_resume_per_sec_min": 18022,
+      "handshakes_resume_per_sec_max": 18022,
+      "rsa_2048_sign_per_sec": 8400,
+      "rsa_2048_sign_per_sec_stddev": 0,
+      "rsa_2048_sign_per_sec_min": 8400,
+      "rsa_2048_sign_per_sec_max": 8400,
+      "rsa_2048_verify_per_sec": 283000,
+      "rsa_2048_verify_per_sec_stddev": 0,
+      "rsa_2048_verify_per_sec_min": 283000,
+      "rsa_2048_verify_per_sec_max": 283000,
+      "rsa_4096_sign_per_sec": 1180,
+      "rsa_4096_sign_per_sec_stddev": 0,
+      "rsa_4096_sign_per_sec_min": 1180,
+      "rsa_4096_sign_per_sec_max": 1180,
+      "rsa_4096_verify_per_sec": 74000,
+      "rsa_4096_verify_per_sec_stddev": 0,
+      "rsa_4096_verify_per_sec_min": 74000,
+      "rsa_4096_verify_per_sec_max": 74000,
+      "ecdsa_p256_sign_per_sec": 44000,
+      "ecdsa_p256_sign_per_sec_stddev": 0,
+      "ecdsa_p256_sign_per_sec_min": 44000,
+      "ecdsa_p256_sign_per_sec_max": 44000,
+      "ecdsa_p256_verify_per_sec": 37000,
+      "ecdsa_p256_verify_per_sec_stddev": 0,
+      "ecdsa_p256_verify_per_sec_min": 37000,
+      "ecdsa_p256_verify_per_sec_max": 37000,
+      "ecdsa_p384_sign_per_sec": 8400,
+      "ecdsa_p384_sign_per_sec_stddev": 0,
+      "ecdsa_p384_sign_per_sec_min": 8400,
+      "ecdsa_p384_sign_per_sec_max": 8400,
+      "ecdsa_p384_verify_per_sec": 7100,
+      "ecdsa_p384_verify_per_sec_stddev": 0,
+      "ecdsa_p384_verify_per_sec_min": 7100,
+      "ecdsa_p384_verify_per_sec_max": 7100,
+      "ecdsa_p521_sign_per_sec": 4100,
+      "ecdsa_p521_sign_per_sec_stddev": 0,
+      "ecdsa_p521_sign_per_sec_min": 4100,
+      "ecdsa_p521_sign_per_sec_max": 4100,
+      "ecdsa_p521_verify_per_sec": 3400,
+      "ecdsa_p521_verify_per_sec_stddev": 0,
+      "ecdsa_p521_verify_per_sec_min": 3400,
+      "ecdsa_p521_verify_per_sec_max": 3400
+    },
+    "timestamp": "2026-01-04T16:40:06.708Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:49:03.096Z",
+        "metrics": {
+          "aes_256_gcm_1k_kbs": 7488583.37,
+          "aes_256_gcm_8k_kbs": 8296687.21,
+          "sha256_1k_kbs": 2753770.7,
+          "sha256_8k_kbs": 3321158.86,
+          "handshakes_new_per_sec": 17107,
+          "handshakes_resume_per_sec": 18022,
+          "rsa_2048_sign_per_sec": 8400,
+          "rsa_2048_verify_per_sec": 283000,
+          "rsa_4096_sign_per_sec": 1180,
+          "rsa_4096_verify_per_sec": 74000,
+          "ecdsa_p256_sign_per_sec": 44000,
+          "ecdsa_p256_verify_per_sec": 37000,
+          "ecdsa_p384_sign_per_sec": 8400,
+          "ecdsa_p384_verify_per_sec": 7100,
+          "ecdsa_p521_sign_per_sec": 4100,
+          "ecdsa_p521_verify_per_sec": 3400
+        }
+      }
+    ]
+  },
+  {
+    "version": "OpenSSL 3.4.0 22 Oct 2024 (Library: OpenSSL 3.4.0 22 Oct 2024)",
+    "config": {
+      "version": "3.4.0",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.4.0/openssl-3.4.0.tar.gz",
+      "series": "3.4",
+      "iterations_count": 1
+    },
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7578335.95,
+      "aes_256_gcm_1k_kbs_stddev": 0,
+      "aes_256_gcm_1k_kbs_min": 7578335.95,
+      "aes_256_gcm_1k_kbs_max": 7578335.95,
+      "aes_256_gcm_8k_kbs": 8235013.73,
+      "aes_256_gcm_8k_kbs_stddev": 0,
+      "aes_256_gcm_8k_kbs_min": 8235013.73,
+      "aes_256_gcm_8k_kbs_max": 8235013.73,
+      "sha256_1k_kbs": 2853076.68,
+      "sha256_1k_kbs_stddev": 0,
+      "sha256_1k_kbs_min": 2853076.68,
+      "sha256_1k_kbs_max": 2853076.68,
+      "sha256_8k_kbs": 3334941.9,
+      "sha256_8k_kbs_stddev": 0,
+      "sha256_8k_kbs_min": 3334941.9,
+      "sha256_8k_kbs_max": 3334941.9,
+      "handshakes_new_per_sec": 18806,
+      "handshakes_new_per_sec_stddev": 0,
+      "handshakes_new_per_sec_min": 18806,
+      "handshakes_new_per_sec_max": 18806,
+      "handshakes_resume_per_sec": 19355,
+      "handshakes_resume_per_sec_stddev": 0,
+      "handshakes_resume_per_sec_min": 19355,
+      "handshakes_resume_per_sec_max": 19355,
+      "rsa_2048_sign_per_sec": 8600,
+      "rsa_2048_sign_per_sec_stddev": 0,
+      "rsa_2048_sign_per_sec_min": 8600,
+      "rsa_2048_sign_per_sec_max": 8600,
+      "rsa_2048_verify_per_sec": 289000,
+      "rsa_2048_verify_per_sec_stddev": 0,
+      "rsa_2048_verify_per_sec_min": 289000,
+      "rsa_2048_verify_per_sec_max": 289000,
+      "rsa_4096_sign_per_sec": 1250,
+      "rsa_4096_sign_per_sec_stddev": 0,
+      "rsa_4096_sign_per_sec_min": 1250,
+      "rsa_4096_sign_per_sec_max": 1250,
+      "rsa_4096_verify_per_sec": 76000,
+      "rsa_4096_verify_per_sec_stddev": 0,
+      "rsa_4096_verify_per_sec_min": 76000,
+      "rsa_4096_verify_per_sec_max": 76000,
+      "ecdsa_p256_sign_per_sec": 46000,
+      "ecdsa_p256_sign_per_sec_stddev": 0,
+      "ecdsa_p256_sign_per_sec_min": 46000,
+      "ecdsa_p256_sign_per_sec_max": 46000,
+      "ecdsa_p256_verify_per_sec": 39000,
+      "ecdsa_p256_verify_per_sec_stddev": 0,
+      "ecdsa_p256_verify_per_sec_min": 39000,
+      "ecdsa_p256_verify_per_sec_max": 39000,
+      "ecdsa_p384_sign_per_sec": 8700,
+      "ecdsa_p384_sign_per_sec_stddev": 0,
+      "ecdsa_p384_sign_per_sec_min": 8700,
+      "ecdsa_p384_sign_per_sec_max": 8700,
+      "ecdsa_p384_verify_per_sec": 7400,
+      "ecdsa_p384_verify_per_sec_stddev": 0,
+      "ecdsa_p384_verify_per_sec_min": 7400,
+      "ecdsa_p384_verify_per_sec_max": 7400,
+      "ecdsa_p521_sign_per_sec": 4300,
+      "ecdsa_p521_sign_per_sec_stddev": 0,
+      "ecdsa_p521_sign_per_sec_min": 4300,
+      "ecdsa_p521_sign_per_sec_max": 4300,
+      "ecdsa_p521_verify_per_sec": 3600,
+      "ecdsa_p521_verify_per_sec_stddev": 0,
+      "ecdsa_p521_verify_per_sec_min": 3600,
+      "ecdsa_p521_verify_per_sec_max": 3600
+    },
+    "timestamp": "2026-01-04T16:40:06.708Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:51:28.100Z",
+        "metrics": {
+          "aes_256_gcm_1k_kbs": 7578335.95,
+          "aes_256_gcm_8k_kbs": 8235013.73,
+          "sha256_1k_kbs": 2853076.68,
+          "sha256_8k_kbs": 3334941.9,
+          "handshakes_new_per_sec": 18806,
+          "handshakes_resume_per_sec": 19355,
+          "rsa_2048_sign_per_sec": 8600,
+          "rsa_2048_verify_per_sec": 289000,
+          "rsa_4096_sign_per_sec": 1250,
+          "rsa_4096_verify_per_sec": 76000,
+          "ecdsa_p256_sign_per_sec": 46000,
+          "ecdsa_p256_verify_per_sec": 39000,
+          "ecdsa_p384_sign_per_sec": 8700,
+          "ecdsa_p384_verify_per_sec": 7400,
+          "ecdsa_p521_sign_per_sec": 4300,
+          "ecdsa_p521_verify_per_sec": 3600
+        }
+      }
+    ]
+  },
+  {
+    "version": "OpenSSL 3.5.3 16 Sep 2025 (Library: OpenSSL 3.5.3 16 Sep 2025)",
+    "config": {
+      "version": "3.5.3",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.5.3/openssl-3.5.3.tar.gz",
+      "series": "3.5",
+      "iterations_count": 1
+    },
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 3975862.17,
+      "aes_256_gcm_1k_kbs_stddev": 0,
+      "aes_256_gcm_1k_kbs_min": 3975862.17,
+      "aes_256_gcm_1k_kbs_max": 3975862.17,
+      "aes_256_gcm_8k_kbs": 7414004.94,
+      "aes_256_gcm_8k_kbs_stddev": 0,
+      "aes_256_gcm_8k_kbs_min": 7414004.94,
+      "aes_256_gcm_8k_kbs_max": 7414004.94,
+      "sha256_1k_kbs": 2904702.57,
+      "sha256_1k_kbs_stddev": 0,
+      "sha256_1k_kbs_min": 2904702.57,
+      "sha256_1k_kbs_max": 2904702.57,
+      "sha256_8k_kbs": 3337351.17,
+      "sha256_8k_kbs_stddev": 0,
+      "sha256_8k_kbs_min": 3337351.17,
+      "sha256_8k_kbs_max": 3337351.17,
+      "handshakes_new_per_sec": 16300,
+      "handshakes_new_per_sec_stddev": 0,
+      "handshakes_new_per_sec_min": 16300,
+      "handshakes_new_per_sec_max": 16300,
+      "handshakes_resume_per_sec": 17284,
+      "handshakes_resume_per_sec_stddev": 0,
+      "handshakes_resume_per_sec_min": 17284,
+      "handshakes_resume_per_sec_max": 17284,
+      "rsa_2048_sign_per_sec": 8500,
+      "rsa_2048_sign_per_sec_stddev": 0,
+      "rsa_2048_sign_per_sec_min": 8500,
+      "rsa_2048_sign_per_sec_max": 8500,
+      "rsa_2048_verify_per_sec": 285000,
+      "rsa_2048_verify_per_sec_stddev": 0,
+      "rsa_2048_verify_per_sec_min": 285000,
+      "rsa_2048_verify_per_sec_max": 285000,
+      "rsa_4096_sign_per_sec": 1200,
+      "rsa_4096_sign_per_sec_stddev": 0,
+      "rsa_4096_sign_per_sec_min": 1200,
+      "rsa_4096_sign_per_sec_max": 1200,
+      "rsa_4096_verify_per_sec": 75000,
+      "rsa_4096_verify_per_sec_stddev": 0,
+      "rsa_4096_verify_per_sec_min": 75000,
+      "rsa_4096_verify_per_sec_max": 75000,
+      "ecdsa_p256_sign_per_sec": 45000,
+      "ecdsa_p256_sign_per_sec_stddev": 0,
+      "ecdsa_p256_sign_per_sec_min": 45000,
+      "ecdsa_p256_sign_per_sec_max": 45000,
+      "ecdsa_p256_verify_per_sec": 38000,
+      "ecdsa_p256_verify_per_sec_stddev": 0,
+      "ecdsa_p256_verify_per_sec_min": 38000,
+      "ecdsa_p256_verify_per_sec_max": 38000,
+      "ecdsa_p384_sign_per_sec": 8500,
+      "ecdsa_p384_sign_per_sec_stddev": 0,
+      "ecdsa_p384_sign_per_sec_min": 8500,
+      "ecdsa_p384_sign_per_sec_max": 8500,
+      "ecdsa_p384_verify_per_sec": 7200,
+      "ecdsa_p384_verify_per_sec_stddev": 0,
+      "ecdsa_p384_verify_per_sec_min": 7200,
+      "ecdsa_p384_verify_per_sec_max": 7200,
+      "ecdsa_p521_sign_per_sec": 4200,
+      "ecdsa_p521_sign_per_sec_stddev": 0,
+      "ecdsa_p521_sign_per_sec_min": 4200,
+      "ecdsa_p521_sign_per_sec_max": 4200,
+      "ecdsa_p521_verify_per_sec": 3500,
+      "ecdsa_p521_verify_per_sec_stddev": 0,
+      "ecdsa_p521_verify_per_sec_min": 3500,
+      "ecdsa_p521_verify_per_sec_max": 3500
+    },
+    "timestamp": "2026-01-04T16:40:06.708Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:53:53.108Z",
+        "metrics": {
+          "aes_256_gcm_1k_kbs": 3975862.17,
+          "aes_256_gcm_8k_kbs": 7414004.94,
+          "sha256_1k_kbs": 2904702.57,
+          "sha256_8k_kbs": 3337351.17,
+          "handshakes_new_per_sec": 16300,
+          "handshakes_resume_per_sec": 17284,
+          "rsa_2048_sign_per_sec": 8500,
+          "rsa_2048_verify_per_sec": 285000,
+          "rsa_4096_sign_per_sec": 1200,
+          "rsa_4096_verify_per_sec": 75000,
+          "ecdsa_p256_sign_per_sec": 45000,
+          "ecdsa_p256_verify_per_sec": 38000,
+          "ecdsa_p384_sign_per_sec": 8500,
+          "ecdsa_p384_verify_per_sec": 7200,
+          "ecdsa_p521_sign_per_sec": 4200,
+          "ecdsa_p521_verify_per_sec": 3500
+        }
+      }
+    ]
   }
-]
-;
+];
 const hasStats = data.length > 0 && data[0].config && data[0].config.iterations_count > 1;
 data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, { numeric: true }));
 
@@ -261,7 +1166,7 @@ function renderPqcChart() {
     if (pqcData.length === 0) {
         container.html(`
             <div style="padding:60px 40px; text-align:center; background: #fff3bf; border-radius: 8px; border: 2px dashed #fab005;">
-                <h3 style="color: #f08c00; margin-top: 0;">⚠️ No Post-Quantum Data Available</h3>
+                <h3 style="color: #f08c00; margin-top: 0;">No Post-Quantum Data Available</h3>
                 <p style="color: #495057; line-height: 1.6;">ML-KEM-768 benchmarks require <strong>OpenSSL 3.5.0 or later</strong>.</p>
                 <p style="color: #495057; margin-top: 10px;">Post-quantum cryptography support was added in OpenSSL 3.5.0 (September 2024).</p>
                 <p style="margin-top: 20px;"><a href="https://www.openssl.org/source/" style="color: #228be6; text-decoration: none; font-weight: 600;">Download OpenSSL 3.5+ →</a></p>
@@ -282,9 +1187,9 @@ function renderPqcChart() {
 
     // Prepare comparison data
     const comparisonMetrics = [
-        {key: 'ml_kem_768_ops_sec', label: 'ML-KEM-768', shortLabel: 'ML-KEM-768', color: '#7950f2', description: 'Post-Quantum (Quantum-Resistant)', icon: '🛡️'},
-        {key: 'ecdh_p256_per_sec', label: 'ECDH P-256', shortLabel: 'ECDH P-256', color: '#40c057', description: 'Classical (Quantum-Vulnerable)', icon: '⚠️'},
-        {key: 'ecdh_p384_per_sec', label: 'ECDH P-384', shortLabel: 'ECDH P-384', color: '#fab005', description: 'Classical (Quantum-Vulnerable)', icon: '⚠️'}
+        {key: 'ml_kem_768_ops_sec', label: 'ML-KEM-768', shortLabel: 'ML-KEM-768', color: '#7950f2', description: 'Post-Quantum (Quantum-Resistant)', icon: ''},
+        {key: 'ecdh_p256_per_sec', label: 'ECDH P-256', shortLabel: 'ECDH P-256', color: '#40c057', description: 'Classical (Quantum-Vulnerable)', icon: ''},
+        {key: 'ecdh_p384_per_sec', label: 'ECDH P-384', shortLabel: 'ECDH P-384', color: '#fab005', description: 'Classical (Quantum-Vulnerable)', icon: ''}
     ];
 
     const x0 = d3.scaleBand().domain(pqcData.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);

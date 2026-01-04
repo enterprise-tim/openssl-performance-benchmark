@@ -73,7 +73,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
     const iterCount = dataForHeader[0]?.config?.iterations_count || 1;
     if (iterCount > 1) {
         document.getElementById('iterations-note').innerHTML = 
-            '<strong style="color: #40c057;">● ' + iterCount + ' iterations per version</strong> (mean ± stddev shown)';
+            '<strong style="color: #40c057;">' + iterCount + ' iterations per version</strong> (mean ± stddev shown)';
     }
 </script>
 
@@ -95,7 +95,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             <div class="card-desc">
                 Scatter plot showing <strong>Handshake Speed</strong> (Y) vs <strong>Encryption Throughput</strong> (X). 
                 We have zoomed the axes to focus on the differences. <br>
-                <span style="color: #228be6">● 1.1.1w</span> is the baseline. Note how 3.x moves ↘️ (Slower Handshake, Faster Throughput).
+                <span style="color: #228be6">1.1.1w</span> is the baseline. Note how 3.x moves toward Slower Handshake, Faster Throughput.
             </div>
             <div id="scatter-chart" style="height: 500px; width: 100%;"></div>
         </div>
@@ -115,7 +115,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
         </div>
         
         <div class="card">
-            <h2>📊 Understanding the Performance Metrics</h2>
+            <h2>Understanding the Performance Metrics</h2>
             <div style="background: #e7f5ff; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #228be6;">
                 <h3 style="margin-top: 0; color: #1971c2; font-size: 1.1rem;">What's Being Measured</h3>
                 <p style="margin-bottom: 15px; color: #495057;">
@@ -149,7 +149,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
                 
                 <div style="background: #fff3bf; padding: 12px; border-radius: 6px; border-left: 3px solid #fab005; margin-top: 15px;">
                     <p style="margin: 0; color: #495057; font-size: 0.95rem;">
-                        <strong>⚠️ Why TLS 1.2 Can Be Faster:</strong> Despite having more round trips, TLS 1.2 handshakes in OpenSSL 3.x 
+                        <strong>Why TLS 1.2 Can Be Faster:</strong> Despite having more round trips, TLS 1.2 handshakes in OpenSSL 3.x 
                         can be faster due to better code path optimization from years of tuning. TLS 1.3 was introduced in OpenSSL 1.1.1 
                         and the OpenSSL 3.x Provider architecture adds additional overhead that disproportionately affects TLS 1.3's more 
                         complex cryptographic operations (key derivation, transcript hashing). However, TLS 1.3 provides superior security 
@@ -265,7 +265,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             </div>
 
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #228be6;">
-                <h3 style="margin-top: 0; color: #495057; font-size: 1.1rem;">📋 Optimization Configuration Details</h3>
+                <h3 style="margin-top: 0; color: #495057; font-size: 1.1rem;">Optimization Configuration Details</h3>
                 
                 <p style="margin-bottom: 15px; color: #495057;">
                     The <strong>"Optimized"</strong> configuration applies the following tuning parameters to minimize Provider overhead in OpenSSL 3.x:
@@ -307,7 +307,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             </div>
 
             <div style="background: #e7f5ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #1971c2;">
-                <h3 style="margin-top: 0; color: #1971c2; font-size: 1.1rem;">📊 How to Read This Chart</h3>
+                <h3 style="margin-top: 0; color: #1971c2; font-size: 1.1rem;">How to Read This Chart</h3>
                 
                 <div style="margin-bottom: 12px;">
                     <strong style="color: #1971c2;">Blue Bars (Default):</strong> 
@@ -371,14 +371,14 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
 
                 <div style="background: #d3f9d8; padding: 12px; border-radius: 6px; margin-top: 15px; border-left: 3px solid #40c057;">
                     <p style="margin: 0; color: #495057; font-size: 0.95rem;">
-                        <strong>🎯 Production Recommendation:</strong> If you see 10%+ improvement here, you should implement these 
+                        <strong>Production Recommendation:</strong> If you see 10%+ improvement here, you should implement these 
                         configuration changes in production. The settings are safe, well-supported, and provide measurable performance gains.
                     </p>
                 </div>
 
                 <div style="background: #fff3bf; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 3px solid #fab005;">
                     <p style="margin: 0; color: #495057; font-size: 0.95rem;">
-                        <strong>⚠️ Beyond Configuration:</strong> For even more gains, consider build-time optimizations like 
+                        <strong>Beyond Configuration:</strong> For even more gains, consider build-time optimizations like 
                         <code>enable-ec_nistp_64_gcc_128</code>, disabling unused modules (<code>no-engines</code>, <code>no-dh</code>), 
                         and ensuring assembly optimizations are enabled. See the full 
                         <a href="https://www.youtube.com/watch?v=Cv-43gJJFIs" target="_blank">Mráz talk</a> for details.
@@ -399,7 +399,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
                 Each metric is normalized to make cross-version comparisons easier.</p>
                 
                 <p style="margin-bottom: 0; padding: 10px; background: #e7f5ff; border-radius: 4px; font-size: 0.9rem;">
-                <strong>📊 Reading the Charts:</strong> The Y-axis is automatically scaled to highlight the actual differences in your data. 
+                <strong>Reading the Charts:</strong> The Y-axis is automatically scaled to highlight the actual differences in your data. 
                 Percentage labels show the exact change from baseline. Even small differences (< 5%) can indicate meaningful performance impacts at scale.
                 </p>
             </div>
@@ -1777,7 +1777,7 @@ async function main() {
 
     const finalHtml = HTML_TEMPLATE(rawData);
     await fs.writeFile(outputPath, finalHtml);
-    console.log(`📊 Visualization dashboard generated at: ${outputPath}`);
+    console.log(`Visualization dashboard generated at: ${outputPath}`);
   } catch (error) {
     console.error('❌ Failed to generate visual report:', error.message);
   }

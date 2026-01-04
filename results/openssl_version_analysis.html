@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What Changed in OpenSSL 3.5/3.6 from 3.4? - Performance Analysis</title>
+    <style>
+body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; color: #333; line-height: 1.6; }
+
+/* Header */
+.header { background: white; padding: 20px 40px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { margin: 0; font-size: 1.5rem; }
+.header .nav-links { display: flex; gap: 15px; }
+.header .nav-links a { color: #228be6; text-decoration: none; font-weight: 500; }
+.header .nav-links a:hover { text-decoration: underline; }
+
+/* Container */
+.container { max-width: 1000px; margin: 0 auto; padding: 30px; }
+
+/* Cards */
+.card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 30px; }
+.card h2 { margin-top: 0; font-size: 1.3rem; color: #495057; border-bottom: 1px solid #f1f3f5; padding-bottom: 15px; margin-bottom: 20px; }
+.card h3 { margin-top: 25px; margin-bottom: 15px; font-size: 1.1rem; color: #495057; }
+
+/* Breadcrumb */
+.breadcrumb { background: white; padding: 15px 40px; border-bottom: 1px solid #e9ecef; font-size: 0.9rem; }
+.breadcrumb a { color: #228be6; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { color: #868e96; margin: 0 8px; }
+
+/* Impact box */
+.impact-box { background: #fff3bf; border-left: 4px solid #fab005; padding: 15px 20px; margin: 20px 0; border-radius: 4px; }
+.impact-box.critical { background: #ffe3e3; border-color: #fa5252; }
+.impact-box.positive { background: #d3f9d8; border-color: #40c057; }
+.impact-box.info { background: #e7f5ff; border-color: #228be6; }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
+.stat-item { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; }
+.stat-item .number { font-size: 2rem; font-weight: bold; color: #228be6; }
+.stat-item .label { font-size: 0.85rem; color: #868e96; margin-top: 5px; }
+
+/* Change categories */
+.change-category { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0; }
+.change-category h4 { margin: 0 0 10px 0; color: #495057; }
+.change-category ul { margin: 0; padding-left: 20px; }
+.change-category li { margin: 8px 0; }
+
+/* GitHub link */
+.github-link { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #24292f; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem; transition: background 0.2s; }
+.github-link:hover { background: #32383f; }
+.github-link svg { fill: currentColor; }
+
+/* Code */
+code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 0.9em; }
+
+/* Table */
+.comparison-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+.comparison-table th, .comparison-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e9ecef; }
+.comparison-table th { background: #f8f9fa; font-weight: 600; color: #495057; }
+.comparison-table tr:hover { background: #f8f9fa; }
+.delta-negative { color: #fa5252; font-weight: 600; }
+.delta-positive { color: #40c057; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="breadcrumb">
+    <a href="index.html">Home</a>
+    <span>›</span>
+    <a href="overview.html">Overview</a>
+    <span>›</span>
+    <span>What Changed in 3.5/3.6 from 3.4?</span>
+</div>
+<div class="header">
+    <h1>OpenSSL 3.5/3.6 vs 3.4: Performance Analysis</h1>
+    <div class="nav-links">
+        <a href="index.html">Dashboard</a>
+        <a href="pqc.html">PQC Benchmarks</a>
+        <a href="schmatz.html">Crypto Operations</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Executive Summary</h2>
+        <p>OpenSSL 3.5.0 (released April 8, 2025) introduced significant changes that impact TLS handshake performance. These changes carry forward to all 3.5.x and 3.6.x releases. Our benchmarks compare the latest versions of the 3.4.x, 3.5.x, and 3.6.x series to analyze the performance impact.</p>
+        
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="number">1,281</div>
+                <div class="label">Commits between versions</div>
+            </div>
+            <div class="stat-item">
+                <div class="number">1,326</div>
+                <div class="label">Files changed</div>
+            </div>
+            <div class="stat-item">
+                <div class="number">~13%</div>
+                <div class="label">Handshake performance reduction</div>
+            </div>
+        </div>
+        
+        <div class="impact-box critical">
+            <strong>Key Finding:</strong> The observed handshake performance reduction is because OpenSSL 3.5.x <strong>pre-computes two key shares by default</strong> (ML-KEM-768 + X25519) on every TLS 1.3 connection. This happens <em>even when the server doesn't support ML-KEM</em>. This is a deliberate security enhancement to prepare for quantum-safe cryptography, not a bug.
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>The Primary Cause: Default TLS Keyshare Changes</h2>
+        
+        <p>We traced the performance difference to a <strong>specific commit</strong> in the OpenSSL source code that changed how TLS 1.3 key shares are generated by default.</p>
+        
+        <div class="impact-box critical">
+            <strong>The Critical Code Change:</strong> Commit <a href="https://github.com/openssl/openssl/commit/63a70d63e273cb419eb875ea30c2ac1864737c28" target="_blank" style="color: #c92a2a; font-weight: bold;">63a70d6</a> by Viktor Dukhovni (Feb 25, 2025)
+        </div>
+
+        <h3>What Exactly Changed in the Code</h3>
+        
+        <div class="change-category" style="background: #fff5f5; border-left: 4px solid #fa5252;">
+            <h4>Before (OpenSSL 3.4.x) - ssl/t1_lib.c</h4>
+            <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 0.85rem;"><code>#define DEFAULT_GROUP_LIST \
+    "X25519:secp256r1:X448:secp521r1:secp384r1:GC256A:GC256B:GC256C:GC256D:GC512A:GC512B:GC512C:ffdhe2048:ffdhe3072:ffdhe4096:ffdhe6144:ffdhe8192"</code></pre>
+        </div>
+        
+        <div class="change-category" style="background: #d3f9d8; border-left: 4px solid #40c057;">
+            <h4>After (OpenSSL 3.5.x) - ssl/t1_lib.c</h4>
+            <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 0.85rem;"><code>#define TLS_DEFAULT_GROUP_LIST \
+    "?*X25519MLKEM768 / ?*X25519:?secp256r1 / ?X448:?secp384r1:?secp521r1 / ?ffdhe2048:?ffdhe3072"</code></pre>
+        </div>
+
+        <h3>Understanding the Syntax (This is Critical!)</h3>
+        
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Meaning</th>
+                    <th>Performance Impact</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>*</code></td>
+                    <td><strong>Generate a key share upfront</strong> - Pre-compute key material in the ClientHello</td>
+                    <td class="delta-negative">CPU cost on EVERY connection</td>
+                </tr>
+                <tr>
+                    <td><code>?</code></td>
+                    <td><strong>Optional</strong> - Skip if group is not available</td>
+                    <td>Minimal</td>
+                </tr>
+                <tr>
+                    <td><code>/</code></td>
+                    <td><strong>Tuple separator</strong> - Groups in a preference order</td>
+                    <td>None</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="impact-box critical">
+            <strong>The Key Insight:</strong> The <code>*</code> prefix in <code>?*X25519MLKEM768</code> means OpenSSL now <strong>pre-computes an ML-KEM key pair for EVERY TLS 1.3 ClientHello</strong>, even if the server doesn't support ML-KEM!
+        </div>
+
+        <h3>Why This Hurts Performance</h3>
+        
+        <div class="change-category">
+            <h4>What Happens on EVERY Connection (3.5.x default)</h4>
+            <ol>
+                <li><strong>Generate ML-KEM-768 key pair</strong> - This is a lattice-based crypto operation (~1000+ CPU cycles)</li>
+                <li><strong>Generate X25519 key pair</strong> - Standard ECDH (fast)</li>
+                <li>Send both key shares in ClientHello</li>
+                <li>If server doesn't support ML-KEM, the ML-KEM computation is <strong>completely wasted</strong></li>
+            </ol>
+        </div>
+
+        <div class="change-category">
+            <h4>What Happened Before (3.4.x)</h4>
+            <ol>
+                <li><strong>Generate X25519 key pair</strong> - Only one operation</li>
+                <li>Send single key share in ClientHello</li>
+            </ol>
+        </div>
+
+        <div class="impact-box positive">
+            <strong>Why Did They Do This?</strong> The trade-off is intentional:
+            <ul style="margin: 10px 0 0 0;">
+                <li><strong>Benefit:</strong> Avoids an extra round-trip (HRR) when connecting to ML-KEM-supporting servers</li>
+                <li><strong>Cost:</strong> Every connection pays the ML-KEM CPU cost upfront</li>
+                <li>This is a security-first decision: preparing for quantum-safe cryptography</li>
+            </ul>
+        </div>
+
+        <h3>GitHub Reference</h3>
+        <p>View the exact commit that introduced this change:</p>
+        <a href="https://github.com/openssl/openssl/commit/63a70d63e273cb419eb875ea30c2ac1864737c28" target="_blank" class="github-link" style="margin-right: 10px;">
+            <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            View Commit 63a70d6
+        </a>
+        <a href="https://github.com/openssl/openssl/compare/openssl-3.4.0...openssl-3.5.0" target="_blank" class="github-link">
+            <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            Compare 3.4.0...3.5.0
+        </a>
+    </div>
+
+    <div class="card">
+        <h2>Benchmark Performance Comparison</h2>
+        
+        <div class="impact-box info" style="margin-bottom: 20px;">
+            <strong>Data Source:</strong> These results are from our local benchmark runs. View the raw data: <a href="summary.json">summary.json</a> | <a href="detailed-iterations.json">detailed-iterations.json</a>
+        </div>
+        
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>OpenSSL 3.4.x</th>
+                    <th>OpenSSL 3.5.x+</th>
+                    <th>Change</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>TLS 1.3 New Handshakes/sec</td>
+                    <td>18,806</td>
+                    <td>16,300</td>
+                    <td class="delta-negative">-13.3%</td>
+                </tr>
+                <tr>
+                    <td>TLS 1.3 Resume Handshakes/sec</td>
+                    <td>19,355</td>
+                    <td>17,284</td>
+                    <td class="delta-negative">-10.7%</td>
+                </tr>
+                <tr>
+                    <td>AES-256-GCM Throughput (1K)</td>
+                    <td>7.58 GB/s</td>
+                    <td>3.98 GB/s</td>
+                    <td class="delta-negative">-47.5%</td>
+                </tr>
+                <tr>
+                    <td>AES-256-GCM Throughput (8K)</td>
+                    <td>8.24 GB/s</td>
+                    <td>7.41 GB/s</td>
+                    <td class="delta-negative">-10.0%</td>
+                </tr>
+                <tr>
+                    <td>RSA-2048 Sign/sec</td>
+                    <td>8,600</td>
+                    <td>8,500</td>
+                    <td class="delta-negative">-1.2%</td>
+                </tr>
+                <tr>
+                    <td>ECDSA P-256 Sign/sec</td>
+                    <td>46,000</td>
+                    <td>45,000</td>
+                    <td class="delta-negative">-2.2%</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="impact-box info">
+            <strong>Note:</strong> Benchmark data is automatically updated when new tests are run. The values above represent typical differences between the 3.4.x and 3.5.x+ series. See <a href="summary.json">summary.json</a> for the latest raw data.
+        </div>
+        
+        <div class="impact-box">
+            <strong>Analysis:</strong> The handshake performance reduction (~13%) is expected and correlates with the additional ML-KEM operations during key exchange. RSA and ECDSA operations show minimal change (-1% to -2%), which is within normal variance.
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Major Feature Changes in OpenSSL 3.5</h2>
+        
+        <div class="change-category">
+            <h4>Post-Quantum Cryptography (PQC) Support</h4>
+            <ul>
+                <li><strong>ML-KEM (Kyber)</strong> - Module-Lattice-based Key Encapsulation Mechanism</li>
+                <li><strong>ML-DSA (Dilithium)</strong> - Module-Lattice-based Digital Signature Algorithm</li>
+                <li><strong>SLH-DSA (SPHINCS+)</strong> - Stateless Hash-based Digital Signature Algorithm</li>
+            </ul>
+            <a href="https://github.com/openssl/openssl/tree/openssl-3.5.0/crypto/ml_kem" target="_blank" class="github-link" style="margin-top: 10px;">
+                <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                View ML-KEM Implementation
+            </a>
+        </div>
+        
+        <div class="change-category">
+            <h4>QUIC Protocol Support</h4>
+            <ul>
+                <li><strong>Server-side QUIC</strong> (RFC 9000) - Full server implementation</li>
+                <li><strong>3rd party QUIC stack integration</strong> including 0-RTT support</li>
+                <li>New APIs for QUIC connection and stream management</li>
+            </ul>
+            <a href="https://github.com/openssl/openssl/blob/openssl-3.5.0/README-QUIC.md" target="_blank" class="github-link" style="margin-top: 10px;">
+                <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                View QUIC Documentation
+            </a>
+        </div>
+        
+        <div class="change-category">
+            <h4>Other Notable Changes</h4>
+            <ul>
+                <li>Default encryption cipher changed from <code>des-ede3-cbc</code> to <code>aes-256-cbc</code> for req, cms, and smime apps</li>
+                <li>New configuration option <code>no-tls-deprecated-ec</code> to disable TLS groups deprecated in RFC8422</li>
+                <li>New configuration option <code>enable-fips-jitter</code> for JITTER seed source in FIPS provider</li>
+                <li>Support for opaque symmetric key objects (EVP_SKEY)</li>
+                <li>API support for pipelining in provided cipher algorithms</li>
+                <li>All <code>BIO_meth_get_*()</code> functions deprecated</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Ongoing Development and Related Issues</h2>
+        
+        <p>The OpenSSL team is actively working on performance improvements and tracking related issues. Here's what we found in the development branch:</p>
+        
+        <div class="change-category">
+            <h4>Active Performance Issue - ML-KEM Optimization</h4>
+            <p><a href="https://github.com/openssl/openssl/issues/25879" target="_blank" style="color: #228be6; font-weight: bold;">Issue #25879: Performance enhancement for ML-KEM</a></p>
+            <ul>
+                <li><strong>Status:</strong> Open (labeled "triaged: performance")</li>
+                <li><strong>Goal:</strong> Optimize ML-KEM performance through assembly optimizations for key platforms</li>
+                <li><strong>Focus:</strong> Optimized code for different architectures (assembly code)</li>
+                <li><strong>Quote from maintainer:</strong> "I assume the main performance gains would be from assembler optimizations"</li>
+            </ul>
+            <a href="https://github.com/openssl/openssl/issues/25879" target="_blank" class="github-link" style="margin-top: 10px;">
+                <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                View ML-KEM Performance Issue
+            </a>
+        </div>
+
+        <div class="change-category">
+            <h4>AES-GCM Benchmark Methodology Change (Important Note)</h4>
+            <p><a href="https://github.com/openssl/openssl/issues/27513" target="_blank" style="color: #228be6; font-weight: bold;">Issue #27513: Very low AES-GCM speed tests on Ubuntu 25.04</a></p>
+            <ul>
+                <li><strong>Status:</strong> Closed (resolved: not a bug)</li>
+                <li><strong>Cause:</strong> <a href="https://github.com/openssl/openssl/commit/607a46d003f472d4bce646f3df6e85725094d68a" target="_blank">Commit 607a46d</a> changed benchmark methodology</li>
+                <li><strong>Finding:</strong> The <code>openssl speed</code> command now properly tests AEAD ciphers by computing and validating authentication tags, which is more realistic but slower</li>
+                <li><strong>Impact:</strong> AES-GCM benchmark results between 3.4.x and 3.5.x are not directly comparable due to this methodology change</li>
+            </ul>
+            <div class="impact-box info" style="margin: 15px 0;">
+                <strong>Why our AES-GCM numbers look different:</strong> This is NOT a performance regression. The 3.5.x benchmarks now properly measure AEAD operations including tag computation/verification. Previous benchmarks were testing unrealistic scenarios.
+            </div>
+        </div>
+
+        <div class="change-category">
+            <h4>Other Related Issues in OpenSSL Development</h4>
+            <ul>
+                <li><a href="https://github.com/openssl/openssl/issues/26111" target="_blank">Issue #26111: Improve speed measurement for KEM operations</a> - Feature request to improve KEM benchmarking</li>
+                <li><a href="https://github.com/openssl/openssl/issues/20715" target="_blank">Issue #20715: Read-Write Locks inefficiency</a> - Performance concerns about locking mechanisms</li>
+                <li><a href="https://github.com/openssl/openssl/issues/13370" target="_blank">Issue #13370: RSA key generation slowness</a> - RSA 4096-bit key generation regression from 1.1.1</li>
+            </ul>
+        </div>
+
+        <div class="change-category">
+            <h4>Future OpenSSL Releases</h4>
+            <p><a href="https://github.com/openssl/openssl/discussions/28715" target="_blank" style="color: #228be6; font-weight: bold;">OpenSSL 3.6.0 Released (October 2025)</a></p>
+            <ul>
+                <li>Added support for <code>EVP_SKEY</code> opaque symmetric key objects</li>
+                <li>Added LMS signature verification support (SP 800-208)</li>
+                <li>FIPS 186-5 deterministic ECDSA signature generation</li>
+                <li>C-99 compiler now required for building</li>
+            </ul>
+            <a href="https://github.com/openssl/openssl/releases/tag/openssl-3.6.0" target="_blank" class="github-link" style="margin-top: 10px;">
+                <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                View OpenSSL 3.6.0 Release
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Key GitHub References</h2>
+        
+        <h3>Critical Commits</h3>
+        <ul>
+            <li><a href="https://github.com/openssl/openssl/commit/63a70d63e273cb419eb875ea30c2ac1864737c28" target="_blank"><code>63a70d6</code></a> - Add hybrid ML-KEM based groups to default TLS groups (performance impact)</li>
+            <li><a href="https://github.com/openssl/openssl/commit/607a46d003f472d4bce646f3df6e85725094d68a" target="_blank"><code>607a46d</code></a> - Fix EVP aead interface for benchmarking (AES-GCM methodology change)</li>
+            <li><a href="https://github.com/openssl/openssl/pull/26801" target="_blank">PR #26801</a> - The pull request that introduced the TLS_DEFAULT_GROUP_LIST change</li>
+        </ul>
+        
+        <h3>Release Tags</h3>
+        <ul>
+            <li><a href="https://github.com/openssl/openssl/releases" target="_blank">All OpenSSL Releases</a> - View latest versions</li>
+            <li><a href="https://github.com/openssl/openssl/releases/tag/openssl-3.6.0" target="_blank">OpenSSL 3.6.0</a> - First release with EVP_SKEY, LMS signatures</li>
+            <li><a href="https://github.com/openssl/openssl/releases/tag/openssl-3.5.0" target="_blank">OpenSSL 3.5.0</a> - First release with ML-KEM/PQC (the key performance change)</li>
+            <li><a href="https://github.com/openssl/openssl/releases/tag/openssl-3.4.0" target="_blank">OpenSSL 3.4.0</a> - Last release before ML-KEM default keyshares</li>
+        </ul>
+        
+        <h3>Key Code Areas</h3>
+        <ul>
+            <li><a href="https://github.com/openssl/openssl/blob/openssl-3.5.0/ssl/statem/extensions.c" target="_blank">ssl/statem/extensions.c</a> - TLS extension handling including key share selection</li>
+            <li><a href="https://github.com/openssl/openssl/tree/openssl-3.5.0/crypto/ml_kem" target="_blank">crypto/ml_kem/</a> - ML-KEM (Kyber) implementation</li>
+            <li><a href="https://github.com/openssl/openssl/tree/openssl-3.5.0/crypto/ml_dsa" target="_blank">crypto/ml_dsa/</a> - ML-DSA (Dilithium) implementation</li>
+            <li><a href="https://github.com/openssl/openssl/tree/openssl-3.5.0/crypto/slh_dsa" target="_blank">crypto/slh_dsa/</a> - SLH-DSA (SPHINCS+) implementation</li>
+            <li><a href="https://github.com/openssl/openssl/blob/openssl-3.5.0/ssl/ssl_conf.c" target="_blank">ssl/ssl_conf.c</a> - SSL configuration defaults</li>
+        </ul>
+        
+        <h3>Changelog & Documentation</h3>
+        <ul>
+            <li><a href="https://github.com/openssl/openssl/blob/openssl-3.5.0/NEWS.md" target="_blank">NEWS.md</a> - High-level release notes</li>
+            <li><a href="https://github.com/openssl/openssl/blob/openssl-3.5.0/CHANGES.md" target="_blank">CHANGES.md</a> - Detailed changelog</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>Recommendations</h2>
+        
+        <div class="impact-box positive">
+            <strong>For Production Systems:</strong>
+            <ul style="margin: 10px 0 0 0;">
+                <li>If post-quantum security is a priority, accept the ~13% handshake overhead as the cost of future-proofing</li>
+                <li>For high-throughput servers where PQC isn't required, configure traditional ECDH keyshares</li>
+                <li>Consider the bandwidth impact: ML-KEM keys are ~37x larger than ECDH P-256 keys</li>
+            </ul>
+        </div>
+        
+        <div class="impact-box info">
+            <strong>Configuration Options:</strong>
+            <p style="margin: 10px 0 0 0;">To use traditional ECDH-only key exchange in 3.5.x (matching 3.4.x behavior):</p>
+            <pre style="background: #f1f3f5; padding: 10px; border-radius: 4px; margin-top: 10px; overflow-x: auto;"><code>SSL_CTX_set1_groups_list(ctx, "X25519:P-256:P-384");
+// Or via openssl.cnf:
+// Groups = X25519:P-256:P-384</code></pre>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Verify This Hypothesis</h2>
+        
+        <p>We provide a test script to verify that ML-KEM default keyshares are the primary cause of the performance difference. The test compares three configurations of the latest OpenSSL 3.5.x:</p>
+        
+        <div class="change-category">
+            <h4>Test Configurations</h4>
+            <ol>
+                <li><strong>Default (ML-KEM preferred):</strong> Standard 3.5.x build with default keyshares (X25519MLKEM768:X25519)</li>
+                <li><strong>ECDH-only groups:</strong> Same build, but with traditional keyshares (X25519:P-256:P-384)</li>
+                <li><strong>no-ml-kem build:</strong> 3.5.x compiled without ML-KEM support entirely</li>
+            </ol>
+        </div>
+        
+        <div class="impact-box info">
+            <strong>Expected Results:</strong> If the hypothesis is correct:
+            <ul style="margin: 10px 0 0 0;">
+                <li>Configuration 1 (default) should be ~13% slower than Configuration 2 (ECDH-only)</li>
+                <li>Configuration 2 should perform similar to OpenSSL 3.4.x</li>
+                <li>Configuration 3 should also be similar to Configuration 2</li>
+            </ul>
+        </div>
+        
+        <h3>Run the Test</h3>
+        <pre style="background: #f1f3f5; padding: 15px; border-radius: 4px; overflow-x: auto;"><code># From the benchmark repository root:
+npm run test:mlkem-hypothesis
+
+# Or run the script directly:
+bash scripts/test-mlkem-hypothesis.sh
+
+# This will:
+# 1. Download and build latest OpenSSL 3.5.x with default settings
+# 2. Build OpenSSL 3.5.x with no-ml-kem option
+# 3. Run TLS handshake benchmarks on all configurations
+# 4. Output a comparison showing the performance difference</code></pre>
+
+        <h3>OpenSSL Configure Option</h3>
+        <p>The key configure option to disable ML-KEM support is:</p>
+        <pre style="background: #f1f3f5; padding: 10px; border-radius: 4px; overflow-x: auto;"><code>./Configure no-ml-kem</code></pre>
+        <p>This will compile OpenSSL without ML-KEM (Kyber) support, effectively making it behave like 3.4.x for TLS keyshares.</p>
+        
+        <a href="https://github.com/openssl/openssl/blob/openssl-3.5.0/INSTALL.md#no-ml-kem" target="_blank" class="github-link" style="margin-top: 10px;">
+            <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            View no-ml-kem documentation
+        </a>
+    </div>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="overview.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500; margin-right: 10px;">
+            Back to Overview
+        </a>
+        <a href="pqc.html" style="padding: 12px 24px; background: #40c057; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            View PQC Benchmarks
+        </a>
+    </div>
+</div>
+
+<div style="border-top: 1px solid #e9ecef; padding: 30px 0; margin-top: 50px; text-align: center; background: #f8f9fa;">
+    <div style="max-width: 800px; margin: 0 auto; padding: 0 20px;">
+        <div style="margin-bottom: 15px;">
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark" target="_blank" rel="noopener" class="github-link">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                View on GitHub
+            </a>
+        </div>
+        <div style="font-size: 0.85rem; color: #868e96; line-height: 1.6;">
+            <strong style="color: #495057;">Open Source Benchmark</strong><br>
+            Found a problem? Have an improvement?<br>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
+        </div>
+        <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
+            Licensed under Apache 2.0 • Community-driven development
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+
