@@ -1,6 +1,6 @@
 {
   "name": "openssl-performance-benchmark",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "type": "module",
   "scripts": {
     "benchmark": "node scripts/run-benchmark.js",
@@ -23,6 +23,7 @@
     "test:docker": "bash scripts/test-docker-build.sh quick",
     "test:docker:full": "bash scripts/test-docker-build.sh full",
     "test:docker:version": "bash scripts/test-docker-build.sh quick",
+    "test:mlkem-hypothesis": "bash scripts/test-mlkem-hypothesis.sh",
     "lint:yaml": "bash scripts/lint-yaml.sh",
     "lint:workflows": "bash scripts/test-workflow-bash.sh",
     "lint:actions": "bash scripts/lint-actions.sh",

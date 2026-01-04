@@ -51,8 +51,8 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
 const SHARED_UTILS = `
 // Shared D3 utilities
 const colorScale = d3.scaleOrdinal()
-    .domain(['1.1.1', '3.0', '3.1', '3.2', '3.3', '3.4', '3.5'])
-    .range(['#228be6', '#fa5252', '#fd7e14', '#fab005', '#40c057', '#15aabf', '#7950f2']);
+    .domain(['1.1.1', '3.0', '3.1', '3.2', '3.3', '3.4', '3.5', '3.6'])
+    .range(['#228be6', '#fa5252', '#fd7e14', '#fab005', '#40c057', '#15aabf', '#7950f2', '#e64980']);
 
 const getSeries = (ver) => {
     if (ver.startsWith('1.1.1')) return '1.1.1';
@@ -80,14 +80,26 @@ function getWidth(container, pad = 60, minWidth = 320) {
 }
 `;
 
-function generateHeader(title, iterationCount) {
+function generateHeader(title, iterationCount, lastRunDate = null, versionIterations = null) {
   const iterNote = iterationCount > 1 ? 
-    `<span style="color: #40c057; margin-left: 20px;">● ${iterationCount} iterations per version</span>` : 
+    `<span style="color: #40c057; margin-left: 20px;">${iterationCount} iterations per version</span>` : 
     '';
+  
+  let timestampNote = '';
+  if (lastRunDate) {
+    timestampNote = `<div style="font-size: 0.85rem; color: #adb5bd; margin-top: 4px;">Last run: ${lastRunDate}`;
+    
+    if (versionIterations && versionIterations.length > 0) {
+      const iterInfo = versionIterations.map(v => `${v.version} (${v.count}x)`).join(', ');
+      timestampNote += ` • Iterations: ${iterInfo}`;
+    }
+    
+    timestampNote += `</div>`;
+  }
   
   return `
 <div class="breadcrumb">
-    <a href="index.html">🏠 Home</a>
+    <a href="index.html">Home</a>
     <span>›</span>
     <span>${title}</span>
 </div>
@@ -95,6 +107,7 @@ function generateHeader(title, iterationCount) {
     <h1>OpenSSL Performance Benchmark</h1>
     <div style="font-size: 0.9rem; color: #868e96;">
         ${title}${iterNote}
+        ${timestampNote}
     </div>
 </div>`;
 }
@@ -127,7 +140,7 @@ function generateNavigation(hasOptimizedData) {
   return `
 <div class="container">
     <div class="card">
-        <h2>📊 Available Charts</h2>
+        <h2>Available Charts</h2>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
             <a href="overview.html" style="display: block; padding: 20px; background: #e7f5ff; border-radius: 8px; text-decoration: none; color: #1971c2; border: 2px solid #a5d8ff;">
                 <h3 style="margin: 0 0 10px 0;">1. Overview</h3>
@@ -160,26 +173,30 @@ function generateNavigation(hasOptimizedData) {
                 <h3 style="margin: 0 0 10px 0;">8. Memory Consumption</h3>
                 <p style="margin: 0; font-size: 0.9rem; color: #495057;">RAM usage during TLS handshakes across versions</p>
             </a>
+            <a href="openssl_version_analysis.html" style="display: block; padding: 20px; background: #ffe8cc; border-radius: 8px; text-decoration: none; color: #d9480f; border: 2px solid #ffc078;">
+                <h3 style="margin: 0 0 10px 0;">Version Analysis</h3>
+                <p style="margin: 0; font-size: 0.9rem; color: #495057;">What changed in OpenSSL 3.5/3.6 from 3.4? Deep dive into performance impacts</p>
+            </a>
         </div>
     </div>
     
     <div class="card">
-        <h2>📥 Downloads</h2>
+        <h2>Downloads</h2>
         <div style="display: flex; gap: 15px; flex-wrap: wrap;">
             <a href="REPORT.md" download style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
-                📄 Markdown Report
+                Markdown Report
             </a>
             <a href="summary.json" download style="padding: 12px 24px; background: #40c057; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
-                📊 JSON Data
+                JSON Data
             </a>
             <a href="detailed-iterations.json" download style="padding: 12px 24px; background: #fab005; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
-                🔢 Raw Iterations
+                Raw Iterations
             </a>
         </div>
     </div>
     
     <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
-        <h2 style="color: white; border-bottom-color: rgba(255,255,255,0.3);">🌟 Open Source Project</h2>
+        <h2 style="color: white; border-bottom-color: rgba(255,255,255,0.3);">Open Source Project</h2>
         <div style="font-size: 1rem; line-height: 1.8; margin-bottom: 20px;">
             This benchmark suite is <strong>open source</strong> and community-driven. 
             Found an issue? Have an idea for improvement? Contributions are welcome!
@@ -192,10 +209,10 @@ function generateNavigation(hasOptimizedData) {
                 View on GitHub
             </a>
             <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="padding: 12px 24px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; border: 2px solid white;">
-                🍴 Fork & Contribute
+                Fork & Contribute
             </a>
             <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/issues" target="_blank" rel="noopener" style="padding: 12px 24px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; border: 2px solid white;">
-                🐛 Report Issues
+                Report Issues
             </a>
         </div>
     </div>
@@ -203,7 +220,7 @@ function generateNavigation(hasOptimizedData) {
 }
 
 // Generate individual page templates
-function createPageTemplate(title, description, chartFunction, dataJson, iterationCount) {
+function createPageTemplate(title, description, chartFunction, dataJson, iterationCount, lastRunDate = null, versionIterations = null) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -217,7 +234,7 @@ ${SHARED_STYLES}
 </head>
 <body>
 
-${generateHeader(title, iterationCount)}
+${generateHeader(title, iterationCount, lastRunDate, versionIterations)}
 
 <div class="container">
     <div class="card">
@@ -261,7 +278,7 @@ async function main() {
   const summaryPath = path.join(RESULTS_DIR, 'summary.json');
   
   try {
-    console.log('📊 Generating multi-page visualizations...\n');
+    console.log('Generating multi-page visualizations...\n');
     
     const rawData = await fs.readFile(summaryPath, 'utf8');
     const jsonData = JSON.parse(rawData);
@@ -270,13 +287,23 @@ async function main() {
       throw new Error('summary.json contains no results.');
     }
     
+    // Get the file modification time to show when tests were last run
+    const stats = await fs.stat(summaryPath);
+    const lastRunDate = new Date(stats.mtime).toISOString().split('T')[0];
+    
     const iterationCount = jsonData[0]?.config?.iterations_count || 1;
+    
+    // Get iteration counts per version for display
+    const versionIterations = jsonData.map(d => ({
+      version: d.config.version,
+      count: d.config.iterations_count || 1
+    }));
     
     // Check if we have optimized data for Mráz page
     const hasOptimizedData = jsonData.some(d => d.metrics?.optimized_tls1_3_rsa_new_cps > 0);
 
     // Page 1: Index/Navigation
-    console.log('  📄 Generating index.html...');
+    console.log('  Generating index.html...');
     const indexHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -291,7 +318,7 @@ ${SHARED_STYLES}
 </head>
 <body>
 
-${generateHeader('Dashboard', iterationCount)}
+${generateHeader('Dashboard', iterationCount, lastRunDate, versionIterations)}
 
 ${generateNavigation(hasOptimizedData)}
 
@@ -299,7 +326,7 @@ ${generateNavigation(hasOptimizedData)}
     <div class="card">
         <h2>About This Benchmark</h2>
         <p>
-            This benchmark suite tests OpenSSL performance across versions 1.1.1w through 3.5.3.
+            This benchmark suite tests OpenSSL performance across versions 1.1.1w through 3.6.0.
             ${iterationCount > 1 ? `Each version was tested <strong>${iterationCount} times</strong> in separate containers, with results showing <strong>mean ± standard deviation</strong>.` : ''}
         </p>
         <p>
@@ -319,7 +346,7 @@ ${generateFooter()}
     await fs.writeFile(path.join(RESULTS_DIR, 'index.html'), indexHtml);
 
     // Page 2: Overview (Scatter Plot)
-    console.log('  📄 Generating overview.html...');
+    console.log('  Generating overview.html...');
     await fs.writeFile(
       path.join(RESULTS_DIR, 'overview.html'),
       createPageTemplate(
@@ -327,12 +354,14 @@ ${generateFooter()}
         'Scatter plot showing <strong>TLS 1.3 Handshake Speed</strong> (Y) vs <strong>AES-256-GCM Encryption Throughput</strong> (X). Handshake metrics use the deprecated <code>handshakes_new_per_sec</code> (TLS 1.3 with RSA certificates). Error bars show ±1 standard deviation when multiple iterations were run.',
         getScatterChartFunction(),
         rawData,
-        iterationCount
+        iterationCount,
+        lastRunDate,
+        versionIterations
       )
     );
 
     // Page 3: TLS Comparison (Slope Chart)
-    console.log('  📄 Generating tls-comparison.html...');
+    console.log('  Generating tls-comparison.html...');
     await fs.writeFile(
       path.join(RESULTS_DIR, 'tls-comparison.html'),
       createPageTemplate(
@@ -340,47 +369,49 @@ ${generateFooter()}
         'Slope chart comparing connection setup capacity between TLS 1.2 and TLS 1.3. Each line represents an OpenSSL version. <strong>Upward slopes</strong> indicate TLS 1.3 is faster, <strong>downward slopes</strong> show TLS 1.2 leading.',
         getTlsComparisonFunction(),
         rawData,
-        iterationCount
+        iterationCount,
+        lastRunDate,
+        versionIterations
       )
     );
 
     // Page 4: Bellingrath Matrix
-    console.log('  📄 Generating bellingrath.html...');
+    console.log('  Generating bellingrath.html...');
     await fs.writeFile(
       path.join(RESULTS_DIR, 'bellingrath.html'),
-      createBellingrathPage(rawData, iterationCount)
+      createBellingrathPage(rawData, iterationCount, lastRunDate, versionIterations)
     );
 
     // Page 5: Schmatz Algorithms
-    console.log('  📄 Generating schmatz.html...');
+    console.log('  Generating schmatz.html...');
     await fs.writeFile(
       path.join(RESULTS_DIR, 'schmatz.html'),
-      createSchmatzPage(rawData, iterationCount)
+      createSchmatzPage(rawData, iterationCount, lastRunDate, versionIterations)
     );
 
     // Page 6: Mráz Optimization (only if data exists)
     if (hasOptimizedData) {
-      console.log('  📄 Generating mraz.html...');
+      console.log('  Generating mraz.html...');
       await fs.writeFile(
         path.join(RESULTS_DIR, 'mraz.html'),
-        createMrazPage(rawData, iterationCount)
+        createMrazPage(rawData, iterationCount, lastRunDate, versionIterations)
       );
     } else {
-      console.log('  ⊘ Skipping mraz.html (no optimized data available)');
+      console.log('  Skipping mraz.html (no optimized data available)');
     }
 
     // Page 7: PQC
-    console.log('  📄 Generating pqc.html...');
+    console.log('  Generating pqc.html...');
     await fs.writeFile(
       path.join(RESULTS_DIR, 'pqc.html'),
-      createPqcPage(rawData, iterationCount)
+      createPqcPage(rawData, iterationCount, lastRunDate, versionIterations)
     );
 
     // Page 8: Memory Consumption
-    console.log('  📄 Generating memory.html...');
+    console.log('  Generating memory.html...');
     await fs.writeFile(
       path.join(RESULTS_DIR, 'memory.html'),
-      createMemoryPage(rawData, iterationCount)
+      createMemoryPage(rawData, iterationCount, lastRunDate, versionIterations)
     );
 
     console.log('\n✅ Multi-page visualization generated successfully!');
@@ -726,7 +757,7 @@ function renderChart() {
 `;
 }
 
-function createBellingrathPage(dataJson, iterationCount) {
+function createBellingrathPage(dataJson, iterationCount, lastRunDate = null, versionIterations = null) {
   // Special page with multiple charts
   return `<!DOCTYPE html>
 <html lang="en">
@@ -739,7 +770,7 @@ function createBellingrathPage(dataJson, iterationCount) {
 </head>
 <body>
 
-${generateHeader('Bellingrath Test Matrix', iterationCount)}
+${generateHeader('Bellingrath Test Matrix', iterationCount, lastRunDate, versionIterations)}
 
 <div class="container">
     <div class="card">
@@ -934,7 +965,7 @@ ${generateFooter()}
 </html>`;
 }
 
-function createSchmatzPage(dataJson, iterationCount) {
+function createSchmatzPage(dataJson, iterationCount, lastRunDate = null, versionIterations = null) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -948,7 +979,7 @@ function createSchmatzPage(dataJson, iterationCount) {
 </head>
 <body>
 
-${generateHeader('Schmatz Algorithm Benchmarks', iterationCount)}
+${generateHeader('Schmatz Algorithm Benchmarks', iterationCount, lastRunDate, versionIterations)}
 
 <div class="container">
     <div class="card">
@@ -1248,7 +1279,7 @@ ${generateFooter()}
 </html>`;
 }
 
-function createPqcPage(dataJson, iterationCount) {
+function createPqcPage(dataJson, iterationCount, lastRunDate = null, versionIterations = null) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1277,23 +1308,24 @@ ${SHARED_STYLES}
 </head>
 <body>
 
-${generateHeader('Post-Quantum Cryptography', iterationCount)}
+${generateHeader('Post-Quantum Cryptography', iterationCount, lastRunDate, versionIterations)}
 
 <div class="container">
     <div class="card">
         <h2>🔐 Quantum-Resistant vs Classical Key Exchange</h2>
         
         <div class="info-box">
-            <h3>📊 What This Chart Shows</h3>
+            <h3>What This Chart Shows</h3>
             <p><strong>ML-KEM-768</strong> (purple bars) is a <strong>post-quantum cryptographic algorithm</strong> designed to resist attacks from quantum computers. It's compared against <strong>ECDH P-256 and P-384</strong> (green/yellow bars), which are the <strong>classical algorithms</strong> used today but vulnerable to quantum attacks.</p>
             <p><strong>Key Insight:</strong> Higher bars = more key exchanges per second. ML-KEM provides quantum resistance with competitive performance!</p>
+            <p><strong>Important:</strong> This chart measures <strong>key exchange operations</strong> (establishing shared secrets for encryption). This is different from <strong>digital signature operations</strong> (signing/verifying) shown on the Schmatz page. While both ECDH and ECDSA use elliptic curves, they perform fundamentally different cryptographic operations and their performance metrics are not directly comparable.</p>
         </div>
 
         <div id="pqc-chart" style="min-height: 450px;"></div>
         
         <div class="comparison-grid">
             <div class="algo-card">
-                <span class="badge badge-quantum">🛡️ QUANTUM RESISTANT</span>
+                <span class="badge badge-quantum">QUANTUM RESISTANT</span>
                 <h4>ML-KEM-768 (Post-Quantum)</h4>
                 <p><strong>Security:</strong> Resistant to quantum computer attacks</p>
                 <p><strong>Algorithm:</strong> Lattice-based cryptography (CRYSTALS-Kyber)</p>
@@ -1303,7 +1335,7 @@ ${generateHeader('Post-Quantum Cryptography', iterationCount)}
             </div>
             
             <div class="algo-card">
-                <span class="badge badge-vulnerable">⚠️ QUANTUM VULNERABLE</span>
+                <span class="badge badge-vulnerable">QUANTUM VULNERABLE</span>
                 <h4>ECDH P-256 (Classical)</h4>
                 <p><strong>Security:</strong> Secure today, vulnerable to quantum</p>
                 <p><strong>Algorithm:</strong> Elliptic curve cryptography</p>
@@ -1313,7 +1345,7 @@ ${generateHeader('Post-Quantum Cryptography', iterationCount)}
             </div>
             
             <div class="algo-card">
-                <span class="badge badge-vulnerable">⚠️ QUANTUM VULNERABLE</span>
+                <span class="badge badge-vulnerable">QUANTUM VULNERABLE</span>
                 <h4>ECDH P-384 (Classical)</h4>
                 <p><strong>Security:</strong> Secure today, vulnerable to quantum</p>
                 <p><strong>Algorithm:</strong> Elliptic curve cryptography</p>
@@ -1325,7 +1357,7 @@ ${generateHeader('Post-Quantum Cryptography', iterationCount)}
     </div>
     
     <div class="card">
-        <h2>🎯 Key Takeaways</h2>
+        <h2>Key Takeaways</h2>
         
         <div class="success-box">
             <h3>✅ Performance is Production-Ready</h3>
@@ -1334,9 +1366,158 @@ ${generateHeader('Post-Quantum Cryptography', iterationCount)}
         </div>
         
         <div class="warning-box">
-            <h3>⚠️ The Real Tradeoff: Bandwidth, Not Speed</h3>
-            <p><strong>ML-KEM keys are ~37x larger</strong> than ECDH P-256 keys (1,184 bytes vs 32 bytes). This adds 1-2 KB to TLS handshakes.</p>
-            <p><strong>Impact:</strong> Negligible on modern networks, but consider for bandwidth-constrained environments (IoT, satellite).</p>
+            <h3>The Real Tradeoff: Bandwidth, Not Speed</h3>
+            
+            <p><strong>ML-KEM-768 adds ~2 KB per TLS handshake</strong> (1,184-byte public key + 1,088-byte ciphertext vs. 32 bytes for ECDH P-256).</p>
+            
+            <p style="margin-top: 15px;"><strong>Let's do the math for different scenarios:</strong></p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.85rem;">
+                <thead style="background: #fff3bf;">
+                    <tr>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #fab005;">Scenario</th>
+                        <th style="padding: 8px; text-align: right; border-bottom: 2px solid #fab005;">New Connections/sec</th>
+                        <th style="padding: 8px; text-align: right; border-bottom: 2px solid #fab005;">Extra Bandwidth</th>
+                        <th style="padding: 8px; text-align: right; border-bottom: 2px solid #fab005;">Per Day</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background: #ffe8cc;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 E-commerce Peak</strong><br><span style="font-size: 0.8em; color: #666;">(Black Friday, major sale)</span></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">40,000</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>640 Mbps</strong><br>(80 MB/sec)</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>6.9 TB</strong></td>
+                    </tr>
+                    <tr style="background: #ffe8cc;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 Busy CDN Edge</strong><br><span style="font-size: 0.8em; color: #666;">(Major content distributor)</span></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">10,000</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>160 Mbps</strong><br>(20 MB/sec)</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>1.7 TB</strong></td>
+                    </tr>
+                    <tr style="background: #fff5e6;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟡 Popular Website</strong><br><span style="font-size: 0.8em; color: #666;">(News site, SaaS platform)</span></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">1,000</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>16 Mbps</strong><br>(2 MB/sec)</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>173 GB</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟢 Typical Website</strong><br><span style="font-size: 0.8em; color: #666;">(Small business, blog)</span></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">100</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>1.6 Mbps</strong><br>(200 KB/sec)</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>17 GB</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #ffe3e3; border-left: 4px solid #fa5252; border-radius: 4px;">
+                <p style="margin: 0; color: #c92a2a;"><strong>When ML-KEM Bandwidth Becomes a Problem:</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.8;">
+                    <li><strong>High-traffic sites:</strong> Extra 100s of Mbps to multi-Gbps bandwidth costs real money (at $0.05-0.15/GB for cloud egress, 6.9 TB/day = $345-1,035/day)</li>
+                    <li><strong>DDoS amplification:</strong> Connection floods now consume 37x more bandwidth per handshake</li>
+                    <li><strong>Mobile networks:</strong> 2G/3G connections with limited bandwidth budgets</li>
+                    <li><strong>Satellite/IoT:</strong> Expensive per-byte costs (satellite can be $5-50/MB)</li>
+                    <li><strong>Geographic regions:</strong> Countries with expensive or limited internet infrastructure</li>
+                </ul>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 12px; background: #e7f5ff; border-radius: 4px;">
+                <p style="margin: 0;"><strong>💡 Context:</strong> For most sites, ML-KEM handshake overhead is still <1% of total bandwidth (images, videos, and application data dominate). But for the busiest sites processing tens of thousands of new connections per second, this is hundreds of Mbps to Gbps of additional sustained bandwidth cost.</p>
+            </div>
+        </div>
+        
+        <div class="warning-box">
+            <h3>Latency Impact: How 2 KB Affects Page Load Times</h3>
+            
+            <p><strong>Bandwidth isn't just about cost—it's about user experience.</strong> That extra 2 KB must be transmitted during the TLS handshake, adding latency before your application data can flow.</p>
+            
+            <p style="margin-top: 15px;"><strong>Transmission time for 2 KB by network type:</strong></p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.85rem;">
+                <thead style="background: #fff3bf;">
+                    <tr>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #fab005;">Network Type</th>
+                        <th style="padding: 8px; text-align: right; border-bottom: 2px solid #fab005;">Typical Speed</th>
+                        <th style="padding: 8px; text-align: right; border-bottom: 2px solid #fab005;">Extra Latency</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #fab005;">Impact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟢 Fiber/Cable Broadband</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">100 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+0.16 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">✅ Imperceptible</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟢 5G (Sub-6 GHz)</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">150 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+0.11 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">✅ Imperceptible</td>
+                    </tr>
+                    <tr style="background: #fff5e6;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟡 LTE / Fast 4G</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">30 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+0.5 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">✅ Barely noticeable</td>
+                    </tr>
+                    <tr style="background: #fff5e6;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟡 Average 4G</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">10 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+1.6 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">✅ Minor</td>
+                    </tr>
+                    <tr style="background: #ffe8cc;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟠 Slow 4G / Rural</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">3 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+5.5 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">Noticeable on slow sites</td>
+                    </tr>
+                    <tr style="background: #ffe8cc;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 3G / HSPA+</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">1.5 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+11 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">🔴 Noticeable delay</td>
+                    </tr>
+                    <tr style="background: #ffe8cc;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 2G / EDGE</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">250 Kbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+65 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">🔴 Significant delay</td>
+                    </tr>
+                    <tr style="background: #ffe8cc;">
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 Satellite / High Latency</strong></td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">2 Mbps</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+8 ms</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">🔴 Adds to existing latency (500-700ms typical)</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #ffe3e3; border-left: 4px solid #fa5252; border-radius: 4px;">
+                <p style="margin: 0; color: #c92a2a;"><strong>Real-World Latency Impact by Region:</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.8;">
+                    <li><strong>Developing markets:</strong> Where 2G/3G is still common (parts of Africa, rural Asia, Latin America), the extra 10-65ms is felt on every new connection</li>
+                    <li><strong>Mobile-first regions:</strong> In markets where mobile is primary internet access (India, Southeast Asia), slow 4G/3G means 5-11ms added latency</li>
+                    <li><strong>Rural areas globally:</strong> Limited infrastructure = slower connections = more noticeable delays</li>
+                    <li><strong>Network congestion:</strong> When towers are overloaded (concerts, stadiums, emergencies), effective bandwidth drops and latency multiplies</li>
+                </ul>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 12px; background: #e7f5ff; border-radius: 4px;">
+                <p style="margin: 0;"><strong>📱 Mobile User Experience Impact:</strong></p>
+                <p style="margin: 10px 0 0 0;">For users on fast connections (LTE+, broadband), the <2ms latency is imperceptible. But for the <strong>2+ billion users</strong> still on 2G/3G or slow 4G connections, ML-KEM adds meaningful delay to every new connection. Combined with typical mobile latency (50-200ms), this compounds the "slow web" problem in bandwidth-constrained regions.</p>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 12px; background: #fff3bf; border-radius: 4px;">
+                <p style="margin: 0;"><strong>💡 Mitigation Strategies:</strong></p>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px; line-height: 1.6;">
+                    <li><strong>TLS session resumption:</strong> Reuse sessions to avoid repeated handshakes (latency hit only on first connection)</li>
+                    <li><strong>Connection pooling:</strong> Keep connections alive longer (HTTP keep-alive, connection: keep-alive headers)</li>
+                    <li><strong>CDN edge nodes:</strong> Place content closer to users to reduce base latency</li>
+                    <li><strong>Hybrid mode (X25519+MLKEM768):</strong> Slightly larger but maintains security if either algorithm fails</li>
+                    <li><strong>Gradual rollout:</strong> Start with fast-connection markets, delay adoption for 2G/3G-heavy regions</li>
+                </ul>
+            </div>
         </div>
         
         <div class="info-box">
@@ -1344,6 +1525,69 @@ ${generateHeader('Post-Quantum Cryptography', iterationCount)}
             <p><strong>"Harvest Now, Decrypt Later" attacks:</strong> Adversaries are capturing encrypted traffic today to decrypt once quantum computers become available.</p>
             <p><strong>Timeline:</strong> While large-scale quantum computers don't exist yet, the cryptographic community recommends migrating now, as infrastructure changes take years.</p>
             <p><strong>Your data:</strong> If it needs protection beyond 2030, consider post-quantum cryptography today.</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>🌐 Real-World Impact: When Does Key Exchange Happen?</h2>
+        
+        <div class="info-box">
+            <h3>💡 Understanding "Operations Per Second"</h3>
+            <p><strong>Key exchange is NOT performed on every HTTP request.</strong> It only happens during the initial TLS handshake when establishing a new connection:</p>
+            
+            <ul style="margin: 10px 0; padding-left: 25px; line-height: 1.8;">
+                <li><strong>First connection to a server</strong> (full handshake with key exchange)</li>
+                <li><strong>After session expiration</strong> (typically hours or days later)</li>
+                <li><strong>New browser tab/window</strong> (sometimes, depends on browser session cache)</li>
+            </ul>
+            
+            <p><strong>What happens on every request:</strong> Only fast symmetric encryption (AES-256-GCM) using the keys established during the initial handshake. Modern browsers reuse TLS connections for multiple HTTP requests (HTTP keep-alive), so one key exchange can secure hundreds of requests.</p>
+        </div>
+        
+        <div class="info-box">
+            <h3>🔧 How TLS Works (with ML-KEM or ECDH)</h3>
+            
+            <p><strong>Initial TLS Handshake (happens once per connection):</strong></p>
+            <ol style="margin: 10px 0; padding-left: 25px; line-height: 1.8;">
+                <li><strong>Key Exchange:</strong> ML-KEM-768 (or ECDH) establishes a shared secret between client and server</li>
+                <li><strong>Key Derivation:</strong> Both sides derive symmetric encryption keys from that shared secret</li>
+                <li><strong>Handshake Complete:</strong> Secure connection is ready for application data</li>
+            </ol>
+            
+            <p style="margin-top: 15px;"><strong>Every HTTP Request After That:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 25px; line-height: 1.8;">
+                <li><strong>Only symmetric encryption</strong> (AES-256-GCM, ChaCha20-Poly1305, etc.)</li>
+                <li>Uses the keys established in step 2 above</li>
+                <li><strong>No more ML-KEM operations</strong> - key exchange is done</li>
+                <li>Very fast (symmetric crypto is ~1000x faster than asymmetric)</li>
+            </ul>
+            
+            <p style="margin-top: 15px; padding: 12px; background: #e7f5ff; border-radius: 4px;"><strong>The Key Point:</strong> ML-KEM vs ECDH only affects the initial key exchange. Once you have symmetric keys, there's <strong>zero difference</strong> in ongoing performance between a connection established with ML-KEM vs ECDH.</p>
+            
+            <p style="margin-top: 15px;"><strong>So when we say "31,600 ML-KEM operations per second," we're talking about:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 25px; line-height: 1.8;">
+                <li>31,600 <strong>new TLS connections</strong> per second</li>
+                <li>Each connection can then serve hundreds or thousands of requests using symmetric crypto</li>
+                <li>The ongoing requests are all the same speed regardless of whether ML-KEM or ECDH was used</li>
+            </ul>
+            
+            <p style="margin-top: 15px; font-style: italic; color: #495057;">This is why the performance overhead of ML-KEM is so minimal - it only affects the initial handshake, which is a tiny fraction of overall traffic!</p>
+        </div>
+        
+        <div class="info-box" style="background: #fff3bf; border-left-color: #fab005;">
+            <h3>Who Needs High Key Exchange Performance?</h3>
+            <p><strong>ML-KEM's performance matters most for high-traffic servers processing many NEW connections per second:</strong></p>
+            
+            <ul style="margin: 10px 0; padding-left: 25px; line-height: 1.8;">
+                <li><strong>E-commerce sites during peak sales</strong> (thousands of new shoppers/second)</li>
+                <li><strong>News sites during breaking events</strong> (traffic spikes)</li>
+                <li><strong>API gateways and load balancers</strong> (many service-to-service connections)</li>
+                <li><strong>CDN edge servers</strong> (serving millions of unique users)</li>
+            </ul>
+            
+            <p><strong>Example:</strong> A server handling 10,000 concurrent users might only need <strong>100-500 key exchanges per second</strong> (for new arrivals and expired sessions), while serving 50,000+ HTTP requests per second using existing connections. Both ML-KEM (31K ops/sec) and ECDH (16K ops/sec) easily handle this load.</p>
+            
+            <p style="margin-top: 15px;"><strong>For typical websites:</strong> The ML-KEM performance is more than sufficient. The 1-2ms added to initial connection time is negligible compared to network latency (50-200ms) and is barely noticeable to end users.</p>
         </div>
     </div>
     
@@ -1422,7 +1666,7 @@ function renderPqcChart() {
     if (pqcData.length === 0) {
         container.html(\`
             <div style="padding:60px 40px; text-align:center; background: #fff3bf; border-radius: 8px; border: 2px dashed #fab005;">
-                <h3 style="color: #f08c00; margin-top: 0;">⚠️ No Post-Quantum Data Available</h3>
+                <h3 style="color: #f08c00; margin-top: 0;">No Post-Quantum Data Available</h3>
                 <p style="color: #495057; line-height: 1.6;">ML-KEM-768 benchmarks require <strong>OpenSSL 3.5.0 or later</strong>.</p>
                 <p style="color: #495057; margin-top: 10px;">Post-quantum cryptography support was added in OpenSSL 3.5.0 (September 2024).</p>
                 <p style="margin-top: 20px;"><a href="https://www.openssl.org/source/" style="color: #228be6; text-decoration: none; font-weight: 600;">Download OpenSSL 3.5+ →</a></p>
@@ -1443,9 +1687,9 @@ function renderPqcChart() {
 
     // Prepare comparison data
     const comparisonMetrics = [
-        {key: 'ml_kem_768_ops_sec', label: 'ML-KEM-768', shortLabel: 'ML-KEM-768', color: '#7950f2', description: 'Post-Quantum (Quantum-Resistant)', icon: '🛡️'},
-        {key: 'ecdh_p256_per_sec', label: 'ECDH P-256', shortLabel: 'ECDH P-256', color: '#40c057', description: 'Classical (Quantum-Vulnerable)', icon: '⚠️'},
-        {key: 'ecdh_p384_per_sec', label: 'ECDH P-384', shortLabel: 'ECDH P-384', color: '#fab005', description: 'Classical (Quantum-Vulnerable)', icon: '⚠️'}
+        {key: 'ml_kem_768_ops_sec', label: 'ML-KEM-768', shortLabel: 'ML-KEM-768', color: '#7950f2', description: 'Post-Quantum (Quantum-Resistant)', icon: ''},
+        {key: 'ecdh_p256_per_sec', label: 'ECDH P-256', shortLabel: 'ECDH P-256', color: '#40c057', description: 'Classical (Quantum-Vulnerable)', icon: ''},
+        {key: 'ecdh_p384_per_sec', label: 'ECDH P-384', shortLabel: 'ECDH P-384', color: '#fab005', description: 'Classical (Quantum-Vulnerable)', icon: ''}
     ];
 
     const x0 = d3.scaleBand().domain(pqcData.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
@@ -1573,7 +1817,7 @@ ${generateFooter()}
 </html>`;
 }
 
-function createMrazPage(dataJson, iterationCount) {
+function createMrazPage(dataJson, iterationCount, lastRunDate = null, versionIterations = null) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1585,7 +1829,7 @@ function createMrazPage(dataJson, iterationCount) {
 </head>
 <body>
 
-${generateHeader('Mráz Optimization Analysis', iterationCount)}
+${generateHeader('Mráz Optimization Analysis', iterationCount, lastRunDate, versionIterations)}
 
 <div class="container">
     <div class="card">
@@ -1791,7 +2035,7 @@ ${generateFooter()}
 }
 
 // Memory consumption page
-function createMemoryPage(rawData, iterationCount) {
+function createMemoryPage(rawData, iterationCount, lastRunDate = null, versionIterations = null) {
   const dataJson = JSON.stringify(rawData, null, 2);
   
   return `<!DOCTYPE html>
@@ -1805,7 +2049,7 @@ function createMemoryPage(rawData, iterationCount) {
 </head>
 <body>
 
-${generateHeader('Memory Consumption Analysis', iterationCount)}
+${generateHeader('Memory Consumption Analysis', iterationCount, lastRunDate, versionIterations)}
 
 <div class="container">
     <div class="card">
@@ -1821,7 +2065,7 @@ ${generateHeader('Memory Consumption Analysis', iterationCount)}
     </div>
     
     <div class="card">
-        <h2>📊 Memory Comparison: TLS 1.3 vs TLS 1.2</h2>
+        <h2>Memory Comparison: TLS 1.3 vs TLS 1.2</h2>
         <div class="card-desc">
             Comparing memory consumption between TLS protocols. Shows how protocol version affects memory footprint.
         </div>
