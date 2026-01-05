@@ -150,6 +150,181 @@ RESULTS=$(echo "$RESULTS" | jq -n \
 
 echo "DEBUG: OpenSSL Version: $OPENSSL_VERSION_OUTPUT" >&2
 
+# =============================================================================
+# BUILD CONFIGURATION DIAGNOSTICS
+# =============================================================================
+# Capture detailed build info to verify assembly optimizations are enabled
+# This helps diagnose performance discrepancies between versions
+echo "" >&2
+echo "========================================" >&2
+echo "BUILD CONFIGURATION DIAGNOSTICS" >&2
+echo "========================================" >&2
+
+# Capture full openssl version -a output
+OPENSSL_VERSION_FULL=$(openssl version -a 2>&1)
+echo "Full OpenSSL build info:" >&2
+echo "$OPENSSL_VERSION_FULL" >&2
+echo "" >&2
+
+# Check for assembly optimizations in the build
+# These flags indicate hardware-accelerated crypto is enabled
+OPENSSL_OPTIONS=$(openssl version -o 2>/dev/null || echo "N/A")
+echo "OpenSSL build options: $OPENSSL_OPTIONS" >&2
+
+# Check for specific assembly indicators in compiler flags
+HAS_ASM_AES=$(echo "$COMPILER_FLAGS" | grep -qiE "VPAES_ASM|AES_ASM|AESNI" && echo "true" || echo "false")
+HAS_ASM_SHA=$(echo "$COMPILER_FLAGS" | grep -qiE "SHA1_ASM|SHA256_ASM|SHA512_ASM" && echo "true" || echo "false")
+HAS_ASM_POLY=$(echo "$COMPILER_FLAGS" | grep -qi "POLY1305_ASM" && echo "true" || echo "false")
+HAS_ASM_BN=$(echo "$COMPILER_FLAGS" | grep -qi "BN_ASM" && echo "true" || echo "false")
+HAS_ASM_ECP=$(echo "$COMPILER_FLAGS" | grep -qi "ECP_NISTZ256_ASM" && echo "true" || echo "false")
+
+# For ARM64, check for ARM crypto extension flags
+if [ "$CPU_ARCH" = "aarch64" ]; then
+    HAS_ARM_CRYPTO_EXT=$(echo "$CPU_FLAGS" | grep -qE "aes|pmull|sha1|sha2" && echo "true" || echo "false")
+    # Check if OpenSSL was built with ARM crypto support
+    HAS_ASM_ARM=$(echo "$COMPILER_FLAGS $OPENSSL_OPTIONS" | grep -qiE "ARMV8_CE|armv8|CRYPTO_ASM" && echo "true" || echo "false")
+    echo "DEBUG: ARM Crypto Extensions available: $HAS_ARM_CRYPTO_EXT" >&2
+    echo "DEBUG: OpenSSL ARM ASM enabled: $HAS_ASM_ARM" >&2
+fi
+
+echo "DEBUG: ASM Flags - AES: $HAS_ASM_AES, SHA: $HAS_ASM_SHA, POLY1305: $HAS_ASM_POLY, BN: $HAS_ASM_BN, ECP: $HAS_ASM_ECP" >&2
+
+# Capture engines/providers to verify hardware acceleration paths
+echo "" >&2
+echo "Checking crypto acceleration..." >&2
+if [ "$IS_OPENSSL_3" = "true" ]; then
+    # OpenSSL 3.x uses providers
+    PROVIDERS_LIST=$(openssl list -providers 2>&1 || echo "N/A")
+    echo "Available providers:" >&2
+    echo "$PROVIDERS_LIST" >&2
+    
+    # Check which ciphers are available and from which provider
+    AES_GCM_INFO=$(openssl list -cipher-algorithms 2>&1 | grep -i "aes-256-gcm" | head -3 || echo "N/A")
+    echo "AES-256-GCM info: $AES_GCM_INFO" >&2
+else
+    # OpenSSL 1.x uses engines
+    ENGINES_LIST=$(openssl engine 2>&1 || echo "N/A")
+    echo "Available engines:" >&2
+    echo "$ENGINES_LIST" >&2
+fi
+
+# Run a quick diagnostic speed test to verify hardware acceleration is working
+# Compare with and without EVP to detect if there's an issue
+echo "" >&2
+echo "Quick AES diagnostic (2 seconds each)..." >&2
+AES_EVP_QUICK=$(openssl speed -seconds 2 -evp aes-256-gcm 2>&1 | grep -i "aes-256-gcm" | head -1)
+echo "AES-256-GCM (EVP): $AES_EVP_QUICK" >&2
+
+# For 3.x, we can't easily test non-EVP, but for 1.x we can compare
+if [ "$IS_OPENSSL_1_1" = "true" ]; then
+    AES_DIRECT_QUICK=$(openssl speed -seconds 2 aes-256-cbc 2>&1 | grep -i "aes-256" | head -1)
+    echo "AES-256-CBC (direct): $AES_DIRECT_QUICK" >&2
+fi
+
+# =============================================================================
+# HARDWARE ACCELERATION VERIFICATION TEST
+# =============================================================================
+# This test PROVES whether hardware acceleration is being used at runtime
+# by comparing performance WITH vs WITHOUT hardware crypto extensions.
+# If there's a significant difference (>2x), HW acceleration is confirmed.
+echo "" >&2
+echo "Running Hardware Acceleration Verification Test..." >&2
+
+# Extract 8KB throughput from the quick test (column 6)
+AES_WITH_HW=$(echo "$AES_EVP_QUICK" | awk '{print $6}' | sed 's/k$//')
+
+# Now run the same test with hardware acceleration DISABLED
+# For x86_64: OPENSSL_ia32cap="~0x200000200000000" disables AES-NI
+# For aarch64: OPENSSL_armcap=0 disables ARM crypto extensions
+echo "Testing with hardware acceleration disabled..." >&2
+if [ "$CPU_ARCH" = "x86_64" ]; then
+    # Disable AES-NI and other SIMD extensions
+    AES_NO_HW_OUTPUT=$(OPENSSL_ia32cap="~0x200000200000000" openssl speed -seconds 2 -evp aes-256-gcm 2>&1 | grep -i "aes-256-gcm" | head -1)
+elif [ "$CPU_ARCH" = "aarch64" ]; then
+    # Disable ARM crypto extensions
+    AES_NO_HW_OUTPUT=$(OPENSSL_armcap=0 openssl speed -seconds 2 -evp aes-256-gcm 2>&1 | grep -i "aes-256-gcm" | head -1)
+else
+    AES_NO_HW_OUTPUT=""
+fi
+
+AES_NO_HW=$(echo "$AES_NO_HW_OUTPUT" | awk '{print $6}' | sed 's/k$//')
+
+# Calculate the speedup ratio
+HW_ACCEL_VERIFIED="unknown"
+HW_ACCEL_SPEEDUP="0"
+if [ -n "$AES_WITH_HW" ] && [ -n "$AES_NO_HW" ] && [ "$AES_NO_HW" != "0" ]; then
+    # Use awk for floating point division
+    HW_ACCEL_SPEEDUP=$(awk "BEGIN {printf \"%.2f\", $AES_WITH_HW / $AES_NO_HW}")
+    
+    # If speedup > 2x, hardware acceleration is definitely working
+    HW_VERIFIED=$(awk "BEGIN {print ($AES_WITH_HW / $AES_NO_HW > 2) ? \"true\" : \"false\"}")
+    HW_ACCEL_VERIFIED="$HW_VERIFIED"
+    
+    echo "  With HW accel:    $(awk "BEGIN {printf \"%.2f\", $AES_WITH_HW / 1000000}") GB/s" >&2
+    echo "  Without HW accel: $(awk "BEGIN {printf \"%.2f\", $AES_NO_HW / 1000000}") GB/s" >&2
+    echo "  Speedup ratio:    ${HW_ACCEL_SPEEDUP}x" >&2
+    
+    if [ "$HW_ACCEL_VERIFIED" = "true" ]; then
+        echo "  ✓ Hardware acceleration VERIFIED (>${HW_ACCEL_SPEEDUP}x speedup)" >&2
+    else
+        echo "  ⚠ Hardware acceleration may not be fully enabled (only ${HW_ACCEL_SPEEDUP}x speedup)" >&2
+    fi
+else
+    echo "  Could not complete hardware acceleration verification test" >&2
+    if [ -z "$AES_NO_HW_OUTPUT" ]; then
+        echo "  (Capability masking not supported on this platform)" >&2
+    fi
+fi
+
+echo "" >&2
+
+# Add build diagnostics to JSON metadata
+RESULTS=$(echo "$RESULTS" | jq \
+    --arg options "$OPENSSL_OPTIONS" \
+    --arg version_full "$OPENSSL_VERSION_FULL" \
+    --argjson asm_aes "$HAS_ASM_AES" \
+    --argjson asm_sha "$HAS_ASM_SHA" \
+    --argjson asm_poly "$HAS_ASM_POLY" \
+    --argjson asm_bn "$HAS_ASM_BN" \
+    --argjson asm_ecp "$HAS_ASM_ECP" \
+    --arg hw_verified "$HW_ACCEL_VERIFIED" \
+    --arg hw_speedup "$HW_ACCEL_SPEEDUP" \
+    --arg hw_with "${AES_WITH_HW:-0}" \
+    --arg hw_without "${AES_NO_HW:-0}" \
+    '.metadata.build_diagnostics = {
+        openssl_options: $options,
+        version_full: $version_full,
+        asm_flags_detected: {
+            aes: $asm_aes,
+            sha: $asm_sha,
+            poly1305: $asm_poly,
+            bignum: $asm_bn,
+            ecp_nistz256: $asm_ecp
+        },
+        hw_accel_verification: {
+            verified: (if $hw_verified == "true" then true elif $hw_verified == "false" then false else null end),
+            speedup_ratio: ($hw_speedup | tonumber),
+            with_hw_kbs: ($hw_with | tonumber),
+            without_hw_kbs: ($hw_without | tonumber)
+        }
+    }')
+
+# Add ARM-specific diagnostics if applicable
+if [ "$CPU_ARCH" = "aarch64" ]; then
+    RESULTS=$(echo "$RESULTS" | jq \
+        --argjson arm_crypto "$HAS_ARM_CRYPTO_EXT" \
+        --argjson arm_asm "${HAS_ASM_ARM:-false}" \
+        '.metadata.build_diagnostics.arm = {
+            crypto_extensions_available: $arm_crypto,
+            openssl_arm_asm_enabled: $arm_asm
+        }')
+fi
+
+echo "" >&2
+echo "Build diagnostics complete." >&2
+echo "========================================" >&2
+echo "" >&2
+
 # Helper function to parse speed output
 # Usage: parse_speed <algo_name> <column_index_1k> <column_index_8k>
 # Note: Column indexes in 'openssl speed -evp' are usually consistent across versions for the same block sizes?

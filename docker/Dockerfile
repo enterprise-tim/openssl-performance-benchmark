@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     linux-perf \
     jq \
+    bc \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/local/src
@@ -29,10 +31,33 @@ RUN echo "Downloading OpenSSL ${OPENSSL_VERSION} from ${OPENSSL_URL}" && \
     else \
         CONFIG_OPTS="enable-ktls enable-ec_nistp_64_gcc_128"; \
     fi && \
-    echo "Building with options: $CONFIG_OPTS" && \
+    echo "========================================" && \
+    echo "Building OpenSSL ${OPENSSL_VERSION}" && \
+    echo "Config options: $CONFIG_OPTS" && \
+    echo "========================================" && \
     ./config --prefix=/opt/openssl --openssldir=/opt/openssl/ssl $CONFIG_OPTS -Wl,-rpath,/opt/openssl/lib64 -Wl,-rpath,/opt/openssl/lib && \
+    echo "" && \
+    echo "========================================" && \
+    echo "VERIFYING ASSEMBLY OPTIMIZATIONS" && \
+    echo "========================================" && \
+    echo "Checking configdata.pm for ASM flags..." && \
+    (grep -E "asm|OPENSSL_CPUID|VPAES|AES_ASM|SHA.*_ASM|POLY1305_ASM|BN_ASM" configdata.pm 2>/dev/null | head -20 || echo "configdata.pm not found or no ASM flags") && \
+    echo "" && \
+    echo "Checking Makefile for ASM source files..." && \
+    (grep -c "\.S\|\.s\|asm" Makefile 2>/dev/null && echo "ASM source files found in Makefile" || echo "No ASM references found") && \
+    echo "========================================" && \
     make -j$(nproc) && \
-    make install
+    make install && \
+    echo "" && \
+    echo "========================================" && \
+    echo "POST-BUILD VERIFICATION" && \
+    echo "========================================" && \
+    echo "Installed OpenSSL version:" && \
+    /opt/openssl/bin/openssl version -a && \
+    echo "" && \
+    echo "Checking for ASM in compiled library:" && \
+    (nm /opt/openssl/lib*/libcrypto.* 2>/dev/null | grep -iE "aesni|vpaes|sha.*_block|gcm" | head -10 || echo "Could not check symbols") && \
+    echo "========================================"
 
 # Update path to use the custom openssl
 ENV PATH="/opt/openssl/bin:${PATH}"

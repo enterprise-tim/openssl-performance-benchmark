@@ -42,7 +42,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
 /* D3 Styling */
 .grid line { stroke: #f1f3f5; }
 .grid path { stroke: none; }
-.axis text { fill: #868e96; font-size: 11px; }
+.axis text { fill: #868e96; font-size: 14px; font-weight: 500; }
 .axis path, .axis line { stroke: #dee2e6; }
 .baseline-line { stroke: #333; stroke-dasharray: 4,4; stroke-width: 1.5; opacity: 0.5; }
 .zero-line { stroke: #868e96; stroke-dasharray: 2,2; stroke-width: 1; opacity: 0.7; }
@@ -190,6 +190,10 @@ function generateNavigation(hasOptimizedData) {
             <a href="openssl_version_analysis.html" style="display: block; padding: 20px; background: #ffe8cc; border-radius: 8px; text-decoration: none; color: #d9480f; border: 2px solid #ffc078;">
                 <h3 style="margin: 0 0 10px 0;">Version Analysis</h3>
                 <p style="margin: 0; font-size: 0.9rem; color: #495057;">What changed in OpenSSL 3.5/3.6 from 3.4? Deep dive into performance impacts</p>
+            </a>
+            <a href="build-info.html" style="display: block; padding: 20px; background: #e3fafc; border-radius: 8px; text-decoration: none; color: #0b7285; border: 2px solid #99e9f2;">
+                <h3 style="margin: 0 0 10px 0;">🔧 Build Configuration</h3>
+                <p style="margin: 0; font-size: 0.9rem; color: #495057;">Compiler flags, assembly optimizations, and hardware acceleration per version</p>
             </a>
         </div>
     </div>
@@ -445,6 +449,13 @@ ${generateFooter()}
       createMemoryPage(rawData, iterationCount, lastRunDate, versionIterations)
     );
 
+    // Page 10: Build Configuration Info
+    console.log('  Generating build-info.html...');
+    await fs.writeFile(
+      path.join(RESULTS_DIR, 'build-info.html'),
+      createBuildInfoPage(rawData, iterationCount, lastRunDate, versionIterations)
+    );
+
     console.log('\n✅ Multi-page visualization generated successfully!');
     console.log(`   Generated files in ${RESULTS_DIR}:`);
     console.log('   - index.html');
@@ -458,6 +469,7 @@ ${generateFooter()}
     console.log('   - hw-accel.html');
     console.log('   - pqc.html');
     console.log('   - memory.html');
+    console.log('   - build-info.html');
     console.log('\n   Open index.html in your browser to explore!\n');
     
   } catch (error) {
@@ -695,7 +707,7 @@ function renderChart() {
         .selectAll("text")
         .style("font-size", "12px");
     
-    svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+    svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'k'));
     
     // Y-axis label
     svg.append("text")
@@ -873,7 +885,7 @@ function renderRsaEcdsaChart() {
     ];
 
     const containerWidth = container.node().getBoundingClientRect().width;
-    const margin = {top: 20, right: 120, bottom: 60, left: 70};
+    const margin = {top: 20, right: 120, bottom: 80, left: 90};
     const width = containerWidth - margin.left - margin.right;
     const height = 420;
 
@@ -913,8 +925,31 @@ function renderRsaEcdsaChart() {
 
     svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0))
         .selectAll("text").style("text-anchor", "end").attr("dx", "-.8em").attr("dy", ".15em")
-        .attr("transform", "rotate(-45)");
-    svg.append("g").call(d3.axisLeft(y).tickFormat(d => viewMode === 'relative' ? d + '%' : d));
+        .attr("transform", "rotate(-45)").style("font-size", "13px");
+    svg.append("g").call(d3.axisLeft(y).tickFormat(d => viewMode === 'relative' ? d + '%' : (d/1000).toFixed(0) + 'k'))
+        .selectAll("text").style("font-size", "13px");
+
+    // Y-axis title
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -margin.left + 20)
+        .attr("x", -height / 2)
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "600")
+        .style("fill", "#495057")
+        .text(yLabel);
+
+    // X-axis title
+    svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", height + margin.bottom - 10)
+        .style("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "600")
+        .style("fill", "#495057")
+        .text("OpenSSL Version");
 
     const versionGroups = svg.selectAll(".g").data(data).enter().append("g")
         .attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
@@ -948,7 +983,7 @@ function renderResumptionChart() {
     container.html("");
     
     const containerWidth = container.node().getBoundingClientRect().width;
-    const margin = {top: 20, right: 120, bottom: 60, left: 70};
+    const margin = {top: 20, right: 120, bottom: 80, left: 90};
     const width = containerWidth - margin.left - margin.right;
     const height = 360;
 
@@ -969,8 +1004,31 @@ function renderResumptionChart() {
 
     svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0))
         .selectAll("text").style("text-anchor", "end").attr("dx", "-.8em").attr("dy", ".15em")
-        .attr("transform", "rotate(-45)");
-    svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+        .attr("transform", "rotate(-45)").style("font-size", "13px");
+    svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'k'))
+        .selectAll("text").style("font-size", "13px");
+
+    // Y-axis title
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -margin.left + 20)
+        .attr("x", -height / 2)
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "600")
+        .style("fill", "#495057")
+        .text("Connections per Second");
+
+    // X-axis title
+    svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", height + margin.bottom - 10)
+        .style("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "600")
+        .style("fill", "#495057")
+        .text("OpenSSL Version");
 
     const versionGroups = svg.selectAll(".g").data(data).enter().append("g")
         .attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
@@ -1148,7 +1206,7 @@ function renderGroupedBarChart(containerId, metrics) {
     const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
 
     svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0));
-    svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+    svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'k'));
 
     const versionGroups = svg.selectAll(".g").data(data).enter().append("g")
         .attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
@@ -2116,7 +2174,7 @@ function renderPqcChart() {
         .style("font-size", "13px")
         .style("font-weight", "500");
     
-    svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+    svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'k'));
     
     // Y-axis label
     svg.append("text")
@@ -2759,9 +2817,16 @@ ${generateHeader('Hardware Acceleration Impact', iterationCount, lastRunDate, ve
         
         <div class="info-box">
             <h3>What This Page Shows</h3>
-            <p>This benchmark measures the performance difference when hardware acceleration (AVX/AVX2 on x86, NEON/Crypto on ARM) is <strong>enabled vs disabled</strong>.</p>
-            <p><strong>Testing Method:</strong> Each algorithm is benchmarked twice - once with hardware acceleration enabled (default), and once with it disabled using OpenSSL's capability masking (\`OPENSSL_ia32cap\` on x86, \`OPENSSL_armcap\` on ARM).</p>
-            <p><strong>Why This Matters:</strong> Post-quantum algorithms like ML-KEM heavily rely on SIMD vectorization. Understanding the impact helps with hardware selection and performance planning.</p>
+            <p>This benchmark measures the performance difference when hardware acceleration is <strong>enabled vs disabled</strong>.</p>
+            
+            <p style="margin-top: 15px;"><strong>What is Hardware Acceleration (AVX/NEON)?</strong></p>
+            <ul style="margin: 10px 0 15px 0; padding-left: 20px; line-height: 1.8;">
+                <li><strong>AVX/AVX2 (Intel/AMD x86)</strong> — Advanced Vector Extensions use 256-bit registers to process 8 data elements in parallel. Essential for high-speed encryption on desktop/server CPUs.</li>
+                <li><strong>NEON/Crypto (ARM)</strong> — ARM's SIMD technology using 128-bit registers, with dedicated Crypto extensions that provide hardware-accelerated AES and SHA operations. Used in ARM servers and Apple Silicon.</li>
+            </ul>
+            
+            <p><strong>Testing Method:</strong> Each algorithm is benchmarked twice — once with hardware acceleration enabled (default), and once with it disabled using OpenSSL's capability masking (<code>OPENSSL_ia32cap</code> on x86, <code>OPENSSL_armcap</code> on ARM).</p>
+            <p><strong>Why This Matters:</strong> Understanding the acceleration impact helps with hardware selection, capacity planning, and identifying when optimizations are actually being used.</p>
         </div>
         
         <div id="cpu-info-container"></div>
@@ -2770,7 +2835,23 @@ ${generateHeader('Hardware Acceleration Impact', iterationCount, lastRunDate, ve
     <div class="card">
         <h2>Symmetric Cryptography Impact</h2>
         <p style="color: #868e96; margin-bottom: 20px;">AES-256-GCM and SHA256 throughput with and without hardware acceleration</p>
+        
+        <div id="symmetric-improvement-summary" style="margin-bottom: 25px;"></div>
+        
         <div id="symmetric-chart" style="min-height: 400px;"></div>
+        
+        <div class="info-box" style="background: #d3f9d8; border-left-color: #2f9e44; margin-top: 25px;">
+            <h3>Why Hardware Acceleration Has Such Massive Impact</h3>
+            <p>The dramatic performance difference is because modern CPUs have <strong>dedicated silicon circuits</strong> specifically designed for these cryptographic operations:</p>
+            <ul style="margin: 12px 0; padding-left: 20px; line-height: 1.9;">
+                <li><strong>AES-NI / ARM Crypto Extensions:</strong> These are actual hardware circuits that perform AES encryption rounds in a single CPU instruction. Without them, AES requires ~160 individual operations per 16-byte block using lookup tables — with them, it's a single instruction taking just a few clock cycles. This explains the <strong>20-30x improvement</strong>.</li>
+                <li><strong>SHA Extensions:</strong> Similarly, SHA-256 without hardware acceleration requires hundreds of bitwise operations, shifts, and additions per block. The SHA-NI (Intel) and SHA3 (ARM) extensions reduce this to just a handful of specialized instructions, yielding <strong>4-5x improvements</strong>.</li>
+                <li><strong>Constant-Time Execution:</strong> Hardware implementations also provide security benefits — they execute in constant time regardless of data, preventing timing-based side-channel attacks that can leak encryption keys.</li>
+            </ul>
+            <p style="margin-top: 12px; padding: 10px; background: rgba(255,255,255,0.5); border-radius: 4px;">
+                <strong>💡 Practical Impact:</strong> This is why TLS/HTTPS is essentially "free" on modern hardware — a server with AES-NI can handle millions of encrypted connections with negligible CPU overhead, whereas the same workload without hardware acceleration would require 20-30x more CPU resources.
+            </p>
+        </div>
     </div>
     
     <div class="card">
@@ -2779,14 +2860,17 @@ ${generateHeader('Hardware Acceleration Impact', iterationCount, lastRunDate, ve
         <div id="mlkem-chart" style="min-height: 400px;"></div>
         
         <div class="info-box" style="background: #e7f5ff; border-left-color: #228be6;">
-            <h3>Why ML-KEM Benefits Most from SIMD</h3>
-            <p>ML-KEM (Kyber) is a lattice-based algorithm that involves:</p>
-            <ul style="margin: 10px 0; padding-left: 20px;">
-                <li><strong>Matrix-vector multiplications</strong> - parallelizable across SIMD lanes</li>
-                <li><strong>Number Theoretic Transform (NTT)</strong> - butterfly operations map perfectly to AVX2</li>
-                <li><strong>Polynomial arithmetic</strong> - coefficient operations are independent</li>
+            <h3>About ML-KEM and SIMD Acceleration</h3>
+            <p>ML-KEM (Kyber) is a lattice-based algorithm with operations theoretically well-suited for parallel processing:</p>
+            <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.8;">
+                <li><strong>Matrix-vector multiplications</strong> — parallelizable across SIMD lanes</li>
+                <li><strong>Number Theoretic Transform (NTT)</strong> — butterfly operations can map to AVX2/NEON</li>
+                <li><strong>Polynomial arithmetic</strong> — coefficient operations are independent</li>
             </ul>
-            <p>This makes ML-KEM an ideal candidate for 50-100%+ performance gains with AVX2/NEON acceleration.</p>
+            
+            <p style="margin-top: 15px; padding: 12px; background: #fff9db; border-radius: 4px; border-left: 3px solid #fab005;">
+                <strong>⚠️ Why the chart may show no difference:</strong> If the "With" and "Without" acceleration bars appear nearly identical, it indicates that <strong>OpenSSL's current ML-KEM implementation may not have fully optimized SIMD code paths</strong> for this CPU architecture, or the runtime capability masking (<code>OPENSSL_armcap</code>/<code>OPENSSL_ia32cap</code>) doesn't affect ML-KEM. The expected 50-100%+ gains from research papers often use reference implementations with hand-tuned assembly — OpenSSL's implementation is still maturing.
+            </p>
         </div>
     </div>
     
@@ -2866,6 +2950,69 @@ const hwAccelData = data.filter(d =>
     (d.metrics.aes_256_gcm_with_avx_kbs && d.metrics.aes_256_gcm_with_avx_kbs > 0)
 );
 
+function renderSymmetricImprovementSummary() {
+    const container = d3.select("#symmetric-improvement-summary");
+    
+    if (hwAccelData.length === 0) {
+        container.html('');
+        return;
+    }
+    
+    // Calculate average improvements from the data
+    let totalAesImprovement = 0, totalShaImprovement = 0;
+    let countAes = 0, countSha = 0;
+    
+    hwAccelData.forEach(d => {
+        // Calculate AES improvement
+        const aesWithHw = d.metrics.aes_256_gcm_with_avx_kbs || 0;
+        const aesWithoutHw = d.metrics.aes_256_gcm_without_avx_kbs || 0;
+        if (aesWithoutHw > 0 && aesWithHw > 0) {
+            const aesImprovement = ((aesWithHw - aesWithoutHw) / aesWithoutHw) * 100;
+            totalAesImprovement += aesImprovement;
+            countAes++;
+        }
+        
+        // Calculate SHA improvement
+        const shaWithHw = d.metrics.sha256_with_avx_kbs || 0;
+        const shaWithoutHw = d.metrics.sha256_without_avx_kbs || 0;
+        if (shaWithoutHw > 0 && shaWithHw > 0) {
+            const shaImprovement = ((shaWithHw - shaWithoutHw) / shaWithoutHw) * 100;
+            totalShaImprovement += shaImprovement;
+            countSha++;
+        }
+    });
+    
+    const avgAesImprovement = countAes > 0 ? (totalAesImprovement / countAes) : 0;
+    const avgShaImprovement = countSha > 0 ? (totalShaImprovement / countSha) : 0;
+    
+    // Format as multiplier for large improvements
+    const aesMultiplier = avgAesImprovement > 0 ? (avgAesImprovement / 100 + 1).toFixed(0) : 0;
+    const shaMultiplier = avgShaImprovement > 0 ? (avgShaImprovement / 100 + 1).toFixed(1) : 0;
+    
+    container.html(\`
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+            <div style="background: linear-gradient(135deg, #40c057 0%, #2f9e44 100%); color: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(64, 192, 87, 0.3);">
+                <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 8px;">AES-256-GCM Acceleration</div>
+                <div style="font-size: 2.5rem; font-weight: 700; line-height: 1;">
+                    \${avgAesImprovement > 0 ? aesMultiplier + '×' : 'N/A'}
+                </div>
+                <div style="font-size: 0.8rem; opacity: 0.85; margin-top: 8px;">
+                    \${avgAesImprovement > 0 ? '+' + avgAesImprovement.toFixed(0) + '% faster' : 'No comparison data'}
+                </div>
+            </div>
+            <div style="background: linear-gradient(135deg, #228be6 0%, #1971c2 100%); color: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(34, 139, 230, 0.3);">
+                <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 8px;">SHA-256 Acceleration</div>
+                <div style="font-size: 2.5rem; font-weight: 700; line-height: 1;">
+                    \${avgShaImprovement > 0 ? shaMultiplier + '×' : 'N/A'}
+                </div>
+                <div style="font-size: 0.8rem; opacity: 0.85; margin-top: 8px;">
+                    \${avgShaImprovement > 0 ? '+' + avgShaImprovement.toFixed(0) + '% faster' : 'No comparison data'}
+                </div>
+            </div>
+        </div>
+    \`);
+}
+
 function renderSymmetricChart() {
     const container = d3.select("#symmetric-chart");
     container.html("");
@@ -2875,9 +3022,10 @@ function renderSymmetricChart() {
         return;
     }
     
-    const width = Math.max(container.node().getBoundingClientRect().width - 60, 400);
+    const containerWidth = container.node().getBoundingClientRect().width;
+    const margin = {top: 40, right: 200, bottom: 100, left: 90};
+    const width = Math.max(containerWidth - margin.left - margin.right, 400);
     const height = 400;
-    const margin = {top: 40, right: 120, bottom: 80, left: 80};
     
     const svg = container.append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -2916,27 +3064,45 @@ function renderSymmetricChart() {
         .domain([0, maxVal * 1.1])
         .rangeRound([height, 0]);
     
-    // Axes
+    // X Axis
     svg.append("g")
+        .attr("class", "axis x-axis")
         .attr("transform", \`translate(0,\${height})\`)
         .call(d3.axisBottom(x0))
         .selectAll("text")
         .style("text-anchor", "end")
-        .attr("dx", "-.8em")
-        .attr("dy", ".15em")
-        .attr("transform", "rotate(-45)");
+        .style("font-size", "12px")
+        .style("font-weight", "600")
+        .style("fill", "#343a40")
+        .attr("dx", "-0.5em")
+        .attr("dy", "0.3em")
+        .attr("transform", "rotate(-30)");
     
+    // Y Axis with readable formatting
     svg.append("g")
-        .call(d3.axisLeft(y).tickFormat(d => d3.format(".2s")(d)));
+        .attr("class", "axis y-axis")
+        .call(d3.axisLeft(y)
+            .tickFormat(d => {
+                if (d >= 1000000) return (d / 1000000).toFixed(1) + "M";
+                if (d >= 1000) return (d / 1000).toFixed(0) + "K";
+                return d;
+            })
+            .ticks(8))
+        .selectAll("text")
+        .style("font-size", "12px")
+        .style("font-weight", "600")
+        .style("fill", "#343a40");
     
+    // Y Axis Label
     svg.append("text")
         .attr("transform", "rotate(-90)")
-        .attr("y", -60)
+        .attr("y", -70)
         .attr("x", -height/2)
         .attr("dy", "1em")
         .style("text-anchor", "middle")
-        .style("font-size", "12px")
-        .style("fill", "#495057")
+        .style("font-size", "13px")
+        .style("font-weight", "600")
+        .style("fill", "#343a40")
         .text("Throughput (KB/s)");
     
     // Bars
@@ -2967,22 +3133,34 @@ function renderSymmetricChart() {
             tooltip.transition().duration(500).style("opacity", 0);
         });
     
-    // Legend
+    // Legend with background box
     const legend = svg.append("g")
-        .attr("transform", \`translate(\${width + 20}, 0)\`);
+        .attr("transform", \`translate(\${width + 25}, 10)\`);
+    
+    // Legend background
+    legend.append("rect")
+        .attr("x", -10)
+        .attr("y", -10)
+        .attr("width", 170)
+        .attr("height", metrics.length * 28 + 15)
+        .attr("fill", "white")
+        .attr("stroke", "#dee2e6")
+        .attr("rx", 6);
     
     metrics.forEach((m, i) => {
         const lg = legend.append("g")
-            .attr("transform", \`translate(0, \${i * 22})\`);
+            .attr("transform", \`translate(0, \${i * 28})\`);
         lg.append("rect")
-            .attr("width", 14)
-            .attr("height", 14)
+            .attr("width", 16)
+            .attr("height", 16)
+            .attr("rx", 3)
             .attr("fill", m.color);
         lg.append("text")
-            .attr("x", 20)
-            .attr("y", 11)
-            .style("font-size", "11px")
-            .style("fill", "#495057")
+            .attr("x", 24)
+            .attr("y", 13)
+            .style("font-size", "12px")
+            .style("font-weight", "500")
+            .style("fill", "#343a40")
             .text(m.label);
     });
 }
@@ -3000,9 +3178,10 @@ function renderMlkemChart() {
         return;
     }
     
-    const width = Math.max(container.node().getBoundingClientRect().width - 60, 400);
+    const containerWidth = container.node().getBoundingClientRect().width;
+    const margin = {top: 40, right: 200, bottom: 100, left: 100};
+    const width = Math.max(containerWidth - margin.left - margin.right, 400);
     const height = 350;
-    const margin = {top: 40, right: 150, bottom: 80, left: 80};
     
     const svg = container.append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -3010,12 +3189,17 @@ function renderMlkemChart() {
         .append("g")
         .attr("transform", \`translate(\${margin.left},\${margin.top})\`);
     
-    const chartData = mlkemData.map(d => ({
-        version: d.config.version,
-        with_hw: d.metrics.ml_kem_768_with_avx_ops || 0,
-        without_hw: d.metrics.ml_kem_768_without_avx_ops || 0,
-        improvement: d.metrics.ml_kem_768_avx_improvement_percent || 0
-    }));
+    const chartData = mlkemData.map(d => {
+        const withHw = d.metrics.ml_kem_768_with_avx_ops || 0;
+        const withoutHw = d.metrics.ml_kem_768_without_avx_ops || 0;
+        const improvement = withoutHw > 0 ? ((withHw - withoutHw) / withoutHw) * 100 : 0;
+        return {
+            version: d.config.version,
+            with_hw: withHw,
+            without_hw: withoutHw,
+            improvement: improvement
+        };
+    });
     
     const x = d3.scaleBand()
         .domain(chartData.map(d => d.version))
@@ -3027,21 +3211,40 @@ function renderMlkemChart() {
         .domain([0, maxVal * 1.15])
         .rangeRound([height, 0]);
     
-    // Axes
+    // X Axis
     svg.append("g")
+        .attr("class", "axis x-axis")
         .attr("transform", \`translate(0,\${height})\`)
-        .call(d3.axisBottom(x));
+        .call(d3.axisBottom(x))
+        .selectAll("text")
+        .style("font-size", "13px")
+        .style("font-weight", "600")
+        .style("fill", "#343a40");
     
+    // Y Axis with readable formatting
     svg.append("g")
-        .call(d3.axisLeft(y).tickFormat(d => d3.format(".2s")(d)));
+        .attr("class", "axis y-axis")
+        .call(d3.axisLeft(y)
+            .tickFormat(d => {
+                if (d >= 1000000) return (d / 1000000).toFixed(1) + "M";
+                if (d >= 1000) return (d / 1000).toFixed(0) + "K";
+                return d;
+            })
+            .ticks(8))
+        .selectAll("text")
+        .style("font-size", "12px")
+        .style("font-weight", "600")
+        .style("fill", "#343a40");
     
+    // Y Axis Label
     svg.append("text")
         .attr("transform", "rotate(-90)")
-        .attr("y", -60)
+        .attr("y", -80)
         .attr("x", -height/2)
         .style("text-anchor", "middle")
-        .style("font-size", "12px")
-        .style("fill", "#495057")
+        .style("font-size", "13px")
+        .style("font-weight", "600")
+        .style("fill", "#343a40")
         .text("ML-KEM-768 Operations/sec");
     
     // Grouped bars
@@ -3105,22 +3308,35 @@ function renderMlkemChart() {
         .style("fill", "#2f9e44")
         .text(d => d.improvement > 0 ? \`+\${d.improvement.toFixed(0)}%\` : '');
     
-    // Legend
+    // Legend with background box
+    const legendItems = [[\`With \${accelName}\`, '#7950f2'], [\`No \${accelName}\`, '#868e96']];
     const legend = svg.append("g")
-        .attr("transform", \`translate(\${width + 20}, 0)\`);
+        .attr("transform", \`translate(\${width + 25}, 10)\`);
     
-    [[\`With \${accelName}\`, '#7950f2'], [\`No \${accelName}\`, '#868e96']].forEach((item, i) => {
+    // Legend background
+    legend.append("rect")
+        .attr("x", -10)
+        .attr("y", -10)
+        .attr("width", 160)
+        .attr("height", legendItems.length * 28 + 15)
+        .attr("fill", "white")
+        .attr("stroke", "#dee2e6")
+        .attr("rx", 6);
+    
+    legendItems.forEach((item, i) => {
         const lg = legend.append("g")
-            .attr("transform", \`translate(0, \${i * 22})\`);
+            .attr("transform", \`translate(0, \${i * 28})\`);
         lg.append("rect")
-            .attr("width", 14)
-            .attr("height", 14)
+            .attr("width", 16)
+            .attr("height", 16)
+            .attr("rx", 3)
             .attr("fill", item[1]);
         lg.append("text")
-            .attr("x", 20)
-            .attr("y", 11)
-            .style("font-size", "11px")
-            .style("fill", "#495057")
+            .attr("x", 24)
+            .attr("y", 13)
+            .style("font-size", "12px")
+            .style("font-weight", "500")
+            .style("fill", "#343a40")
             .text(item[0]);
     });
 }
@@ -3133,52 +3349,82 @@ function renderImprovementSummary() {
         return;
     }
     
-    // Calculate average improvements across all versions
+    // Calculate improvements from raw values (with vs without acceleration)
     let totalAes = 0, totalSha = 0, totalMlkem = 0;
     let countAes = 0, countSha = 0, countMlkem = 0;
     
     hwAccelData.forEach(d => {
-        if (d.metrics.aes_256_gcm_avx_improvement_percent) {
-            totalAes += d.metrics.aes_256_gcm_avx_improvement_percent;
+        // Calculate AES improvement from raw values
+        const aesWithHw = d.metrics.aes_256_gcm_with_avx_kbs || 0;
+        const aesWithoutHw = d.metrics.aes_256_gcm_without_avx_kbs || 0;
+        if (aesWithoutHw > 0 && aesWithHw > 0) {
+            const improvement = ((aesWithHw - aesWithoutHw) / aesWithoutHw) * 100;
+            totalAes += improvement;
             countAes++;
         }
-        if (d.metrics.sha256_avx_improvement_percent) {
-            totalSha += d.metrics.sha256_avx_improvement_percent;
+        
+        // Calculate SHA improvement from raw values
+        const shaWithHw = d.metrics.sha256_with_avx_kbs || 0;
+        const shaWithoutHw = d.metrics.sha256_without_avx_kbs || 0;
+        if (shaWithoutHw > 0 && shaWithHw > 0) {
+            const improvement = ((shaWithHw - shaWithoutHw) / shaWithoutHw) * 100;
+            totalSha += improvement;
             countSha++;
         }
-        if (d.metrics.ml_kem_768_avx_improvement_percent) {
-            totalMlkem += d.metrics.ml_kem_768_avx_improvement_percent;
+        
+        // Calculate ML-KEM improvement from raw values
+        const mlkemWithHw = d.metrics.ml_kem_768_with_avx_ops || 0;
+        const mlkemWithoutHw = d.metrics.ml_kem_768_without_avx_ops || 0;
+        if (mlkemWithoutHw > 0 && mlkemWithHw > 0) {
+            const improvement = ((mlkemWithHw - mlkemWithoutHw) / mlkemWithoutHw) * 100;
+            totalMlkem += improvement;
             countMlkem++;
         }
     });
     
-    const avgAes = countAes > 0 ? (totalAes / countAes).toFixed(1) : 'N/A';
-    const avgSha = countSha > 0 ? (totalSha / countSha).toFixed(1) : 'N/A';
-    const avgMlkem = countMlkem > 0 ? (totalMlkem / countMlkem).toFixed(1) : 'N/A';
+    const avgAes = countAes > 0 ? (totalAes / countAes) : null;
+    const avgSha = countSha > 0 ? (totalSha / countSha) : null;
+    const avgMlkem = countMlkem > 0 ? (totalMlkem / countMlkem) : null;
+    
+    // Format improvements - show multiplier for large values
+    const formatImprovement = (val) => {
+        if (val === null) return { display: 'N/A', subtitle: 'No comparison data' };
+        if (val > 100) {
+            const multiplier = (val / 100 + 1).toFixed(0);
+            return { display: multiplier + '×', subtitle: '+' + val.toFixed(0) + '% faster' };
+        }
+        return { display: '+' + val.toFixed(0) + '%', subtitle: 'improvement' };
+    };
+    
+    const aesDisplay = formatImprovement(avgAes);
+    const shaDisplay = formatImprovement(avgSha);
+    const mlkemDisplay = formatImprovement(avgMlkem);
     
     container.html(\`
         <div class="comparison-row">
-            <div class="comparison-card">
+            <div class="comparison-card" style="border-color: #40c057;">
                 <h4>AES-256-GCM</h4>
-                <div class="value improvement">+\${avgAes}%</div>
-                <div class="label">Average \${accelName} improvement</div>
+                <div class="value improvement" style="font-size: 1.8rem;">\${aesDisplay.display}</div>
+                <div class="label">\${aesDisplay.subtitle}</div>
             </div>
-            <div class="comparison-card">
+            <div class="comparison-card" style="border-color: #228be6;">
                 <h4>SHA-256</h4>
-                <div class="value improvement">+\${avgSha}%</div>
-                <div class="label">Average \${accelName} improvement</div>
+                <div class="value improvement" style="font-size: 1.8rem;">\${shaDisplay.display}</div>
+                <div class="label">\${shaDisplay.subtitle}</div>
             </div>
-            <div class="comparison-card">
+            <div class="comparison-card" style="border-color: #7950f2;">
                 <h4>ML-KEM-768</h4>
-                <div class="value improvement">+\${avgMlkem}%</div>
-                <div class="label">Average \${accelName} improvement</div>
+                <div class="value improvement" style="font-size: 1.8rem;">\${mlkemDisplay.display}</div>
+                <div class="label">\${mlkemDisplay.subtitle}</div>
             </div>
         </div>
         <div style="margin-top: 20px; padding: 15px; background: #fff9db; border-radius: 8px;">
             <p style="margin: 0; font-size: 0.9rem;">
                 <strong>Key Insight:</strong> \${countMlkem > 0 ? 
-                    'ML-KEM (post-quantum) shows the largest improvement from hardware acceleration, often 50-100%+. This is because lattice-based cryptography maps extremely well to SIMD instructions.' :
-                    'ML-KEM data not available. Run benchmarks with OpenSSL 3.5+ to see post-quantum hardware acceleration impact.'}
+                    (avgMlkem < 5 ? 
+                        'ML-KEM shows minimal improvement because OpenSSL\\'s implementation may not yet have optimized SIMD code paths for this CPU architecture.' :
+                        'ML-KEM (post-quantum) benefits significantly from hardware acceleration due to its parallelizable matrix operations.') :
+                    'AES shows the largest improvement (often 20-30×) because modern CPUs have dedicated AES-NI/Crypto hardware circuits that process encryption in single instructions.'}
             </p>
         </div>
     \`);
@@ -3191,14 +3437,366 @@ const tooltip = d3.select("body").append("div")
 
 // Render all
 renderCpuInfo();
+renderSymmetricImprovementSummary();
 renderSymmetricChart();
 renderMlkemChart();
 renderImprovementSummary();
 
 window.addEventListener('resize', () => {
+    renderSymmetricImprovementSummary();
     renderSymmetricChart();
     renderMlkemChart();
 });
+</script>
+
+${generateFooter()}
+
+</body>
+</html>`;
+}
+
+// Build Configuration Info page - shows compiler flags and assembly optimizations per version
+function createBuildInfoPage(dataJson, iterationCount, lastRunDate = null, versionIterations = null) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Configuration - OpenSSL Benchmark</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+${SHARED_STYLES}
+.version-section { border: 2px solid #dee2e6; border-radius: 12px; margin: 25px 0; overflow: hidden; }
+.version-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 25px; }
+.version-header.v1x { background: linear-gradient(135deg, #228be6 0%, #1971c2 100%); }
+.version-header.v3x { background: linear-gradient(135deg, #fa5252 0%, #c92a2a 100%); }
+.version-header h3 { margin: 0 0 5px 0; font-size: 1.4rem; }
+.version-header .subtitle { opacity: 0.9; font-size: 0.9rem; }
+.version-body { padding: 25px; background: white; }
+.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px; }
+.info-item { background: #f8f9fa; border-radius: 8px; padding: 15px; }
+.info-item label { display: block; font-weight: 600; color: #495057; margin-bottom: 8px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.info-item .value { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.9rem; color: #212529; word-break: break-all; }
+.flags-box { background: #212529; color: #e9ecef; padding: 20px; border-radius: 8px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.85rem; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
+.flags-box .flag { color: #74c0fc; }
+.flags-box .flag-asm { color: #69db7c; font-weight: bold; }
+.flags-box .flag-opt { color: #ffd43b; }
+.asm-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.asm-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+.asm-badge.enabled { background: #d3f9d8; color: #2f9e44; }
+.asm-badge.disabled { background: #ffe3e3; color: #c92a2a; }
+.asm-badge svg { width: 14px; height: 14px; }
+.comparison-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9rem; }
+.comparison-table th { background: #f1f3f5; padding: 12px 15px; text-align: left; font-weight: 600; color: #495057; border-bottom: 2px solid #dee2e6; }
+.comparison-table td { padding: 12px 15px; border-bottom: 1px solid #e9ecef; }
+.comparison-table tr:hover { background: #f8f9fa; }
+.comparison-table .version-col { font-weight: 600; color: #228be6; }
+.status-yes { color: #2f9e44; font-weight: 600; }
+.status-no { color: #c92a2a; }
+.status-unknown { color: #868e96; }
+.legend-box { background: #fff9db; border-left: 4px solid #fab005; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+.legend-box h4 { margin: 0 0 10px 0; color: #5c5f00; }
+.legend-box p { margin: 5px 0; font-size: 0.9rem; color: #495057; line-height: 1.6; }
+.legend-box code { background: #fff3bf; padding: 2px 6px; border-radius: 3px; font-family: 'SF Mono', monospace; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+${generateHeader('Build Configuration Details', iterationCount, lastRunDate, versionIterations)}
+
+<div class="container">
+    <div class="card">
+        <h2>🔧 Build Configuration & Assembly Optimizations</h2>
+        <div class="card-desc">
+            This page shows the <strong>compiler flags</strong>, <strong>assembly optimizations</strong>, and 
+            <strong>hardware acceleration settings</strong> that were detected during each OpenSSL benchmark run.
+            <br><br>
+            <strong>Why This Matters:</strong> Performance differences between OpenSSL versions can be significantly 
+            affected by build configuration. Missing assembly optimizations (like <code>-DVPAES_ASM</code> or 
+            <code>-DSHA256_ASM</code>) can cause 2-10x slowdowns in cryptographic operations.
+        </div>
+        
+        <div class="legend-box">
+            <h4>Understanding Assembly Optimization Flags</h4>
+            <p><code>VPAES_ASM</code> — Vector-Permutation AES assembly for older CPUs without AES-NI</p>
+            <p><code>SHA1_ASM / SHA256_ASM / SHA512_ASM</code> — Assembly-optimized SHA implementations</p>
+            <p><code>POLY1305_ASM</code> — Assembly for Poly1305 MAC used in ChaCha20-Poly1305</p>
+            <p><code>BN_ASM_MONT</code> — Montgomery multiplication assembly for RSA/ECDSA</p>
+            <p><code>ECP_NISTZ256_ASM</code> — NIST P-256 curve optimizations</p>
+            <p><code>KECCAK1600_ASM</code> — SHA-3 assembly implementation</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>📊 Assembly Optimization Comparison Matrix</h2>
+        <div class="card-desc">
+            Quick comparison of which assembly optimizations are enabled in each OpenSSL version.
+            A <span class="status-yes">✓</span> indicates the optimization flag was detected in the compiler flags.
+        </div>
+        <div id="comparison-matrix"></div>
+        
+        <div class="legend-box" style="background: #e7f5ff; border-left-color: #228be6; margin-top: 20px;">
+            <h4 style="color: #1971c2;">⚠️ Important Note: OpenSSL 3.x Build Differences</h4>
+            <p>OpenSSL 3.x uses a <strong>Provider Architecture</strong> that handles cryptographic implementations differently than 1.1.x. 
+            The absence of <code>-D*_ASM</code> flags in the compiler output <strong>does not necessarily mean</strong> assembly optimizations are disabled.</p>
+            <p style="margin-top: 10px;">In OpenSSL 3.x:</p>
+            <ul style="margin: 8px 0 8px 20px; line-height: 1.8;">
+                <li>Assembly implementations are compiled into the <strong>default provider</strong> during the build process</li>
+                <li>Hardware acceleration (AES-NI, SHA-NI, ARM Crypto) is detected at <strong>runtime via CPUID</strong></li>
+                <li>The Provider can select optimized code paths without compile-time flags being visible</li>
+            </ul>
+            <p style="margin-top: 10px;">However, if the Docker build didn't properly configure for the target architecture, assembly optimizations 
+            may not be included. Check <code>openssl version -a</code> output for "CPUINFO" or run <code>openssl speed</code> to verify 
+            hardware acceleration is being used.</p>
+        </div>
+    </div>
+    
+    <div id="version-details"></div>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="index.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            ← Back to Overview
+        </a>
+    </div>
+</div>
+
+<script>
+const data = ${dataJson};
+data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, { numeric: true }));
+
+${SHARED_UTILS}
+
+// Assembly flag definitions
+const asmFlags = [
+    { key: 'aes', label: 'AES', patterns: ['VPAES_ASM', 'AES_ASM', 'AESNI'] },
+    { key: 'sha', label: 'SHA', patterns: ['SHA1_ASM', 'SHA256_ASM', 'SHA512_ASM'] },
+    { key: 'poly1305', label: 'Poly1305', patterns: ['POLY1305_ASM'] },
+    { key: 'bignum', label: 'BigNum', patterns: ['BN_ASM_MONT', 'BN_ASM'] },
+    { key: 'ecp', label: 'ECP-256', patterns: ['ECP_NISTZ256_ASM'] },
+    { key: 'keccak', label: 'Keccak', patterns: ['KECCAK1600_ASM'] },
+    { key: 'cpuid', label: 'CPUID', patterns: ['OPENSSL_CPUID_OBJ', 'CPUID_ASM'] }
+];
+
+function checkAsmFlag(compilerFlags, patterns) {
+    if (!compilerFlags) return 'unknown';
+    const upperFlags = compilerFlags.toUpperCase();
+    for (const pattern of patterns) {
+        if (upperFlags.includes(pattern.toUpperCase())) {
+            return 'yes';
+        }
+    }
+    return 'no';
+}
+
+function highlightFlags(flagsStr) {
+    if (!flagsStr) return '<span style="color: #868e96;">(not available)</span>';
+    
+    // Highlight different flag types
+    return flagsStr
+        .replace(/-D(\\w*ASM\\w*)/g, '<span class="flag-asm">-D$1</span>')
+        .replace(/-D(OPENSSL_\\w+)/g, '<span class="flag">-D$1</span>')
+        .replace(/(-O[0-3s])/g, '<span class="flag-opt">$1</span>')
+        .replace(/(gcc|clang)/gi, '<span class="flag">$1</span>');
+}
+
+function renderComparisonMatrix() {
+    const container = d3.select("#comparison-matrix");
+    
+    let html = '<table class="comparison-table"><thead><tr>';
+    html += '<th>OpenSSL Version</th>';
+    asmFlags.forEach(flag => {
+        html += '<th style="text-align: center;">' + flag.label + '</th>';
+    });
+    html += '</tr></thead><tbody>';
+    
+    data.forEach(d => {
+        const version = d.config.version;
+        const compilerFlags = d.metadata?.compiler_flags || '';
+        const isV1 = version.startsWith('1.');
+        
+        html += '<tr>';
+        html += '<td class="version-col">' + version + '</td>';
+        
+        asmFlags.forEach(flag => {
+            const status = checkAsmFlag(compilerFlags, flag.patterns);
+            let statusHtml;
+            if (status === 'yes') {
+                statusHtml = '<span class="status-yes">✓</span>';
+            } else if (status === 'no') {
+                statusHtml = '<span class="status-no">✗</span>';
+            } else {
+                statusHtml = '<span class="status-unknown">?</span>';
+            }
+            html += '<td style="text-align: center;">' + statusHtml + '</td>';
+        });
+        
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table>';
+    container.html(html);
+}
+
+function renderVersionDetails() {
+    const container = d3.select("#version-details");
+    
+    let html = '';
+    
+    data.forEach(d => {
+        const version = d.config.version;
+        const metadata = d.metadata || {};
+        const isV1 = version.startsWith('1.');
+        const headerClass = isV1 ? 'v1x' : 'v3x';
+        
+        html += '<div class="version-section">';
+        html += '<div class="version-header ' + headerClass + '">';
+        html += '<h3>OpenSSL ' + version + '</h3>';
+        html += '<div class="subtitle">' + (d.version || 'OpenSSL ' + version) + '</div>';
+        html += '</div>';
+        html += '<div class="version-body">';
+        
+        // Info grid
+        html += '<div class="info-grid">';
+        
+        html += '<div class="info-item">';
+        html += '<label>Platform</label>';
+        html += '<div class="value">' + (metadata.platform || 'N/A') + '</div>';
+        html += '</div>';
+        
+        html += '<div class="info-item">';
+        html += '<label>CPU Architecture</label>';
+        html += '<div class="value">' + (metadata.cpu_architecture || 'N/A') + '</div>';
+        html += '</div>';
+        
+        html += '<div class="info-item">';
+        html += '<label>CPU Model</label>';
+        html += '<div class="value">' + (metadata.cpu_model || 'N/A') + '</div>';
+        html += '</div>';
+        
+        html += '<div class="info-item">';
+        html += '<label>CPU Cores</label>';
+        html += '<div class="value">' + (metadata.cpu_cores || 'N/A') + '</div>';
+        html += '</div>';
+        
+        html += '<div class="info-item">';
+        html += '<label>OS Distribution</label>';
+        html += '<div class="value">' + (metadata.os_distribution || 'N/A') + '</div>';
+        html += '</div>';
+        
+        html += '<div class="info-item">';
+        html += '<label>Kernel Version</label>';
+        html += '<div class="value">' + (metadata.kernel_version || 'N/A') + '</div>';
+        html += '</div>';
+        
+        html += '</div>';
+        
+        // Assembly flags badges
+        html += '<h4 style="margin: 25px 0 10px 0; color: #495057;">Detected Assembly Optimizations</h4>';
+        html += '<div class="asm-badges">';
+        
+        const compilerFlags = metadata.compiler_flags || '';
+        asmFlags.forEach(flag => {
+            const status = checkAsmFlag(compilerFlags, flag.patterns);
+            const badgeClass = status === 'yes' ? 'enabled' : 'disabled';
+            const icon = status === 'yes' 
+                ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
+            html += '<span class="asm-badge ' + badgeClass + '">' + icon + flag.label + '</span>';
+        });
+        html += '</div>';
+        
+        // CPU Features (if available)
+        if (metadata.cpu_features) {
+            html += '<h4 style="margin: 25px 0 10px 0; color: #495057;">CPU Hardware Features</h4>';
+            html += '<div class="asm-badges">';
+            const features = metadata.cpu_features;
+            const featureLabels = [
+                { key: 'aes_ni', label: 'AES-NI', desc: 'Hardware AES' },
+                { key: 'avx', label: 'AVX', desc: 'Advanced Vector Extensions' },
+                { key: 'avx2', label: 'AVX2', desc: 'AVX2 256-bit' },
+                { key: 'avx512', label: 'AVX-512', desc: 'AVX-512' },
+                { key: 'sse4', label: 'SSE4', desc: 'SSE4.x' },
+                { key: 'sha_ni', label: 'SHA-NI', desc: 'Hardware SHA' }
+            ];
+            featureLabels.forEach(f => {
+                if (features[f.key] !== undefined) {
+                    const enabled = features[f.key];
+                    const badgeClass = enabled ? 'enabled' : 'disabled';
+                    const icon = enabled 
+                        ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
+                        : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
+                    html += '<span class="asm-badge ' + badgeClass + '" title="' + f.desc + '">' + icon + f.label + '</span>';
+                }
+            });
+            html += '</div>';
+        }
+        
+        // Full compiler flags
+        html += '<h4 style="margin: 25px 0 10px 0; color: #495057;">Full Compiler Flags</h4>';
+        html += '<div class="flags-box">' + highlightFlags(compilerFlags) + '</div>';
+        
+        // Build diagnostics if available
+        if (metadata.build_diagnostics) {
+            const diag = metadata.build_diagnostics;
+            
+            // Hardware Acceleration Verification (the proof!)
+            if (diag.hw_accel_verification && diag.hw_accel_verification.speedup_ratio > 0) {
+                const hw = diag.hw_accel_verification;
+                const verified = hw.verified === true;
+                const speedup = hw.speedup_ratio.toFixed(2);
+                const withHw = (hw.with_hw_kbs / 1000000).toFixed(2);
+                const withoutHw = (hw.without_hw_kbs / 1000000).toFixed(2);
+                
+                html += '<h4 style="margin: 25px 0 10px 0; color: #495057;">⚡ Hardware Acceleration Verification</h4>';
+                
+                if (verified) {
+                    html += '<div style="background: #d3f9d8; border: 2px solid #2f9e44; border-radius: 8px; padding: 15px; margin-bottom: 15px;">';
+                    html += '<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">';
+                    html += '<svg width="24" height="24" fill="#2f9e44" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+                    html += '<strong style="color: #2f9e44; font-size: 1.1rem;">Hardware Acceleration VERIFIED</strong>';
+                    html += '</div>';
+                    html += '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 10px;">';
+                    html += '<div style="text-align: center; padding: 10px; background: white; border-radius: 6px;">';
+                    html += '<div style="font-size: 1.5rem; font-weight: bold; color: #2f9e44;">' + withHw + ' GB/s</div>';
+                    html += '<div style="font-size: 0.8rem; color: #495057;">With HW Accel</div>';
+                    html += '</div>';
+                    html += '<div style="text-align: center; padding: 10px; background: white; border-radius: 6px;">';
+                    html += '<div style="font-size: 1.5rem; font-weight: bold; color: #868e96;">' + withoutHw + ' GB/s</div>';
+                    html += '<div style="font-size: 0.8rem; color: #495057;">Without HW Accel</div>';
+                    html += '</div>';
+                    html += '<div style="text-align: center; padding: 10px; background: white; border-radius: 6px;">';
+                    html += '<div style="font-size: 1.5rem; font-weight: bold; color: #1971c2;">' + speedup + 'x</div>';
+                    html += '<div style="font-size: 0.8rem; color: #495057;">Speedup</div>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '<div style="font-size: 0.85rem; color: #2b8a3e; margin-top: 10px;">✓ This proves hardware crypto extensions (AES-NI/ARM Crypto) are being used at runtime.</div>';
+                    html += '</div>';
+                } else if (hw.verified === false) {
+                    html += '<div style="background: #fff3bf; border: 2px solid #fab005; border-radius: 8px; padding: 15px;">';
+                    html += '<div style="display: flex; align-items: center; gap: 10px;">';
+                    html += '<svg width="24" height="24" fill="#e67700" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>';
+                    html += '<strong style="color: #e67700;">Hardware Acceleration Minimal (' + speedup + 'x speedup)</strong>';
+                    html += '</div>';
+                    html += '<div style="font-size: 0.85rem; color: #495057; margin-top: 8px;">With: ' + withHw + ' GB/s | Without: ' + withoutHw + ' GB/s</div>';
+                    html += '</div>';
+                }
+            }
+            
+            if (diag.openssl_options) {
+                html += '<h4 style="margin: 25px 0 10px 0; color: #495057;">OpenSSL Build Options</h4>';
+                html += '<div class="flags-box">' + diag.openssl_options + '</div>';
+            }
+        }
+        
+        html += '</div>'; // version-body
+        html += '</div>'; // version-section
+    });
+    
+    container.html(html);
+}
+
+renderComparisonMatrix();
+renderVersionDetails();
 </script>
 
 ${generateFooter()}

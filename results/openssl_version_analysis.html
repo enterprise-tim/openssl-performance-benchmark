@@ -131,46 +131,53 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
                     <td style="color: #fa5252;">EOL (Sep 2023)</td>
                 </tr>
                 <tr>
-                    <td><strong>3.0.15</strong></td>
+                    <td><strong>3.0.18</strong></td>
                     <td>3.0 (LTS)</td>
-                    <td>Sep 2024</td>
+                    <td>Dec 2025</td>
                     <td>Provider architecture, FIPS module</td>
                     <td style="color: #40c057;">Supported until Sep 2026</td>
                 </tr>
                 <tr>
-                    <td><strong>3.1.7</strong></td>
+                    <td><strong>3.1.8</strong></td>
                     <td>3.1</td>
-                    <td>Sep 2024</td>
+                    <td>Dec 2025</td>
                     <td>Performance improvements, bug fixes</td>
-                    <td style="color: #fab005;">Maintenance</td>
+                    <td style="color: #fa5252;">EOL (Mar 2025)</td>
                 </tr>
                 <tr>
-                    <td><strong>3.2.3</strong></td>
+                    <td><strong>3.2.6</strong></td>
                     <td>3.2 (LTS)</td>
-                    <td>Sep 2024</td>
+                    <td>Dec 2025</td>
                     <td>Client QUIC, HPKE, major performance recovery</td>
                     <td style="color: #40c057;">Supported until Nov 2026</td>
                 </tr>
                 <tr>
-                    <td><strong>3.3.2</strong></td>
+                    <td><strong>3.3.5</strong></td>
                     <td>3.3</td>
-                    <td>Sep 2024</td>
+                    <td>Dec 2025</td>
                     <td>Continued QUIC improvements, QLOG</td>
-                    <td style="color: #fab005;">Maintenance</td>
+                    <td style="color: #fa5252;">EOL (Apr 2026)</td>
                 </tr>
                 <tr>
-                    <td><strong>3.4.0</strong></td>
-                    <td>3.4</td>
-                    <td>Oct 2024</td>
+                    <td><strong>3.4.3</strong></td>
+                    <td>3.4 (LTS)</td>
+                    <td>Dec 2025</td>
                     <td>Peak traditional performance, pre-PQC</td>
-                    <td style="color: #40c057;">Current stable</td>
+                    <td style="color: #40c057;">Supported until Oct 2026</td>
                 </tr>
                 <tr>
-                    <td><strong>3.5.3</strong></td>
+                    <td><strong>3.5.4</strong></td>
                     <td>3.5</td>
-                    <td>Sep 2025</td>
+                    <td>Dec 2025</td>
                     <td>ML-KEM/PQC, server QUIC, 0-RTT</td>
                     <td style="color: #40c057;">Current feature</td>
+                </tr>
+                <tr>
+                    <td><strong>3.6.0</strong></td>
+                    <td>3.6</td>
+                    <td>Oct 2025</td>
+                    <td>EVP_SKEY, LMS signatures, deterministic ECDSA</td>
+                    <td style="color: #40c057;">Current latest</td>
                 </tr>
             </tbody>
         </table>
@@ -181,7 +188,7 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
         
         <h3>Quick Version Comparison</h3>
         
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 20px 0;">
             <div style="background: linear-gradient(135deg, #228be6 0%, #1971c2 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-weight: bold; font-size: 1.1rem;">1.1.1w</div>
                 <div style="font-size: 0.8rem; opacity: 0.9;">Baseline</div>
@@ -203,9 +210,14 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
                 <div style="margin-top: 10px; font-size: 0.85rem;">Best traditional<br>performance</div>
             </div>
             <div style="background: linear-gradient(135deg, #7950f2 0%, #6741d9 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
-                <div style="font-weight: bold; font-size: 1.1rem;">3.5.x+</div>
+                <div style="font-weight: bold; font-size: 1.1rem;">3.5.x</div>
                 <div style="font-size: 0.8rem; opacity: 0.9;">Quantum-Ready</div>
                 <div style="margin-top: 10px; font-size: 0.85rem;">ML-KEM/PQC<br>Server QUIC</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #be4bdb 0%, #9c36b5 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-weight: bold; font-size: 1.1rem;">3.6.x</div>
+                <div style="font-size: 0.8rem; opacity: 0.9;">Latest</div>
+                <div style="margin-top: 10px; font-size: 0.85rem;">EVP_SKEY<br>LMS signatures</div>
             </div>
         </div>
         
@@ -213,34 +225,38 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
         <p>The chart below shows how TLS handshake performance evolved across versions:</p>
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <div style="display: flex; align-items: flex-end; height: 200px; gap: 15px;">
+            <div style="display: flex; align-items: flex-end; height: 200px; gap: 12px;">
                 <div style="flex: 1; text-align: center;">
                     <div style="background: #228be6; height: 100%; border-radius: 4px 4px 0 0;"></div>
                     <div style="font-size: 0.75rem; margin-top: 5px;"><strong>1.1.1w</strong><br>19,557</div>
                 </div>
                 <div style="flex: 1; text-align: center;">
                     <div style="background: #fa5252; height: 85%; border-radius: 4px 4px 0 0;"></div>
-                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.0.15</strong><br>16,719</div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.0.18</strong><br>16,719</div>
                 </div>
                 <div style="flex: 1; text-align: center;">
                     <div style="background: #fd7e14; height: 87%; border-radius: 4px 4px 0 0;"></div>
-                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.1.7</strong><br>17,150</div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.1.8</strong><br>17,150</div>
                 </div>
                 <div style="flex: 1; text-align: center;">
                     <div style="background: #fab005; height: 91%; border-radius: 4px 4px 0 0;"></div>
-                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.2.3</strong><br>17,892</div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.2.6</strong><br>17,892</div>
                 </div>
                 <div style="flex: 1; text-align: center;">
                     <div style="background: #40c057; height: 87%; border-radius: 4px 4px 0 0;"></div>
-                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.3.2</strong><br>17,107</div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.3.5</strong><br>17,107</div>
                 </div>
                 <div style="flex: 1; text-align: center;">
                     <div style="background: #15aabf; height: 96%; border-radius: 4px 4px 0 0;"></div>
-                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.4.0</strong><br>18,806</div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.4.3</strong><br>18,806</div>
                 </div>
                 <div style="flex: 1; text-align: center;">
                     <div style="background: #7950f2; height: 83%; border-radius: 4px 4px 0 0;"></div>
-                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.5.3</strong><br>16,300</div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.5.4</strong><br>16,300</div>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                    <div style="background: #be4bdb; height: 83%; border-radius: 4px 4px 0 0;"></div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.6.0</strong><br>16,300</div>
                 </div>
             </div>
             <div style="text-align: center; font-size: 0.8rem; color: #868e96; margin-top: 10px;">TLS 1.3 New Handshakes per Second (higher is better)</div>
@@ -251,7 +267,7 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
             <ul style="margin: 10px 0 0 0;">
                 <li><strong>3.0.x introduced regression</strong> due to provider architecture overhead</li>
                 <li><strong>3.2.x-3.4.x recovered</strong> through optimization work</li>
-                <li><strong>3.5.x trades performance for security</strong> with quantum-resistant defaults</li>
+                <li><strong>3.5.x/3.6.x trade performance for security</strong> with quantum-resistant defaults</li>
             </ul>
         </div>
     </div>
@@ -364,8 +380,8 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
             <thead>
                 <tr>
                     <th>Metric</th>
-                    <th>OpenSSL 3.4.x</th>
-                    <th>OpenSSL 3.5.x+</th>
+                    <th>OpenSSL 3.4.3</th>
+                    <th>OpenSSL 3.5.4/3.6.0</th>
                     <th>Change</th>
                 </tr>
             </thead>
@@ -410,7 +426,7 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
         </table>
         
         <div class="impact-box info">
-            <strong>Note:</strong> Benchmark data is automatically updated when new tests are run. The values above represent typical differences between the 3.4.x and 3.5.x+ series. See <a href="summary.json">summary.json</a> for the latest raw data.
+            <strong>Note:</strong> Benchmark data is automatically updated when new tests are run. The values above represent typical differences between OpenSSL 3.4.x (pre-PQC) and 3.5.x/3.6.x (with ML-KEM default keyshares). See <a href="summary.json">summary.json</a> for the latest raw data.
         </div>
         
         <div class="impact-box">
@@ -512,13 +528,14 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
         </div>
 
         <div class="change-category">
-            <h4>Future OpenSSL Releases</h4>
-            <p><a href="https://github.com/openssl/openssl/discussions/28715" target="_blank" style="color: #228be6; font-weight: bold;">OpenSSL 3.6.0 Released (October 2025)</a></p>
+            <h4>OpenSSL 3.6.0 - Now Included in Benchmarks</h4>
+            <p><a href="https://github.com/openssl/openssl/releases/tag/openssl-3.6.0" target="_blank" style="color: #228be6; font-weight: bold;">OpenSSL 3.6.0 (Released October 2025)</a></p>
             <ul>
                 <li>Added support for <code>EVP_SKEY</code> opaque symmetric key objects</li>
                 <li>Added LMS signature verification support (SP 800-208)</li>
                 <li>FIPS 186-5 deterministic ECDSA signature generation</li>
                 <li>C-99 compiler now required for building</li>
+                <li>Maintains the same PQC/ML-KEM default keyshare behavior as 3.5.x</li>
             </ul>
             <a href="https://github.com/openssl/openssl/releases/tag/openssl-3.6.0" target="_blank" class="github-link" style="margin-top: 10px;">
                 <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -590,14 +607,14 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
     <div class="card">
         <h2>Verify This Hypothesis</h2>
         
-        <p>We provide a test script to verify that ML-KEM default keyshares are the primary cause of the performance difference. The test compares three configurations of the latest OpenSSL 3.5.x:</p>
+        <p>We provide a test script to verify that ML-KEM default keyshares are the primary cause of the performance difference. The test compares three configurations of the latest OpenSSL 3.5.4/3.6.0:</p>
         
         <div class="change-category">
             <h4>Test Configurations</h4>
             <ol>
-                <li><strong>Default (ML-KEM preferred):</strong> Standard 3.5.x build with default keyshares (X25519MLKEM768:X25519)</li>
+                <li><strong>Default (ML-KEM preferred):</strong> Standard 3.5.4/3.6.0 build with default keyshares (X25519MLKEM768:X25519)</li>
                 <li><strong>ECDH-only groups:</strong> Same build, but with traditional keyshares (X25519:P-256:P-384)</li>
-                <li><strong>no-ml-kem build:</strong> 3.5.x compiled without ML-KEM support entirely</li>
+                <li><strong>no-ml-kem build:</strong> 3.5.4/3.6.0 compiled without ML-KEM support entirely</li>
             </ol>
         </div>
         
@@ -605,7 +622,7 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
             <strong>Expected Results:</strong> If the hypothesis is correct:
             <ul style="margin: 10px 0 0 0;">
                 <li>Configuration 1 (default) should be ~13% slower than Configuration 2 (ECDH-only)</li>
-                <li>Configuration 2 should perform similar to OpenSSL 3.4.x</li>
+                <li>Configuration 2 should perform similar to OpenSSL 3.4.3</li>
                 <li>Configuration 3 should also be similar to Configuration 2</li>
             </ul>
         </div>
@@ -618,8 +635,8 @@ npm run test:mlkem-hypothesis
 bash scripts/test-mlkem-hypothesis.sh
 
 # This will:
-# 1. Download and build latest OpenSSL 3.5.x with default settings
-# 2. Build OpenSSL 3.5.x with no-ml-kem option
+# 1. Download and build latest OpenSSL 3.5.4/3.6.0 with default settings
+# 2. Build with no-ml-kem option
 # 3. Run TLS handshake benchmarks on all configurations
 # 4. Output a comparison showing the performance difference</code></pre>
 

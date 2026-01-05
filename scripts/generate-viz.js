@@ -49,7 +49,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
         /* D3 Styling */
         .grid line { stroke: #f1f3f5; }
         .grid path { stroke: none; }
-        .axis text { fill: #868e96; font-size: 11px; }
+        .axis text { fill: #868e96; font-size: 14px; font-weight: 500; }
         .axis path, .axis line { stroke: #dee2e6; }
         .baseline-line { stroke: #333; stroke-dasharray: 4,4; stroke-width: 1.5; opacity: 0.5; }
         .zero-line { stroke: #868e96; stroke-dasharray: 2,2; stroke-width: 1; opacity: 0.7; }
@@ -677,7 +677,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             .text("TLS 1.3");
 
         // Y-axis
-        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'k'));
 
         // Draw slope lines with gradient effect
         const lines = svg.selectAll(".slope-line")
@@ -1002,7 +1002,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
             .attr("dy", ".15em")
             .attr("transform", "rotate(-45)");
             
-        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'k'));
         svg.append("text")
             .attr("transform", "rotate(-90)")
             .attr("x", -height/2)
@@ -1066,7 +1066,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
         const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
 
         svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0));
-        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'k'));
         svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45).style("text-anchor", "middle").text("Sign Operations/sec");
 
         const versionGroups = svg.selectAll(".g").data(data).enter().append("g").attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
@@ -1121,7 +1121,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
         const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
 
         svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0));
-        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'k'));
         svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45).style("text-anchor", "middle").text("Verify Operations/sec");
 
         const versionGroups = svg.selectAll(".g").data(data).enter().append("g").attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
@@ -1177,7 +1177,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
         const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
 
         svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0));
-        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'k'));
         svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45).style("text-anchor", "middle").text("Sign Operations/sec");
 
         const versionGroups = svg.selectAll(".g").data(data).enter().append("g").attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);
@@ -1233,7 +1233,7 @@ const HTML_TEMPLATE = (dataJson) => `<!DOCTYPE html>
         const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
 
         svg.append("g").attr("transform", \`translate(0,\${height})\`).call(d3.axisBottom(x0));
-        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'K'));
+        svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'k'));
         svg.append("text").attr("transform", "rotate(-90)").attr("x", -height/2).attr("y", -45).style("text-anchor", "middle").text("Verify Operations/sec");
 
         const versionGroups = svg.selectAll(".g").data(data).enter().append("g").attr("transform", d => \`translate(\${x0(d.config.version)},0)\`);

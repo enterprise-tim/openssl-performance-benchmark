@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bellingrath Matrix - OpenSSL Benchmark</title>
+    <title>Build Configuration - OpenSSL Benchmark</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
+
 body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; color: #333; }
 
 /* Header */
@@ -44,7 +45,40 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
 .breadcrumb a { color: #228be6; text-decoration: none; }
 .breadcrumb a:hover { text-decoration: underline; }
 .breadcrumb span { color: #868e96; margin: 0 8px; }
-</style>
+
+.version-section { border: 2px solid #dee2e6; border-radius: 12px; margin: 25px 0; overflow: hidden; }
+.version-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 25px; }
+.version-header.v1x { background: linear-gradient(135deg, #228be6 0%, #1971c2 100%); }
+.version-header.v3x { background: linear-gradient(135deg, #fa5252 0%, #c92a2a 100%); }
+.version-header h3 { margin: 0 0 5px 0; font-size: 1.4rem; }
+.version-header .subtitle { opacity: 0.9; font-size: 0.9rem; }
+.version-body { padding: 25px; background: white; }
+.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px; }
+.info-item { background: #f8f9fa; border-radius: 8px; padding: 15px; }
+.info-item label { display: block; font-weight: 600; color: #495057; margin-bottom: 8px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.info-item .value { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.9rem; color: #212529; word-break: break-all; }
+.flags-box { background: #212529; color: #e9ecef; padding: 20px; border-radius: 8px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.85rem; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
+.flags-box .flag { color: #74c0fc; }
+.flags-box .flag-asm { color: #69db7c; font-weight: bold; }
+.flags-box .flag-opt { color: #ffd43b; }
+.asm-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.asm-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+.asm-badge.enabled { background: #d3f9d8; color: #2f9e44; }
+.asm-badge.disabled { background: #ffe3e3; color: #c92a2a; }
+.asm-badge svg { width: 14px; height: 14px; }
+.comparison-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9rem; }
+.comparison-table th { background: #f1f3f5; padding: 12px 15px; text-align: left; font-weight: 600; color: #495057; border-bottom: 2px solid #dee2e6; }
+.comparison-table td { padding: 12px 15px; border-bottom: 1px solid #e9ecef; }
+.comparison-table tr:hover { background: #f8f9fa; }
+.comparison-table .version-col { font-weight: 600; color: #228be6; }
+.status-yes { color: #2f9e44; font-weight: 600; }
+.status-no { color: #c92a2a; }
+.status-unknown { color: #868e96; }
+.legend-box { background: #fff9db; border-left: 4px solid #fab005; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+.legend-box h4 { margin: 0 0 10px 0; color: #5c5f00; }
+.legend-box p { margin: 5px 0; font-size: 0.9rem; color: #495057; line-height: 1.6; }
+.legend-box code { background: #fff3bf; padding: 2px 6px; border-radius: 3px; font-family: 'SF Mono', monospace; font-size: 0.85rem; }
+    </style>
 </head>
 <body>
 
@@ -56,67 +90,65 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
 <div class="breadcrumb">
     <a href="index.html">Home</a>
     <span>›</span>
-    <span>Bellingrath Test Matrix</span>
+    <span>Build Configuration Details</span>
 </div>
 <div class="header">
     <h1>OpenSSL Performance Benchmark</h1>
     <div style="font-size: 0.9rem; color: #868e96;">
-        Bellingrath Test Matrix<span style="color: #40c057; margin-left: 20px;">3 iterations per version</span>
+        Build Configuration Details<span style="color: #40c057; margin-left: 20px;">3 iterations per version</span>
         <div style="font-size: 0.85rem; color: #adb5bd; margin-top: 4px;">Last run: 2026-01-05 • Iterations: 1.1.1w (3x), 3.0.15 (3x), 3.1.7 (3x), 3.2.3 (3x), 3.3.2 (3x), 3.4.0 (3x), 3.5.3 (3x)</div>
     </div>
 </div>
 
 <div class="container">
     <div class="card">
-        <h2>RSA vs ECDSA Certificate Comparison</h2>
+        <h2>🔧 Build Configuration & Assembly Optimizations</h2>
         <div class="card-desc">
-            Aligned with <a href="https://www.youtube.com/watch?v=b01y5FDx-ao" target="_blank">W. Bellingrath's OpenSSL 3.x presentation</a> (Juniper Networks).
-            Shows handshake performance for both RSA-2048 and ECDSA P-256 certificates.
+            This page shows the <strong>compiler flags</strong>, <strong>assembly optimizations</strong>, and 
+            <strong>hardware acceleration settings</strong> that were detected during each OpenSSL benchmark run.
+            <br><br>
+            <strong>Why This Matters:</strong> Performance differences between OpenSSL versions can be significantly 
+            affected by build configuration. Missing assembly optimizations (like <code>-DVPAES_ASM</code> or 
+            <code>-DSHA256_ASM</code>) can cause 2-10x slowdowns in cryptographic operations.
         </div>
-        <div style="display: flex; gap: 8px; margin-bottom: 20px;">
-            <button id="btn-absolute" class="view-toggle active" onclick="toggleView('absolute')">Absolute Values</button>
-            <button id="btn-relative" class="view-toggle" onclick="toggleView('relative')">% vs 1.1.1w</button>
-        </div>
-        <div id="rsa-ecdsa-chart"></div>
         
-        <!-- OpenSSL 3.2 RSA/ECDSA Performance Jump Explanation -->
-        <div style="background: #e7f5ff; border-left: 4px solid #228be6; padding: 15px 20px; margin: 20px 0; border-radius: 4px;">
-            <strong>📈 Why OpenSSL 3.2+ Shows a Major Performance Jump</strong>
-            <p style="margin: 10px 0 0 0;">The dramatic improvement from OpenSSL 3.1.x to 3.2.x (~2-2.5× for RSA, ~1.5× for ECDSA) is <strong>real and expected</strong>. OpenSSL 3.2 (released November 2023) included significant optimizations:</p>
-            <ul style="margin: 10px 0; padding-left: 25px;">
-                <li><strong>Provider Architecture Overhead Reduction:</strong> OpenSSL 3.0/3.1 introduced a provider-based architecture with significant per-operation dispatch overhead. Version 3.2 dramatically reduced this overhead.</li>
-                <li><strong>RSA Operations:</strong> RSA signing (the bottleneck in RSA handshakes) benefited from reduced context setup and provider lookups per operation.</li>
-                <li><strong>ECDSA/ECDH Operations:</strong> Elliptic curve operations saw improvements in both the provider layer and underlying implementations.</li>
-                <li><strong>TLS Path Optimizations:</strong> Streamlined the full handshake code path, reducing CPU cycles per connection.</li>
-            </ul>
-            <p style="margin: 10px 0 0 0;"><strong>Note:</strong> The 3.0/3.1 performance regression vs 1.1.1w was a known issue. OpenSSL 3.2 marked the beginning of recovery, with 3.4+ often matching or exceeding 1.1.1w performance.</p>
-            <p style="margin: 10px 0 0 0;">👉 <a href="openssl_3.2_version_analysis.html" style="color: #228be6; font-weight: 500;">See full analysis of the 3.1 → 3.2 performance improvement →</a></p>
+        <div class="legend-box">
+            <h4>Understanding Assembly Optimization Flags</h4>
+            <p><code>VPAES_ASM</code> — Vector-Permutation AES assembly for older CPUs without AES-NI</p>
+            <p><code>SHA1_ASM / SHA256_ASM / SHA512_ASM</code> — Assembly-optimized SHA implementations</p>
+            <p><code>POLY1305_ASM</code> — Assembly for Poly1305 MAC used in ChaCha20-Poly1305</p>
+            <p><code>BN_ASM_MONT</code> — Montgomery multiplication assembly for RSA/ECDSA</p>
+            <p><code>ECP_NISTZ256_ASM</code> — NIST P-256 curve optimizations</p>
+            <p><code>KECCAK1600_ASM</code> — SHA-3 assembly implementation</p>
         </div>
     </div>
     
     <div class="card">
-        <h2>TLS 1.3 Session Resumption Performance</h2>
+        <h2>📊 Assembly Optimization Comparison Matrix</h2>
         <div class="card-desc">
-            Comparison of new vs resumed <strong>TLS 1.3</strong> connections with RSA certificates. Resumed connections reuse cached session parameters for faster setup.
-            <br><strong>Note:</strong> These are the deprecated <code>handshakes_new_per_sec</code> and <code>handshakes_resume_per_sec</code> metrics, which specifically measure TLS 1.3 (not TLS 1.2).
+            Quick comparison of which assembly optimizations are enabled in each OpenSSL version.
+            A <span class="status-yes">✓</span> indicates the optimization flag was detected in the compiler flags.
         </div>
-        <div id="resumption-chart"></div>
+        <div id="comparison-matrix"></div>
         
-        <!-- OpenSSL 3.2 Performance Jump Explanation -->
-        <div style="background: #e7f5ff; border-left: 4px solid #228be6; padding: 15px 20px; margin: 20px 0; border-radius: 4px;">
-            <strong>📈 Why OpenSSL 3.2+ Shows Significantly Higher Handshake Performance</strong>
-            <p style="margin: 10px 0 0 0;">The dramatic performance improvement from OpenSSL 3.1.x to 3.2.x (~2-2.5× in some configurations) is <strong>real and expected</strong>. OpenSSL 3.2 (released November 2023) included major optimizations:</p>
-            <ul style="margin: 10px 0; padding-left: 25px;">
-                <li><strong>Provider Architecture Optimizations:</strong> Reduced per-operation dispatch overhead that accumulated in the 3.0/3.1 transition from the legacy API</li>
-                <li><strong>Context Caching Improvements:</strong> Better reuse of cryptographic contexts, reducing repeated initialization costs during handshakes</li>
-                <li><strong>TLS Session Handling:</strong> Streamlined session ticket processing and key derivation paths</li>
-                <li><strong>General Performance Work:</strong> Accumulated fixes addressing performance regressions identified since 3.0</li>
+        <div class="legend-box" style="background: #e7f5ff; border-left-color: #228be6; margin-top: 20px;">
+            <h4 style="color: #1971c2;">⚠️ Important Note: OpenSSL 3.x Build Differences</h4>
+            <p>OpenSSL 3.x uses a <strong>Provider Architecture</strong> that handles cryptographic implementations differently than 1.1.x. 
+            The absence of <code>-D*_ASM</code> flags in the compiler output <strong>does not necessarily mean</strong> assembly optimizations are disabled.</p>
+            <p style="margin-top: 10px;">In OpenSSL 3.x:</p>
+            <ul style="margin: 8px 0 8px 20px; line-height: 1.8;">
+                <li>Assembly implementations are compiled into the <strong>default provider</strong> during the build process</li>
+                <li>Hardware acceleration (AES-NI, SHA-NI, ARM Crypto) is detected at <strong>runtime via CPUID</strong></li>
+                <li>The Provider can select optimized code paths without compile-time flags being visible</li>
             </ul>
-            <p style="margin: 10px 0 0 0;"><strong>Bottom Line:</strong> The 3.2 release marked a turning point where OpenSSL 3.x handshake performance began approaching—and in some cases exceeding—1.1.1w levels. This improvement is consistent across independent benchmarks.</p>
-            <p style="margin: 10px 0 0 0;">👉 <a href="openssl_3.2_version_analysis.html" style="color: #228be6; font-weight: 500;">See full analysis of the 3.1 → 3.2 performance improvement →</a></p>
+            <p style="margin-top: 10px;">However, if the Docker build didn't properly configure for the target architecture, assembly optimizations 
+            may not be included. Check <code>openssl version -a</code> output for "CPUINFO" or run <code>openssl speed</code> to verify 
+            hardware acceleration is being used.</p>
         </div>
     </div>
     
+    <div id="version-details"></div>
+
     <div style="text-align: center; margin: 30px 0;">
         <a href="index.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
             ← Back to Overview
@@ -2409,9 +2441,7 @@ const data = [
     ]
   }
 ];
-const hasStats = data.length > 0 && data[0].config && data[0].config.iterations_count > 1;
 data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, { numeric: true }));
-const baseline = data.find(d => d.config.version === '1.1.1w') || data[0];
 
 
 // Shared D3 utilities
@@ -2445,201 +2475,237 @@ function getWidth(container, pad = 60, minWidth = 320) {
 }
 
 
-let viewMode = 'absolute';
+// Assembly flag definitions
+const asmFlags = [
+    { key: 'aes', label: 'AES', patterns: ['VPAES_ASM', 'AES_ASM', 'AESNI'] },
+    { key: 'sha', label: 'SHA', patterns: ['SHA1_ASM', 'SHA256_ASM', 'SHA512_ASM'] },
+    { key: 'poly1305', label: 'Poly1305', patterns: ['POLY1305_ASM'] },
+    { key: 'bignum', label: 'BigNum', patterns: ['BN_ASM_MONT', 'BN_ASM'] },
+    { key: 'ecp', label: 'ECP-256', patterns: ['ECP_NISTZ256_ASM'] },
+    { key: 'keccak', label: 'Keccak', patterns: ['KECCAK1600_ASM'] },
+    { key: 'cpuid', label: 'CPUID', patterns: ['OPENSSL_CPUID_OBJ', 'CPUID_ASM'] }
+];
 
-function toggleView(mode) {
-    viewMode = mode;
-    document.querySelectorAll('.view-toggle').forEach(el => el.classList.remove('active'));
-    document.getElementById(`btn-${mode}`).classList.add('active');
-    renderRsaEcdsaChart();
-}
-
-function renderRsaEcdsaChart() {
-    const container = d3.select("#rsa-ecdsa-chart");
-    container.html("");
-    
-    const metrics = [
-        {key: 'tls1_3_rsa_new_cps', label: 'TLS 1.3 RSA', color: '#228be6'},
-        {key: 'tls1_3_ecdsa_new_cps', label: 'TLS 1.3 ECDSA', color: '#15aabf'},
-        {key: 'tls1_2_ecdhe_rsa_aes128gcm_cps', label: 'TLS 1.2 RSA', color: '#fa5252'},
-        {key: 'tls1_2_ecdhe_ecdsa_aes128gcm_cps', label: 'TLS 1.2 ECDSA', color: '#fd7e14'}
-    ];
-
-    const containerWidth = container.node().getBoundingClientRect().width;
-    const margin = {top: 20, right: 120, bottom: 80, left: 90};
-    const width = containerWidth - margin.left - margin.right;
-    const height = 420;
-
-    const svg = container.append("svg")
-        .attr("width", containerWidth)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-
-    const x0 = d3.scaleBand().domain(data.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
-    const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
-    
-    let yLabel, maxVal, minVal;
-    if (viewMode === 'relative') {
-        yLabel = "% Change vs 1.1.1w";
-        const percentages = data.flatMap(d => metrics.map(m => {
-            const baseVal = baseline.metrics[m.key] || 1;
-            const currentVal = d.metrics[m.key] || 0;
-            return ((currentVal - baseVal) / baseVal) * 100;
-        }));
-        maxVal = d3.max(percentages);
-        minVal = d3.min(percentages);
-        const range = Math.max(Math.abs(maxVal), Math.abs(minVal));
-        maxVal = range * 1.1;
-        minVal = -range * 1.1;
-    } else {
-        yLabel = "Connections/sec";
-        maxVal = d3.max(data, d => d3.max(metrics, m => d.metrics[m.key] || 0)) * 1.1;
-        minVal = 0;
+function checkAsmFlag(compilerFlags, patterns) {
+    if (!compilerFlags) return 'unknown';
+    const upperFlags = compilerFlags.toUpperCase();
+    for (const pattern of patterns) {
+        if (upperFlags.includes(pattern.toUpperCase())) {
+            return 'yes';
+        }
     }
-    
-    const y = d3.scaleLinear().domain([minVal, maxVal]).rangeRound([height, 0]);
-
-    if (viewMode === 'relative') {
-        svg.append("line").attr("class", "zero-line")
-            .attr("x1", 0).attr("x2", width).attr("y1", y(0)).attr("y2", y(0));
-    }
-
-    svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x0))
-        .selectAll("text").style("text-anchor", "end").attr("dx", "-.8em").attr("dy", ".15em")
-        .attr("transform", "rotate(-45)").style("font-size", "13px");
-    svg.append("g").call(d3.axisLeft(y).tickFormat(d => viewMode === 'relative' ? d + '%' : (d/1000).toFixed(0) + 'k'))
-        .selectAll("text").style("font-size", "13px");
-
-    // Y-axis title
-    svg.append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", -margin.left + 20)
-        .attr("x", -height / 2)
-        .attr("dy", "1em")
-        .style("text-anchor", "middle")
-        .style("font-size", "14px")
-        .style("font-weight", "600")
-        .style("fill", "#495057")
-        .text(yLabel);
-
-    // X-axis title
-    svg.append("text")
-        .attr("x", width / 2)
-        .attr("y", height + margin.bottom - 10)
-        .style("text-anchor", "middle")
-        .style("font-size", "14px")
-        .style("font-weight", "600")
-        .style("fill", "#495057")
-        .text("OpenSSL Version");
-
-    const versionGroups = svg.selectAll(".g").data(data).enter().append("g")
-        .attr("transform", d => `translate(${x0(d.config.version)},0)`);
-
-    versionGroups.selectAll("rect").data(d => metrics.map(m => {
-        const baseVal = baseline.metrics[m.key] || 1;
-        const currentVal = d.metrics[m.key] || 0;
-        const value = viewMode === 'relative' ? ((currentVal - baseVal) / baseVal) * 100 : currentVal;
-        return {key: m.key, label: m.label, color: m.color, value: value, raw: currentVal};
-    })).enter().append("rect")
-        .attr("x", d => x1(d.key))
-        .attr("y", d => viewMode === 'relative' ? (d.value >= 0 ? y(d.value) : y(0)) : y(d.value))
-        .attr("width", x1.bandwidth())
-        .attr("height", d => viewMode === 'relative' ? Math.abs(y(d.value) - y(0)) : height - y(d.value))
-        .attr("fill", d => d.color)
-        .attr("opacity", 0.9)
-        .on("mouseover", (e, d) => showTooltip(e, `${d.label}: ${d.raw.toLocaleString()} conn/s`))
-        .on("mouseout", hideTooltip);
-
-    // Legend
-    const legend = svg.append("g").attr("transform", `translate(${width + 10}, 0)`);
-    metrics.forEach((m, i) => {
-        const g = legend.append("g").attr("transform", `translate(0, ${i * 22})`);
-        g.append("rect").attr("width", 15).attr("height", 15).attr("fill", m.color);
-        g.append("text").attr("x", 20).attr("y", 12).text(m.label).style("font-size", "11px");
-    });
+    return 'no';
 }
 
-function renderResumptionChart() {
-    const container = d3.select("#resumption-chart");
-    container.html("");
+function highlightFlags(flagsStr) {
+    if (!flagsStr) return '<span style="color: #868e96;">(not available)</span>';
     
-    const containerWidth = container.node().getBoundingClientRect().width;
-    const margin = {top: 20, right: 120, bottom: 80, left: 90};
-    const width = containerWidth - margin.left - margin.right;
-    const height = 360;
-
-    const svg = container.append("svg")
-        .attr("width", containerWidth)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-
-    const metrics = [
-        {key: 'handshakes_new_per_sec', label: 'TLS 1.3 New Connections', color: '#228be6'},
-        {key: 'handshakes_resume_per_sec', label: 'TLS 1.3 Resumed Connections', color: '#74c0fc'}
-    ];
-
-    const x0 = d3.scaleBand().domain(data.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.3);
-    const x1 = d3.scaleBand().domain(metrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.1);
-    const maxVal = d3.max(data, d => d3.max(metrics, m => d.metrics[m.key] || 0));
-    const y = d3.scaleLinear().domain([0, maxVal * 1.1]).rangeRound([height, 0]);
-
-    svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x0))
-        .selectAll("text").style("text-anchor", "end").attr("dx", "-.8em").attr("dy", ".15em")
-        .attr("transform", "rotate(-45)").style("font-size", "13px");
-    svg.append("g").call(d3.axisLeft(y).tickFormat(d => (d/1000).toFixed(0) + 'k'))
-        .selectAll("text").style("font-size", "13px");
-
-    // Y-axis title
-    svg.append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", -margin.left + 20)
-        .attr("x", -height / 2)
-        .attr("dy", "1em")
-        .style("text-anchor", "middle")
-        .style("font-size", "14px")
-        .style("font-weight", "600")
-        .style("fill", "#495057")
-        .text("Connections per Second");
-
-    // X-axis title
-    svg.append("text")
-        .attr("x", width / 2)
-        .attr("y", height + margin.bottom - 10)
-        .style("text-anchor", "middle")
-        .style("font-size", "14px")
-        .style("font-weight", "600")
-        .style("fill", "#495057")
-        .text("OpenSSL Version");
-
-    const versionGroups = svg.selectAll(".g").data(data).enter().append("g")
-        .attr("transform", d => `translate(${x0(d.config.version)},0)`);
-
-    versionGroups.selectAll("rect").data(d => metrics.map(m => 
-        ({key: m.key, label: m.label, color: m.color, value: d.metrics[m.key] || 0})
-    )).enter().append("rect")
-        .attr("x", d => x1(d.key))
-        .attr("y", d => y(d.value))
-        .attr("width", x1.bandwidth())
-        .attr("height", d => height - y(d.value))
-        .attr("fill", d => d.color)
-        .on("mouseover", (e, d) => showTooltip(e, `${d.label}: ${d.value.toLocaleString()} conn/sec`))
-        .on("mouseout", hideTooltip);
-
-    const legend = svg.append("g").attr("transform", `translate(${width + 10}, 0)`);
-    metrics.forEach((m, i) => {
-        const g = legend.append("g").attr("transform", `translate(0, ${i * 22})`);
-        g.append("rect").attr("width", 15).attr("height", 15).attr("fill", m.color);
-        g.append("text").attr("x", 20).attr("y", 12).text(m.label).style("font-size", "11px");
-    });
+    // Highlight different flag types
+    return flagsStr
+        .replace(/-D(\w*ASM\w*)/g, '<span class="flag-asm">-D$1</span>')
+        .replace(/-D(OPENSSL_\w+)/g, '<span class="flag">-D$1</span>')
+        .replace(/(-O[0-3s])/g, '<span class="flag-opt">$1</span>')
+        .replace(/(gcc|clang)/gi, '<span class="flag">$1</span>');
 }
 
-renderRsaEcdsaChart();
-renderResumptionChart();
+function renderComparisonMatrix() {
+    const container = d3.select("#comparison-matrix");
+    
+    let html = '<table class="comparison-table"><thead><tr>';
+    html += '<th>OpenSSL Version</th>';
+    asmFlags.forEach(flag => {
+        html += '<th style="text-align: center;">' + flag.label + '</th>';
+    });
+    html += '</tr></thead><tbody>';
+    
+    data.forEach(d => {
+        const version = d.config.version;
+        const compilerFlags = d.metadata?.compiler_flags || '';
+        const isV1 = version.startsWith('1.');
+        
+        html += '<tr>';
+        html += '<td class="version-col">' + version + '</td>';
+        
+        asmFlags.forEach(flag => {
+            const status = checkAsmFlag(compilerFlags, flag.patterns);
+            let statusHtml;
+            if (status === 'yes') {
+                statusHtml = '<span class="status-yes">✓</span>';
+            } else if (status === 'no') {
+                statusHtml = '<span class="status-no">✗</span>';
+            } else {
+                statusHtml = '<span class="status-unknown">?</span>';
+            }
+            html += '<td style="text-align: center;">' + statusHtml + '</td>';
+        });
+        
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table>';
+    container.html(html);
+}
 
-window.addEventListener('resize', () => {
-    renderRsaEcdsaChart();
-    renderResumptionChart();
-});
+function renderVersionDetails() {
+    const container = d3.select("#version-details");
+    
+    let html = '';
+    
+    data.forEach(d => {
+        const version = d.config.version;
+        const metadata = d.metadata || {};
+        const isV1 = version.startsWith('1.');
+        const headerClass = isV1 ? 'v1x' : 'v3x';
+        
+        html += '<div class="version-section">';
+        html += '<div class="version-header ' + headerClass + '">';
+        html += '<h3>OpenSSL ' + version + '</h3>';
+        html += '<div class="subtitle">' + (d.version || 'OpenSSL ' + version) + '</div>';
+        html += '</div>';
+        html += '<div class="version-body">';
+        
+        // Info grid
+        html += '<div class="info-grid">';
+        
+        html += '<div class="info-item">';
+        html += '<label>Platform</label>';
+        html += '<div class="value">' + (metadata.platform || 'N/A') + '</div>';
+        html += '</div>';
+        
+        html += '<div class="info-item">';
+        html += '<label>CPU Architecture</label>';
+        html += '<div class="value">' + (metadata.cpu_architecture || 'N/A') + '</div>';
+        html += '</div>';
+        
+        html += '<div class="info-item">';
+        html += '<label>CPU Model</label>';
+        html += '<div class="value">' + (metadata.cpu_model || 'N/A') + '</div>';
+        html += '</div>';
+        
+        html += '<div class="info-item">';
+        html += '<label>CPU Cores</label>';
+        html += '<div class="value">' + (metadata.cpu_cores || 'N/A') + '</div>';
+        html += '</div>';
+        
+        html += '<div class="info-item">';
+        html += '<label>OS Distribution</label>';
+        html += '<div class="value">' + (metadata.os_distribution || 'N/A') + '</div>';
+        html += '</div>';
+        
+        html += '<div class="info-item">';
+        html += '<label>Kernel Version</label>';
+        html += '<div class="value">' + (metadata.kernel_version || 'N/A') + '</div>';
+        html += '</div>';
+        
+        html += '</div>';
+        
+        // Assembly flags badges
+        html += '<h4 style="margin: 25px 0 10px 0; color: #495057;">Detected Assembly Optimizations</h4>';
+        html += '<div class="asm-badges">';
+        
+        const compilerFlags = metadata.compiler_flags || '';
+        asmFlags.forEach(flag => {
+            const status = checkAsmFlag(compilerFlags, flag.patterns);
+            const badgeClass = status === 'yes' ? 'enabled' : 'disabled';
+            const icon = status === 'yes' 
+                ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
+            html += '<span class="asm-badge ' + badgeClass + '">' + icon + flag.label + '</span>';
+        });
+        html += '</div>';
+        
+        // CPU Features (if available)
+        if (metadata.cpu_features) {
+            html += '<h4 style="margin: 25px 0 10px 0; color: #495057;">CPU Hardware Features</h4>';
+            html += '<div class="asm-badges">';
+            const features = metadata.cpu_features;
+            const featureLabels = [
+                { key: 'aes_ni', label: 'AES-NI', desc: 'Hardware AES' },
+                { key: 'avx', label: 'AVX', desc: 'Advanced Vector Extensions' },
+                { key: 'avx2', label: 'AVX2', desc: 'AVX2 256-bit' },
+                { key: 'avx512', label: 'AVX-512', desc: 'AVX-512' },
+                { key: 'sse4', label: 'SSE4', desc: 'SSE4.x' },
+                { key: 'sha_ni', label: 'SHA-NI', desc: 'Hardware SHA' }
+            ];
+            featureLabels.forEach(f => {
+                if (features[f.key] !== undefined) {
+                    const enabled = features[f.key];
+                    const badgeClass = enabled ? 'enabled' : 'disabled';
+                    const icon = enabled 
+                        ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
+                        : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
+                    html += '<span class="asm-badge ' + badgeClass + '" title="' + f.desc + '">' + icon + f.label + '</span>';
+                }
+            });
+            html += '</div>';
+        }
+        
+        // Full compiler flags
+        html += '<h4 style="margin: 25px 0 10px 0; color: #495057;">Full Compiler Flags</h4>';
+        html += '<div class="flags-box">' + highlightFlags(compilerFlags) + '</div>';
+        
+        // Build diagnostics if available
+        if (metadata.build_diagnostics) {
+            const diag = metadata.build_diagnostics;
+            
+            // Hardware Acceleration Verification (the proof!)
+            if (diag.hw_accel_verification && diag.hw_accel_verification.speedup_ratio > 0) {
+                const hw = diag.hw_accel_verification;
+                const verified = hw.verified === true;
+                const speedup = hw.speedup_ratio.toFixed(2);
+                const withHw = (hw.with_hw_kbs / 1000000).toFixed(2);
+                const withoutHw = (hw.without_hw_kbs / 1000000).toFixed(2);
+                
+                html += '<h4 style="margin: 25px 0 10px 0; color: #495057;">⚡ Hardware Acceleration Verification</h4>';
+                
+                if (verified) {
+                    html += '<div style="background: #d3f9d8; border: 2px solid #2f9e44; border-radius: 8px; padding: 15px; margin-bottom: 15px;">';
+                    html += '<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">';
+                    html += '<svg width="24" height="24" fill="#2f9e44" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+                    html += '<strong style="color: #2f9e44; font-size: 1.1rem;">Hardware Acceleration VERIFIED</strong>';
+                    html += '</div>';
+                    html += '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 10px;">';
+                    html += '<div style="text-align: center; padding: 10px; background: white; border-radius: 6px;">';
+                    html += '<div style="font-size: 1.5rem; font-weight: bold; color: #2f9e44;">' + withHw + ' GB/s</div>';
+                    html += '<div style="font-size: 0.8rem; color: #495057;">With HW Accel</div>';
+                    html += '</div>';
+                    html += '<div style="text-align: center; padding: 10px; background: white; border-radius: 6px;">';
+                    html += '<div style="font-size: 1.5rem; font-weight: bold; color: #868e96;">' + withoutHw + ' GB/s</div>';
+                    html += '<div style="font-size: 0.8rem; color: #495057;">Without HW Accel</div>';
+                    html += '</div>';
+                    html += '<div style="text-align: center; padding: 10px; background: white; border-radius: 6px;">';
+                    html += '<div style="font-size: 1.5rem; font-weight: bold; color: #1971c2;">' + speedup + 'x</div>';
+                    html += '<div style="font-size: 0.8rem; color: #495057;">Speedup</div>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '<div style="font-size: 0.85rem; color: #2b8a3e; margin-top: 10px;">✓ This proves hardware crypto extensions (AES-NI/ARM Crypto) are being used at runtime.</div>';
+                    html += '</div>';
+                } else if (hw.verified === false) {
+                    html += '<div style="background: #fff3bf; border: 2px solid #fab005; border-radius: 8px; padding: 15px;">';
+                    html += '<div style="display: flex; align-items: center; gap: 10px;">';
+                    html += '<svg width="24" height="24" fill="#e67700" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>';
+                    html += '<strong style="color: #e67700;">Hardware Acceleration Minimal (' + speedup + 'x speedup)</strong>';
+                    html += '</div>';
+                    html += '<div style="font-size: 0.85rem; color: #495057; margin-top: 8px;">With: ' + withHw + ' GB/s | Without: ' + withoutHw + ' GB/s</div>';
+                    html += '</div>';
+                }
+            }
+            
+            if (diag.openssl_options) {
+                html += '<h4 style="margin: 25px 0 10px 0; color: #495057;">OpenSSL Build Options</h4>';
+                html += '<div class="flags-box">' + diag.openssl_options + '</div>';
+            }
+        }
+        
+        html += '</div>'; // version-body
+        html += '</div>'; // version-section
+    });
+    
+    container.html(html);
+}
+
+renderComparisonMatrix();
+renderVersionDetails();
 </script>
 
 
