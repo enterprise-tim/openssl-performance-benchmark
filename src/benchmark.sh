@@ -51,7 +51,59 @@ else
 fi
 
 KERNEL_VERSION=$(uname -sr)
-CPU_MODEL=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs || echo "Unknown CPU")
+
+# CPU detection - handle both x86_64 and aarch64
+CPU_ARCH=$(uname -m)
+if [ -f /proc/cpuinfo ]; then
+    if [ "$CPU_ARCH" = "x86_64" ]; then
+        CPU_MODEL=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs || echo "Unknown x86_64 CPU")
+        # Extract CPU flags for x86_64
+        CPU_FLAGS=$(grep -m1 "^flags" /proc/cpuinfo | cut -d: -f2 | xargs || echo "")
+    elif [ "$CPU_ARCH" = "aarch64" ]; then
+        # ARM processors report differently
+        CPU_MODEL=$(grep -m1 "CPU implementer" /proc/cpuinfo | cut -d: -f2 | xargs || echo "")
+        CPU_PART=$(grep -m1 "CPU part" /proc/cpuinfo | cut -d: -f2 | xargs || echo "")
+        # Try to get a better name from lscpu if available
+        if command -v lscpu >/dev/null 2>&1; then
+            CPU_MODEL=$(lscpu | grep "Model name" | cut -d: -f2 | xargs || echo "ARM $CPU_PART")
+        fi
+        [ -z "$CPU_MODEL" ] && CPU_MODEL="ARM64 (Part: $CPU_PART)"
+        # ARM uses "Features" instead of "flags"
+        CPU_FLAGS=$(grep -m1 "^Features" /proc/cpuinfo | cut -d: -f2 | xargs || echo "")
+    else
+        CPU_MODEL="Unknown $CPU_ARCH CPU"
+        CPU_FLAGS=""
+    fi
+else
+    CPU_MODEL="Unknown CPU"
+    CPU_FLAGS=""
+fi
+
+# Count CPU cores
+CPU_CORES=$(nproc 2>/dev/null || grep -c "^processor" /proc/cpuinfo 2>/dev/null || echo "1")
+
+# Extract key CPU features for reporting
+# x86_64 features
+HAS_AES_NI=$(echo "$CPU_FLAGS" | grep -qw "aes" && echo "true" || echo "false")
+HAS_AVX=$(echo "$CPU_FLAGS" | grep -qw "avx" && echo "true" || echo "false")
+HAS_AVX2=$(echo "$CPU_FLAGS" | grep -qw "avx2" && echo "true" || echo "false")
+HAS_AVX512=$(echo "$CPU_FLAGS" | grep -q "avx512" && echo "true" || echo "false")
+HAS_SSE4=$(echo "$CPU_FLAGS" | grep -qE "sse4_1|sse4_2" && echo "true" || echo "false")
+HAS_SHA_NI=$(echo "$CPU_FLAGS" | grep -qw "sha_ni" && echo "true" || echo "false")
+
+# ARM features (different naming)
+if [ "$CPU_ARCH" = "aarch64" ]; then
+    HAS_AES_NI=$(echo "$CPU_FLAGS" | grep -qE "aes|pmull" && echo "true" || echo "false")
+    HAS_SHA_NI=$(echo "$CPU_FLAGS" | grep -qE "sha1|sha2|sha3" && echo "true" || echo "false")
+    # ARM doesn't have AVX - use NEON/SVE instead
+    HAS_NEON=$(echo "$CPU_FLAGS" | grep -qE "asimd|neon" && echo "true" || echo "false")
+    HAS_SVE=$(echo "$CPU_FLAGS" | grep -qw "sve" && echo "true" || echo "false")
+fi
+
+echo "DEBUG: CPU Architecture: $CPU_ARCH" >&2
+echo "DEBUG: CPU Model: $CPU_MODEL" >&2
+echo "DEBUG: CPU Cores: $CPU_CORES" >&2
+echo "DEBUG: Key CPU Features - AES-NI: $HAS_AES_NI, AVX: $HAS_AVX, AVX2: $HAS_AVX2" >&2
 
 # Initialize JSON with metadata
 RESULTS=$(echo "$RESULTS" | jq -n \
@@ -62,6 +114,15 @@ RESULTS=$(echo "$RESULTS" | jq -n \
     --arg os "$OS_NAME $OS_VERSION" \
     --arg kv "$KERNEL_VERSION" \
     --arg cpu "$CPU_MODEL" \
+    --arg arch "$CPU_ARCH" \
+    --arg cores "$CPU_CORES" \
+    --arg flags "$CPU_FLAGS" \
+    --argjson aesni "$HAS_AES_NI" \
+    --argjson avx "$HAS_AVX" \
+    --argjson avx2 "$HAS_AVX2" \
+    --argjson avx512 "$HAS_AVX512" \
+    --argjson sse4 "$HAS_SSE4" \
+    --argjson shani "$HAS_SHA_NI" \
     '{
         version: $v,
         metadata: {
@@ -71,6 +132,17 @@ RESULTS=$(echo "$RESULTS" | jq -n \
             os_distribution: $os,
             kernel_version: $kv,
             cpu_model: $cpu,
+            cpu_architecture: $arch,
+            cpu_cores: ($cores | tonumber),
+            cpu_flags: $flags,
+            cpu_features: {
+                aes_ni: $aesni,
+                avx: $avx,
+                avx2: $avx2,
+                avx512: $avx512,
+                sse4: $sse4,
+                sha_ni: $shani
+            },
             container: "Docker/Debian"
         },
         metrics: {}
@@ -323,6 +395,28 @@ if [ ! -z "$AES_LINE" ]; then
     RESULTS=$(echo "$RESULTS" | jq --arg v "${AES_16B:-0}" '.metrics.aes_256_gcm_16b_kbs = ($v | tonumber)')
     RESULTS=$(echo "$RESULTS" | jq --arg v "${AES_64B:-0}" '.metrics.aes_256_gcm_64b_kbs = ($v | tonumber)')
     RESULTS=$(echo "$RESULTS" | jq --arg v "${AES_256B:-0}" '.metrics.aes_256_gcm_256b_kbs = ($v | tonumber)')
+else
+    echo "WARNING: Could not find AES-256-GCM line in speed output" >&2
+    echo "Raw output:" >&2
+    echo "$AES_OUT" | head -10 >&2
+fi
+
+# --- Block Size Sensitivity (SHA256 at different sizes) ---
+echo "SHA256 Block Size Sensitivity..." >&2
+SHA_OUT=$(openssl speed -seconds 5 -evp sha256 2>&1)
+SHA_LINE=$(echo "$SHA_OUT" | grep -i "^sha256")
+if [ ! -z "$SHA_LINE" ]; then
+    # Columns: algo, 16B, 64B, 256B, 1024B, 8192B, 16384B
+    SHA_16B=$(echo "$SHA_LINE" | awk '{print $2}' | sed 's/k$//')
+    SHA_64B=$(echo "$SHA_LINE" | awk '{print $3}' | sed 's/k$//')
+    SHA_256B=$(echo "$SHA_LINE" | awk '{print $4}' | sed 's/k$//')
+    RESULTS=$(echo "$RESULTS" | jq --arg v "${SHA_16B:-0}" '.metrics.sha256_16b_kbs = ($v | tonumber)')
+    RESULTS=$(echo "$RESULTS" | jq --arg v "${SHA_64B:-0}" '.metrics.sha256_64b_kbs = ($v | tonumber)')
+    RESULTS=$(echo "$RESULTS" | jq --arg v "${SHA_256B:-0}" '.metrics.sha256_256b_kbs = ($v | tonumber)')
+else
+    echo "WARNING: Could not find SHA256 line in speed output" >&2
+    echo "Raw output:" >&2
+    echo "$SHA_OUT" | head -10 >&2
 fi
 
 echo "Schmatz algorithm tests complete." >&2
@@ -395,6 +489,153 @@ else
     echo "DEBUG: Checking OpenSSL capabilities:" >&2
     openssl version -a 2>&1 | head -n 5 >&2
     RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_kem_768_ops_sec = 0')
+fi
+
+# =============================================================================
+# ML-DSA (DILITHIUM) REJECTION SAMPLING ANALYSIS
+# =============================================================================
+# This test specifically targets the retry mechanism in Dilithium signature
+# generation. The algorithm uses rejection sampling which may require multiple
+# attempts to generate a valid signature. This benchmark captures timing
+# variance to surface this behavior.
+#
+# Reference: Schmatz's concerns about Dilithium retry behavior under stress
+# =============================================================================
+
+echo "" >&2
+echo "========================================" >&2
+echo "ML-DSA (DILITHIUM) REJECTION SAMPLING TEST" >&2
+echo "========================================" >&2
+
+# Check if ML-DSA benchmark tool exists
+if [ -f "./mldsa_bench" ]; then
+    echo "Running ML-DSA benchmark with timing variance analysis..." >&2
+    
+    # Run the ML-DSA benchmark (outputs to stdout, detailed analysis to stderr)
+    MLDSA_OUT=$(./mldsa_bench 2>&2)
+    MLDSA_EXIT=$?
+    
+    echo "DEBUG MLDSA OUT:" >&2
+    echo "$MLDSA_OUT" >&2
+    
+    if [ $MLDSA_EXIT -eq 0 ]; then
+        # Parse ML-DSA-65 (primary algorithm) results
+        # Format: "ml_dsa_65 sign_ops_sec: 1234.5"
+        
+        # Check if ML-DSA is available
+        MLDSA_AVAILABLE=$(echo "$MLDSA_OUT" | grep "ml_dsa_available: true" >/dev/null && echo "true" || echo "false")
+        RESULTS=$(echo "$RESULTS" | jq --argjson v "$MLDSA_AVAILABLE" '.metrics.ml_dsa_available = $v')
+        
+        if [ "$MLDSA_AVAILABLE" = "true" ]; then
+            # Parse ML-DSA-65 signing metrics
+            parse_mldsa_metric() {
+                local metric=$1
+                local value=$(echo "$MLDSA_OUT" | grep "^ml_dsa_65 $metric:" | awk '{print $NF}')
+                if [[ "$value" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+                    echo "$value"
+                else
+                    echo "0"
+                fi
+            }
+            
+            # Signing metrics
+            MLDSA_SIGN_OPS=$(parse_mldsa_metric "sign_ops_sec")
+            MLDSA_SIGN_MEAN=$(parse_mldsa_metric "sign_mean_ms")
+            MLDSA_SIGN_STDDEV=$(parse_mldsa_metric "sign_stddev_ms")
+            MLDSA_SIGN_CV=$(parse_mldsa_metric "sign_cv_percent")
+            MLDSA_SIGN_MIN=$(parse_mldsa_metric "sign_min_ms")
+            MLDSA_SIGN_MAX=$(parse_mldsa_metric "sign_max_ms")
+            MLDSA_SIGN_P50=$(parse_mldsa_metric "sign_p50_ms")
+            MLDSA_SIGN_P95=$(parse_mldsa_metric "sign_p95_ms")
+            MLDSA_SIGN_P99=$(parse_mldsa_metric "sign_p99_ms")
+            MLDSA_SIGN_P999=$(parse_mldsa_metric "sign_p999_ms")
+            MLDSA_SIGN_P9999=$(parse_mldsa_metric "sign_p9999_ms")
+            MLDSA_SIGN_OUTLIERS=$(parse_mldsa_metric "sign_outlier_count")
+            MLDSA_SIGN_OUTLIER_PCT=$(parse_mldsa_metric "sign_outlier_percent")
+            MLDSA_SIGN_SAMPLES=$(parse_mldsa_metric "sign_sample_count")
+            
+            # Verification metrics
+            MLDSA_VERIFY_OPS=$(parse_mldsa_metric "verify_ops_sec")
+            MLDSA_VERIFY_MEAN=$(parse_mldsa_metric "verify_mean_ms")
+            MLDSA_VERIFY_STDDEV=$(parse_mldsa_metric "verify_stddev_ms")
+            MLDSA_VERIFY_CV=$(parse_mldsa_metric "verify_cv_percent")
+            MLDSA_VERIFY_P50=$(parse_mldsa_metric "verify_p50_ms")
+            MLDSA_VERIFY_P95=$(parse_mldsa_metric "verify_p95_ms")
+            MLDSA_VERIFY_P99=$(parse_mldsa_metric "verify_p99_ms")
+            MLDSA_VERIFY_P999=$(parse_mldsa_metric "verify_p999_ms")
+            MLDSA_VERIFY_P9999=$(parse_mldsa_metric "verify_p9999_ms")
+            
+            # Store in results JSON
+            RESULTS=$(echo "$RESULTS" | jq \
+                --arg sign_ops "$MLDSA_SIGN_OPS" \
+                --arg sign_mean "$MLDSA_SIGN_MEAN" \
+                --arg sign_stddev "$MLDSA_SIGN_STDDEV" \
+                --arg sign_cv "$MLDSA_SIGN_CV" \
+                --arg sign_min "$MLDSA_SIGN_MIN" \
+                --arg sign_max "$MLDSA_SIGN_MAX" \
+                --arg sign_p50 "$MLDSA_SIGN_P50" \
+                --arg sign_p95 "$MLDSA_SIGN_P95" \
+                --arg sign_p99 "$MLDSA_SIGN_P99" \
+                --arg sign_p999 "$MLDSA_SIGN_P999" \
+                --arg sign_p9999 "$MLDSA_SIGN_P9999" \
+                --arg sign_outliers "$MLDSA_SIGN_OUTLIERS" \
+                --arg sign_outlier_pct "$MLDSA_SIGN_OUTLIER_PCT" \
+                --arg sign_samples "$MLDSA_SIGN_SAMPLES" \
+                --arg verify_ops "$MLDSA_VERIFY_OPS" \
+                --arg verify_mean "$MLDSA_VERIFY_MEAN" \
+                --arg verify_stddev "$MLDSA_VERIFY_STDDEV" \
+                --arg verify_cv "$MLDSA_VERIFY_CV" \
+                --arg verify_p50 "$MLDSA_VERIFY_P50" \
+                --arg verify_p95 "$MLDSA_VERIFY_P95" \
+                --arg verify_p99 "$MLDSA_VERIFY_P99" \
+                --arg verify_p999 "$MLDSA_VERIFY_P999" \
+                --arg verify_p9999 "$MLDSA_VERIFY_P9999" \
+                '
+                .metrics.ml_dsa_65_sign_ops_sec = ($sign_ops | tonumber) |
+                .metrics.ml_dsa_65_sign_mean_ms = ($sign_mean | tonumber) |
+                .metrics.ml_dsa_65_sign_stddev_ms = ($sign_stddev | tonumber) |
+                .metrics.ml_dsa_65_sign_cv_percent = ($sign_cv | tonumber) |
+                .metrics.ml_dsa_65_sign_min_ms = ($sign_min | tonumber) |
+                .metrics.ml_dsa_65_sign_max_ms = ($sign_max | tonumber) |
+                .metrics.ml_dsa_65_sign_p50_ms = ($sign_p50 | tonumber) |
+                .metrics.ml_dsa_65_sign_p95_ms = ($sign_p95 | tonumber) |
+                .metrics.ml_dsa_65_sign_p99_ms = ($sign_p99 | tonumber) |
+                .metrics.ml_dsa_65_sign_p999_ms = ($sign_p999 | tonumber) |
+                .metrics.ml_dsa_65_sign_p9999_ms = ($sign_p9999 | tonumber) |
+                .metrics.ml_dsa_65_sign_outlier_count = ($sign_outliers | tonumber) |
+                .metrics.ml_dsa_65_sign_outlier_percent = ($sign_outlier_pct | tonumber) |
+                .metrics.ml_dsa_65_sign_sample_count = ($sign_samples | tonumber) |
+                .metrics.ml_dsa_65_verify_ops_sec = ($verify_ops | tonumber) |
+                .metrics.ml_dsa_65_verify_mean_ms = ($verify_mean | tonumber) |
+                .metrics.ml_dsa_65_verify_stddev_ms = ($verify_stddev | tonumber) |
+                .metrics.ml_dsa_65_verify_cv_percent = ($verify_cv | tonumber) |
+                .metrics.ml_dsa_65_verify_p50_ms = ($verify_p50 | tonumber) |
+                .metrics.ml_dsa_65_verify_p95_ms = ($verify_p95 | tonumber) |
+                .metrics.ml_dsa_65_verify_p99_ms = ($verify_p99 | tonumber) |
+                .metrics.ml_dsa_65_verify_p999_ms = ($verify_p999 | tonumber) |
+                .metrics.ml_dsa_65_verify_p9999_ms = ($verify_p9999 | tonumber)
+                ')
+            
+            echo "  ✓ ML-DSA-65 Sign: $MLDSA_SIGN_OPS ops/sec (CV: ${MLDSA_SIGN_CV}%, outliers: ${MLDSA_SIGN_OUTLIER_PCT}%)" >&2
+            echo "  ✓ ML-DSA-65 Verify: $MLDSA_VERIFY_OPS ops/sec" >&2
+            
+            # Flag high variance as potential retry indicator
+            if [ "$(echo "$MLDSA_SIGN_CV > 10" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
+                echo "  ⚠️  High signing variance detected (CV > 10%) - rejection sampling retries likely!" >&2
+                RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_dsa_rejection_sampling_detected = true')
+            else
+                RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_dsa_rejection_sampling_detected = false')
+            fi
+        else
+            echo "  ML-DSA not available in this OpenSSL build" >&2
+        fi
+    else
+        echo "  ML-DSA benchmark failed (exit code: $MLDSA_EXIT)" >&2
+        RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_dsa_available = false')
+    fi
+else
+    echo "ML-DSA benchmark tool not found (requires OpenSSL 3.5+)" >&2
+    RESULTS=$(echo "$RESULTS" | jq '.metrics.ml_dsa_available = false')
 fi
 
 # =============================================================================
@@ -648,6 +889,61 @@ kill $EC_SERVER_PID 2>/dev/null
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_NEW:-0}" '.metrics.handshakes_new_per_sec = (if $v == "" then 0 else ($v | tonumber) end)')
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS13_RSA_RESUME:-0}" '.metrics.handshakes_resume_per_sec = (if $v == "" then 0 else ($v | tonumber) end)')
 RESULTS=$(echo "$RESULTS" | jq --arg v "${HS_TLS12_ECDHE_RSA:-0}" '.metrics.handshakes_new_tls1_2_per_sec = (if $v == "" then 0 else ($v | tonumber) end)')
+
+# =============================================================================
+# AVX IMPACT TESTS
+# =============================================================================
+# Tests the performance impact of AVX (Advanced Vector Extensions) on
+# cryptographic operations, particularly useful for understanding ML-KEM
+# performance characteristics.
+#
+# The OPENSSL_ia32cap environment variable controls which CPU features
+# OpenSSL uses at runtime, allowing us to compare with/without AVX.
+# =============================================================================
+
+echo "" >&2
+echo "========================================" >&2
+echo "AVX IMPACT TESTS" >&2
+echo "========================================" >&2
+
+# Check if AVX benchmark script exists and is executable
+if [ -f "./avx_benchmark.sh" ] && [ -x "./avx_benchmark.sh" ]; then
+    echo "Running AVX impact benchmarks..." >&2
+    
+    # Run AVX benchmark and capture JSON output
+    AVX_JSON=$(./avx_benchmark.sh 2>/dev/null)
+    
+    if [ $? -eq 0 ] && [ -n "$AVX_JSON" ]; then
+        # Parse and integrate AVX results into main results
+        AVX_AVAILABLE=$(echo "$AVX_JSON" | jq -r '.avx_available // false')
+        
+        if [ "$AVX_AVAILABLE" = "true" ]; then
+            RESULTS=$(echo "$RESULTS" | jq --argjson avx "$AVX_JSON" '
+                .avx_tests = $avx |
+                .metrics.avx_available = true |
+                .metrics.aes_256_gcm_with_avx_kbs = ($avx.aes_256_gcm_with_avx_kbs // 0) |
+                .metrics.aes_256_gcm_without_avx_kbs = ($avx.aes_256_gcm_without_avx_kbs // 0) |
+                .metrics.aes_256_gcm_avx_improvement_percent = ($avx.aes_256_gcm_avx_improvement_percent // 0) |
+                .metrics.sha256_with_avx_kbs = ($avx.sha256_with_avx_kbs // 0) |
+                .metrics.sha256_without_avx_kbs = ($avx.sha256_without_avx_kbs // 0) |
+                .metrics.sha256_avx_improvement_percent = ($avx.sha256_avx_improvement_percent // 0) |
+                .metrics.ml_kem_768_with_avx_ops = ($avx.ml_kem_768_with_avx_ops // 0) |
+                .metrics.ml_kem_768_without_avx_ops = ($avx.ml_kem_768_without_avx_ops // 0) |
+                .metrics.ml_kem_768_avx_improvement_percent = ($avx.ml_kem_768_avx_improvement_percent // 0)
+            ')
+            echo "AVX impact tests complete - data captured." >&2
+        else
+            RESULTS=$(echo "$RESULTS" | jq '.metrics.avx_available = false')
+            echo "AVX not available on this system - comparison skipped." >&2
+        fi
+    else
+        echo "WARNING: AVX benchmark script failed or produced no output." >&2
+        RESULTS=$(echo "$RESULTS" | jq '.metrics.avx_tests_error = true')
+    fi
+else
+    echo "AVX benchmark script not found - skipping AVX impact tests." >&2
+    RESULTS=$(echo "$RESULTS" | jq '.metrics.avx_tests_skipped = true')
+fi
 
 # =============================================================================
 # OPTIMIZED TESTS (Based on Tomáš Mráz's recommendations)

@@ -76,6 +76,7 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
     <h1>OpenSSL 3.5/3.6 vs 3.4: Performance Analysis</h1>
     <div class="nav-links">
         <a href="index.html">Dashboard</a>
+        <a href="openssl_3.2_version_analysis.html">3.2 QUIC Analysis</a>
         <a href="pqc.html">PQC Benchmarks</a>
         <a href="schmatz.html">Crypto Operations</a>
     </div>
@@ -103,6 +104,155 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
         
         <div class="impact-box critical">
             <strong>Key Finding:</strong> The observed handshake performance reduction is because OpenSSL 3.5.x <strong>pre-computes two key shares by default</strong> (ML-KEM-768 + X25519) on every TLS 1.3 connection. This happens <em>even when the server doesn't support ML-KEM</em>. This is a deliberate security enhancement to prepare for quantum-safe cryptography, not a bug.
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📋 Tested OpenSSL Versions</h2>
+        
+        <p>This benchmark suite tests the following OpenSSL versions to provide comprehensive performance comparisons across the entire supported release series:</p>
+        
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>Series</th>
+                    <th>Release Date</th>
+                    <th>Key Features</th>
+                    <th>Support Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>1.1.1w</strong></td>
+                    <td>1.1.1 (LTS)</td>
+                    <td>Sep 2023</td>
+                    <td>Final 1.x release, baseline for comparisons</td>
+                    <td style="color: #fa5252;">EOL (Sep 2023)</td>
+                </tr>
+                <tr>
+                    <td><strong>3.0.15</strong></td>
+                    <td>3.0 (LTS)</td>
+                    <td>Sep 2024</td>
+                    <td>Provider architecture, FIPS module</td>
+                    <td style="color: #40c057;">Supported until Sep 2026</td>
+                </tr>
+                <tr>
+                    <td><strong>3.1.7</strong></td>
+                    <td>3.1</td>
+                    <td>Sep 2024</td>
+                    <td>Performance improvements, bug fixes</td>
+                    <td style="color: #fab005;">Maintenance</td>
+                </tr>
+                <tr>
+                    <td><strong>3.2.3</strong></td>
+                    <td>3.2 (LTS)</td>
+                    <td>Sep 2024</td>
+                    <td>Client QUIC, HPKE, major performance recovery</td>
+                    <td style="color: #40c057;">Supported until Nov 2026</td>
+                </tr>
+                <tr>
+                    <td><strong>3.3.2</strong></td>
+                    <td>3.3</td>
+                    <td>Sep 2024</td>
+                    <td>Continued QUIC improvements, QLOG</td>
+                    <td style="color: #fab005;">Maintenance</td>
+                </tr>
+                <tr>
+                    <td><strong>3.4.0</strong></td>
+                    <td>3.4</td>
+                    <td>Oct 2024</td>
+                    <td>Peak traditional performance, pre-PQC</td>
+                    <td style="color: #40c057;">Current stable</td>
+                </tr>
+                <tr>
+                    <td><strong>3.5.3</strong></td>
+                    <td>3.5</td>
+                    <td>Sep 2025</td>
+                    <td>ML-KEM/PQC, server QUIC, 0-RTT</td>
+                    <td style="color: #40c057;">Current feature</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="impact-box info">
+            <strong>Version Selection Rationale:</strong> We test the latest patch release of each major version series to ensure fair comparisons. LTS (Long-Term Support) versions receive priority as they're most commonly deployed in production environments.
+        </div>
+        
+        <h3>Quick Version Comparison</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0;">
+            <div style="background: linear-gradient(135deg, #228be6 0%, #1971c2 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-weight: bold; font-size: 1.1rem;">1.1.1w</div>
+                <div style="font-size: 0.8rem; opacity: 0.9;">Baseline</div>
+                <div style="margin-top: 10px; font-size: 0.85rem;">Direct API<br>No providers</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #fa5252 0%, #e03131 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-weight: bold; font-size: 1.1rem;">3.0.x</div>
+                <div style="font-size: 0.8rem; opacity: 0.9;">Provider Era</div>
+                <div style="margin-top: 10px; font-size: 0.85rem;">New architecture<br>~20% overhead</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #fab005 0%, #f59f00 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-weight: bold; font-size: 1.1rem;">3.2.x</div>
+                <div style="font-size: 0.8rem; opacity: 0.9;">Recovery</div>
+                <div style="margin-top: 10px; font-size: 0.85rem;">QUIC client<br>Performance boost</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #40c057 0%, #2f9e44 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-weight: bold; font-size: 1.1rem;">3.4.x</div>
+                <div style="font-size: 0.8rem; opacity: 0.9;">Peak</div>
+                <div style="margin-top: 10px; font-size: 0.85rem;">Best traditional<br>performance</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #7950f2 0%, #6741d9 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-weight: bold; font-size: 1.1rem;">3.5.x+</div>
+                <div style="font-size: 0.8rem; opacity: 0.9;">Quantum-Ready</div>
+                <div style="margin-top: 10px; font-size: 0.85rem;">ML-KEM/PQC<br>Server QUIC</div>
+            </div>
+        </div>
+        
+        <h3>Performance Journey</h3>
+        <p>The chart below shows how TLS handshake performance evolved across versions:</p>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <div style="display: flex; align-items: flex-end; height: 200px; gap: 15px;">
+                <div style="flex: 1; text-align: center;">
+                    <div style="background: #228be6; height: 100%; border-radius: 4px 4px 0 0;"></div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>1.1.1w</strong><br>19,557</div>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                    <div style="background: #fa5252; height: 85%; border-radius: 4px 4px 0 0;"></div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.0.15</strong><br>16,719</div>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                    <div style="background: #fd7e14; height: 87%; border-radius: 4px 4px 0 0;"></div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.1.7</strong><br>17,150</div>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                    <div style="background: #fab005; height: 91%; border-radius: 4px 4px 0 0;"></div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.2.3</strong><br>17,892</div>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                    <div style="background: #40c057; height: 87%; border-radius: 4px 4px 0 0;"></div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.3.2</strong><br>17,107</div>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                    <div style="background: #15aabf; height: 96%; border-radius: 4px 4px 0 0;"></div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.4.0</strong><br>18,806</div>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                    <div style="background: #7950f2; height: 83%; border-radius: 4px 4px 0 0;"></div>
+                    <div style="font-size: 0.75rem; margin-top: 5px;"><strong>3.5.3</strong><br>16,300</div>
+                </div>
+            </div>
+            <div style="text-align: center; font-size: 0.8rem; color: #868e96; margin-top: 10px;">TLS 1.3 New Handshakes per Second (higher is better)</div>
+        </div>
+        
+        <div class="impact-box positive">
+            <strong>Key Observations:</strong>
+            <ul style="margin: 10px 0 0 0;">
+                <li><strong>3.0.x introduced regression</strong> due to provider architecture overhead</li>
+                <li><strong>3.2.x-3.4.x recovered</strong> through optimization work</li>
+                <li><strong>3.5.x trades performance for security</strong> with quantum-resistant defaults</li>
+            </ul>
         </div>
     </div>
 
@@ -278,9 +428,13 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
                 <li><strong>ML-DSA (Dilithium)</strong> - Module-Lattice-based Digital Signature Algorithm</li>
                 <li><strong>SLH-DSA (SPHINCS+)</strong> - Stateless Hash-based Digital Signature Algorithm</li>
             </ul>
-            <a href="https://github.com/openssl/openssl/tree/openssl-3.5.0/crypto/ml_kem" target="_blank" class="github-link" style="margin-top: 10px;">
+            <a href="https://github.com/openssl/openssl/tree/openssl-3.5.0/crypto/ml_kem" target="_blank" class="github-link" style="margin-top: 10px; margin-right: 10px;">
                 <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
                 View ML-KEM Implementation
+            </a>
+            <a href="openssl_3.2_version_analysis.html#quic-pqc-challenge" class="github-link" style="margin-top: 10px; background: #fa5252;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                ⚠️ PQC + QUIC MTU Challenges
             </a>
         </div>
         
@@ -291,9 +445,13 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
                 <li><strong>3rd party QUIC stack integration</strong> including 0-RTT support</li>
                 <li>New APIs for QUIC connection and stream management</li>
             </ul>
-            <a href="https://github.com/openssl/openssl/blob/openssl-3.5.0/README-QUIC.md" target="_blank" class="github-link" style="margin-top: 10px;">
+            <a href="https://github.com/openssl/openssl/blob/openssl-3.5.0/README-QUIC.md" target="_blank" class="github-link" style="margin-top: 10px; margin-right: 10px;">
                 <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
                 View QUIC Documentation
+            </a>
+            <a href="openssl_3.2_version_analysis.html#quic-section" class="github-link" style="margin-top: 10px; background: #228be6;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                Deep Dive: QUIC in OpenSSL 3.2+
             </a>
         </div>
         
@@ -330,7 +488,7 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
             </a>
         </div>
 
-        <div class="change-category">
+        <div class="change-category" id="aes-gcm-methodology">
             <h4>AES-GCM Benchmark Methodology Change (Important Note)</h4>
             <p><a href="https://github.com/openssl/openssl/issues/27513" target="_blank" style="color: #228be6; font-weight: bold;">Issue #27513: Very low AES-GCM speed tests on Ubuntu 25.04</a></p>
             <ul>
@@ -413,6 +571,11 @@ code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: '
                 <li>For high-throughput servers where PQC isn't required, configure traditional ECDH keyshares</li>
                 <li>Consider the bandwidth impact: ML-KEM keys are ~37x larger than ECDH P-256 keys</li>
             </ul>
+        </div>
+        
+        <div class="impact-box critical" style="margin-top: 20px;">
+            <strong>⚠️ QUIC + Post-Quantum Challenge:</strong> The large key sizes of ML-KEM create significant complications for QUIC (HTTP/3), which relies on UDP packets with strict MTU constraints (~1,200 bytes). A hybrid ML-KEM+X25519 key share is ~2,336 bytes—exceeding the entire QUIC Initial packet limit!
+            <p style="margin-top: 10px;"><a href="openssl_3.2_version_analysis.html#quic-pqc-challenge" style="color: #fa5252; font-weight: bold;">→ See our detailed analysis of the QUIC + PQC MTU Challenge</a></p>
         </div>
         
         <div class="impact-box info">

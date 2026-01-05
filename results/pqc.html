@@ -66,6 +66,10 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
 <body>
 
 
+<div style="background: linear-gradient(90deg, #fff3bf 0%, #ffe066 100%); padding: 10px 40px; border-bottom: 2px solid #fab005; text-align: center;">
+    <strong style="color: #e67700;">PRELIMINARY RESULT</strong>
+    <span style="color: #495057; margin-left: 15px; font-size: 0.85rem;">Benchmark Suite v1.0.15-dev.0 - Results subject to change</span>
+</div>
 <div class="breadcrumb">
     <a href="index.html">Home</a>
     <span>›</span>
@@ -81,7 +85,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
 
 <div class="container">
     <div class="card">
-        <h2>🔐 Quantum-Resistant vs Classical Key Exchange</h2>
+        <h2>Quantum-Resistant vs Classical Key Exchange</h2>
         
         <div class="info-box">
             <h3>What This Chart Shows</h3>
@@ -129,7 +133,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
         <h2>Key Takeaways</h2>
         
         <div class="success-box">
-            <h3>✅ Performance is Production-Ready</h3>
+            <h3>Performance is Production-Ready</h3>
             <p><strong>ML-KEM-768 is competitive</strong> with classical ECDH algorithms. The performance overhead is minimal—often faster than ECDH P-384 and comparable to P-256.</p>
             <p><strong>Bottom line:</strong> You can adopt post-quantum cryptography without significant performance penalties.</p>
         </div>
@@ -152,25 +156,25 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
                 </thead>
                 <tbody>
                     <tr style="background: #ffe8cc;">
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 E-commerce Peak</strong><br><span style="font-size: 0.8em; color: #666;">(Black Friday, major sale)</span></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>[HIGH] E-commerce Peak</strong><br><span style="font-size: 0.8em; color: #666;">(Black Friday, major sale)</span></td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">40,000</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>640 Mbps</strong><br>(80 MB/sec)</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>6.9 TB</strong></td>
                     </tr>
                     <tr style="background: #ffe8cc;">
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 Busy CDN Edge</strong><br><span style="font-size: 0.8em; color: #666;">(Major content distributor)</span></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>[HIGH] Busy CDN Edge</strong><br><span style="font-size: 0.8em; color: #666;">(Major content distributor)</span></td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">10,000</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>160 Mbps</strong><br>(20 MB/sec)</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>1.7 TB</strong></td>
                     </tr>
                     <tr style="background: #fff5e6;">
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟡 Popular Website</strong><br><span style="font-size: 0.8em; color: #666;">(News site, SaaS platform)</span></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>[MEDIUM] Popular Website</strong><br><span style="font-size: 0.8em; color: #666;">(News site, SaaS platform)</span></td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">1,000</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>16 Mbps</strong><br>(2 MB/sec)</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>173 GB</strong></td>
                     </tr>
                     <tr>
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟢 Typical Website</strong><br><span style="font-size: 0.8em; color: #666;">(Small business, blog)</span></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>[LOW] Typical Website</strong><br><span style="font-size: 0.8em; color: #666;">(Small business, blog)</span></td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">100</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>1.6 Mbps</strong><br>(200 KB/sec)</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>17 GB</strong></td>
@@ -190,7 +194,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
             </div>
             
             <div style="margin-top: 15px; padding: 12px; background: #e7f5ff; border-radius: 4px;">
-                <p style="margin: 0;"><strong>💡 Context:</strong> For most sites, ML-KEM handshake overhead is still <1% of total bandwidth (images, videos, and application data dominate). But for the busiest sites processing tens of thousands of new connections per second, this is hundreds of Mbps to Gbps of additional sustained bandwidth cost.</p>
+                <p style="margin: 0;"><strong>Context:</strong> For most sites, ML-KEM handshake overhead is still <1% of total bandwidth (images, videos, and application data dominate). But for the busiest sites processing tens of thousands of new connections per second, this is hundreds of Mbps to Gbps of additional sustained bandwidth cost.</p>
             </div>
         </div>
         
@@ -212,28 +216,28 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
                 </thead>
                 <tbody>
                     <tr>
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟢 Fiber/Cable Broadband</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>[FAST] Fiber/Cable Broadband</strong></td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">100 Mbps</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+0.16 ms</strong></td>
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">✅ Imperceptible</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">Imperceptible</td>
                     </tr>
                     <tr>
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟢 5G (Sub-6 GHz)</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>[FAST] 5G (Sub-6 GHz)</strong></td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">150 Mbps</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+0.11 ms</strong></td>
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">✅ Imperceptible</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">Imperceptible</td>
                     </tr>
                     <tr style="background: #fff5e6;">
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟡 LTE / Fast 4G</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>[MODERATE] LTE / Fast 4G</strong></td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">30 Mbps</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+0.5 ms</strong></td>
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">✅ Barely noticeable</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">Barely noticeable</td>
                     </tr>
                     <tr style="background: #fff5e6;">
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟡 Average 4G</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>[MODERATE] Average 4G</strong></td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">10 Mbps</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+1.6 ms</strong></td>
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">✅ Minor</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">Minor</td>
                     </tr>
                     <tr style="background: #ffe8cc;">
                         <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🟠 Slow 4G / Rural</strong></td>
@@ -242,22 +246,22 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
                         <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">Noticeable on slow sites</td>
                     </tr>
                     <tr style="background: #ffe8cc;">
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 3G / HSPA+</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>[SLOW] 3G / HSPA+</strong></td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">1.5 Mbps</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+11 ms</strong></td>
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">🔴 Noticeable delay</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">Noticeable delay</td>
                     </tr>
                     <tr style="background: #ffe8cc;">
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 2G / EDGE</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>[SLOW] 2G / EDGE</strong></td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">250 Kbps</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+65 ms</strong></td>
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">🔴 Significant delay</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">Significant delay</td>
                     </tr>
                     <tr style="background: #ffe8cc;">
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>🔴 Satellite / High Latency</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;"><strong>[SLOW] Satellite / High Latency</strong></td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;">2 Mbps</td>
                         <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ffd8a8;"><strong>+8 ms</strong></td>
-                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">🔴 Adds to existing latency (500-700ms typical)</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #ffd8a8;">Adds to existing latency (500-700ms typical)</td>
                     </tr>
                 </tbody>
             </table>
@@ -273,12 +277,12 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
             </div>
             
             <div style="margin-top: 15px; padding: 12px; background: #e7f5ff; border-radius: 4px;">
-                <p style="margin: 0;"><strong>📱 Mobile User Experience Impact:</strong></p>
+                <p style="margin: 0;"><strong>Mobile User Experience Impact:</strong></p>
                 <p style="margin: 10px 0 0 0;">For users on fast connections (LTE+, broadband), the <2ms latency is imperceptible. But for the <strong>2+ billion users</strong> still on 2G/3G or slow 4G connections, ML-KEM adds meaningful delay to every new connection. Combined with typical mobile latency (50-200ms), this compounds the "slow web" problem in bandwidth-constrained regions.</p>
             </div>
             
             <div style="margin-top: 15px; padding: 12px; background: #fff3bf; border-radius: 4px;">
-                <p style="margin: 0;"><strong>💡 Mitigation Strategies:</strong></p>
+                <p style="margin: 0;"><strong>Mitigation Strategies:</strong></p>
                 <ul style="margin: 10px 0 0 0; padding-left: 20px; line-height: 1.6;">
                     <li><strong>TLS session resumption:</strong> Reuse sessions to avoid repeated handshakes (latency hit only on first connection)</li>
                     <li><strong>Connection pooling:</strong> Keep connections alive longer (HTTP keep-alive, connection: keep-alive headers)</li>
@@ -290,7 +294,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
         </div>
         
         <div class="info-box">
-            <h3>🔮 Why This Matters: The Quantum Threat</h3>
+            <h3>Why This Matters: The Quantum Threat</h3>
             <p><strong>"Harvest Now, Decrypt Later" attacks:</strong> Adversaries are capturing encrypted traffic today to decrypt once quantum computers become available.</p>
             <p><strong>Timeline:</strong> While large-scale quantum computers don't exist yet, the cryptographic community recommends migrating now, as infrastructure changes take years.</p>
             <p><strong>Your data:</strong> If it needs protection beyond 2030, consider post-quantum cryptography today.</p>
@@ -298,10 +302,10 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
     </div>
     
     <div class="card">
-        <h2>🌐 Real-World Impact: When Does Key Exchange Happen?</h2>
+        <h2>Real-World Impact: When Does Key Exchange Happen?</h2>
         
         <div class="info-box">
-            <h3>💡 Understanding "Operations Per Second"</h3>
+            <h3>Understanding "Operations Per Second"</h3>
             <p><strong>Key exchange is NOT performed on every HTTP request.</strong> It only happens during the initial TLS handshake when establishing a new connection:</p>
             
             <ul style="margin: 10px 0; padding-left: 25px; line-height: 1.8;">
@@ -314,7 +318,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
         </div>
         
         <div class="info-box">
-            <h3>🔧 How TLS Works (with ML-KEM or ECDH)</h3>
+            <h3>How TLS Works (with ML-KEM or ECDH)</h3>
             
             <p><strong>Initial TLS Handshake (happens once per connection):</strong></p>
             <ol style="margin: 10px 0; padding-left: 25px; line-height: 1.8;">
@@ -361,7 +365,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
     </div>
     
     <div class="card">
-        <h2>🔄 Migration Recommendations</h2>
+        <h2>Migration Recommendations</h2>
         
         <div style="margin: 20px 0;">
             <h3 style="color: #495057; font-size: 1rem; margin-bottom: 10px;">Recommended Approach: Hybrid Mode</h3>
@@ -410,6 +414,158 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
                     </tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>🔬 ML-DSA (Dilithium) Rejection Sampling Analysis</h2>
+        
+        <div class="info-box">
+            <h3>What is Rejection Sampling?</h3>
+            <p>Unlike classical signature algorithms like ECDSA, <strong>ML-DSA (Dilithium)</strong> uses <strong>rejection sampling</strong> during signature generation. The algorithm may need to <strong>retry internally</strong> if certain mathematical conditions aren't met—this is a critical security feature that prevents private key leakage through side-channel attacks.</p>
+            <p><strong>Why it matters for stress testing:</strong> Under high load, the retry mechanism can cause timing variance. Operations that require multiple retries take longer, potentially causing latency spikes.</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #495057;">🔄 How Dilithium Signing Works</h3>
+            <div style="display: grid; grid-template-columns: 40px 1fr; gap: 15px; margin: 15px 0;">
+                <div style="background: #228be6; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">1</div>
+                <div><strong>Generate random masking:</strong> The signer generates a random masking polynomial <code>y</code></div>
+                
+                <div style="background: #228be6; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">2</div>
+                <div><strong>Compute candidate:</strong> Calculate <code>z = y + c·s</code> (where <code>c</code> is the challenge, <code>s</code> is the secret key)</div>
+                
+                <div style="background: #fa5252; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">3</div>
+                <div><strong>Rejection check:</strong> If <code>z</code> is "too close" to <code>s</code> (would leak secret key information), <strong>REJECT and restart from step 1</strong></div>
+                
+                <div style="background: #40c057; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">4</div>
+                <div><strong>Success:</strong> On average, this takes <strong>4-7 attempts</strong> to produce a valid signature</div>
+            </div>
+            <p style="margin-bottom: 0; color: #868e96; font-size: 0.9rem;"><em>This retry mechanism is fundamental to Dilithium's security—it ensures signatures don't leak information about the private key.</em></p>
+        </div>
+        
+        <div id="mldsa-chart" style="min-height: 400px;"></div>
+        
+        <div id="mldsa-stats" style="margin-top: 20px;"></div>
+        
+        <div class="warning-box">
+            <h3>📊 Understanding the Metrics</h3>
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9rem;">
+                <thead style="background: #fff3bf;">
+                    <tr>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #fab005;">Metric</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #fab005;">Description</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #fab005;">Why It Matters</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #ffd8a8;">
+                        <td style="padding: 10px;"><strong>CV%</strong></td>
+                        <td style="padding: 10px;">Coefficient of Variation (stddev/mean × 100)</td>
+                        <td style="padding: 10px;">Normalized variance metric. &gt;10% = significant retry activity</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #ffd8a8;">
+                        <td style="padding: 10px;"><strong>Outliers</strong></td>
+                        <td style="padding: 10px;">Operations taking &gt;2× the mean time</td>
+                        <td style="padding: 10px;">Multi-retry scenarios causing latency spikes</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #ffd8a8;">
+                        <td style="padding: 10px;"><strong>P99</strong></td>
+                        <td style="padding: 10px;">99th percentile latency</td>
+                        <td style="padding: 10px;">Tail latency for capacity planning</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #ffd8a8;">
+                        <td style="padding: 10px;"><strong>P99.9</strong></td>
+                        <td style="padding: 10px;">99.9th percentile (1 in 1,000)</td>
+                        <td style="padding: 10px;">Extreme tail latency for high-traffic systems</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #ffd8a8;">
+                        <td style="padding: 10px;"><strong>P99.99</strong></td>
+                        <td style="padding: 10px;">99.99th percentile (1 in 10,000)</td>
+                        <td style="padding: 10px;">Worst-case latency for SLA guarantees</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;"><strong>Max/Min</strong></td>
+                        <td style="padding: 10px;">Ratio of slowest to fastest operation</td>
+                        <td style="padding: 10px;">Large ratio = high variance in retry counts</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h4 style="margin-top: 20px; color: #f08c00;">Interpreting Results</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px;">
+                <div style="background: #d3f9d8; padding: 12px; border-radius: 6px; text-align: center;">
+                    <div style="font-weight: bold; color: #2f9e44;">CV &lt; 5%</div>
+                    <div style="font-size: 0.85rem; color: #495057;">Exceptionally stable</div>
+                </div>
+                <div style="background: #d3f9d8; padding: 12px; border-radius: 6px; text-align: center;">
+                    <div style="font-weight: bold; color: #2f9e44;">CV 5-10%</div>
+                    <div style="font-size: 0.85rem; color: #495057;">Normal variance</div>
+                </div>
+                <div style="background: #fff3bf; padding: 12px; border-radius: 6px; text-align: center;">
+                    <div style="font-weight: bold; color: #f08c00;">CV 10-20%</div>
+                    <div style="font-size: 0.85rem; color: #495057;">Moderate variance</div>
+                </div>
+                <div style="background: #ffe3e3; padding: 12px; border-radius: 6px; text-align: center;">
+                    <div style="font-weight: bold; color: #c92a2a;">CV &gt; 20%</div>
+                    <div style="font-size: 0.85rem; color: #495057;">High variance - investigate</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="success-box">
+            <h3>✅ Expected Behavior</h3>
+            <p>Dilithium is designed to average <strong>4-7 internal retries</strong> per signature. This is normal and expected. The benchmark measures whether this variability causes problematic latency spikes under real workloads.</p>
+            <p style="margin-top: 15px;"><strong>Note:</strong> Verification is deterministic—it doesn't use rejection sampling, so verification timing should be very consistent (low CV%).</p>
+        </div>
+        
+        <div style="background: #f1f3f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #495057;">🆚 ML-DSA vs ECDSA: Timing Characteristics</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead style="background: #e9ecef;">
+                    <tr>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Algorithm</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Signing Behavior</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Timing Variance</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Security Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 10px;"><strong style="color: #7950f2;">ML-DSA (Dilithium)</strong></td>
+                        <td style="padding: 10px;">Rejection sampling with retries</td>
+                        <td style="padding: 10px;">Higher variance (expected)</td>
+                        <td style="padding: 10px;">Variance is a security feature</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;"><strong style="color: #40c057;">ECDSA (RFC 6979)</strong></td>
+                        <td style="padding: 10px;">Deterministic, no retries</td>
+                        <td style="padding: 10px;">Very consistent timing</td>
+                        <td style="padding: 10px;">Constant-time implementation</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="info-box">
+            <h3>🧪 Stress Testing Recommendations</h3>
+            <p>To further analyze the retry mechanism under stress:</p>
+            <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.8;">
+                <li><strong>CPU contention:</strong> Run concurrent signing operations to see if contention affects retry rates</li>
+                <li><strong>Extended duration:</strong> Longer test runs can catch rare high-retry edge cases</li>
+                <li><strong>Compare security levels:</strong> ML-DSA-44 vs ML-DSA-65 vs ML-DSA-87 (higher levels = more retries on average)</li>
+                <li><strong>Memory pressure:</strong> Test under memory constraints to see if it affects variance</li>
+            </ul>
+            <p style="margin-top: 15px;"><strong>Run the standalone test:</strong> <code>./scripts/test-mldsa-retry.sh 3.5.3</code></p>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #e7f5ff; border-radius: 8px;">
+            <h4 style="margin-top: 0; color: #1971c2;">📚 Further Reading</h4>
+            <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.8;">
+                <li><a href="https://csrc.nist.gov/pubs/fips/204/final" target="_blank" style="color: #228be6;">NIST FIPS 204 (ML-DSA Standard)</a></li>
+                <li><a href="https://pq-crystals.org/dilithium/" target="_blank" style="color: #228be6;">CRYSTALS-Dilithium Paper</a></li>
+                <li><a href="https://github.com/openssl/openssl/tree/master/crypto/ml_dsa" target="_blank" style="color: #228be6;">OpenSSL ML-DSA Implementation</a></li>
+            </ul>
         </div>
     </div>
     
@@ -1129,8 +1285,8 @@ data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, 
 
 // Shared D3 utilities
 const colorScale = d3.scaleOrdinal()
-    .domain(['1.1.1', '3.0', '3.1', '3.2', '3.3', '3.4', '3.5'])
-    .range(['#228be6', '#fa5252', '#fd7e14', '#fab005', '#40c057', '#15aabf', '#7950f2']);
+    .domain(['1.1.1', '3.0', '3.1', '3.2', '3.3', '3.4', '3.5', '3.6'])
+    .range(['#228be6', '#fa5252', '#fd7e14', '#fab005', '#40c057', '#15aabf', '#7950f2', '#e64980']);
 
 const getSeries = (ver) => {
     if (ver.startsWith('1.1.1')) return '1.1.1';
@@ -1158,6 +1314,186 @@ function getWidth(container, pad = 60, minWidth = 320) {
 }
 
 
+function renderMldsaChart() {
+    const mldsaData = data.filter(d => d.metrics.ml_dsa_available === true && d.metrics.ml_dsa_65_sign_ops_sec > 0);
+    const container = d3.select("#mldsa-chart");
+    const statsContainer = d3.select("#mldsa-stats");
+    container.html("");
+    statsContainer.html("");
+    
+    if (mldsaData.length === 0) {
+        container.html(`
+            <div style="padding:60px 40px; text-align:center; background: #fff3bf; border-radius: 8px; border: 2px dashed #fab005;">
+                <h3 style="color: #f08c00; margin-top: 0;">No ML-DSA (Dilithium) Data Available</h3>
+                <p style="color: #495057; line-height: 1.6;">ML-DSA benchmarks require <strong>OpenSSL 3.5.0 or later</strong>.</p>
+                <p style="color: #495057; margin-top: 10px;">This test specifically analyzes the rejection sampling retry mechanism in Dilithium signature generation.</p>
+            </div>
+        `);
+        return;
+    }
+
+    const containerWidth = container.node().getBoundingClientRect().width || 1000;
+    const margin = {top: 40, right: 200, bottom: 60, left: 80};
+    const width = containerWidth - margin.left - margin.right;
+    const height = 350;
+
+    const svg = container.append("svg")
+        .attr("width", containerWidth)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // Title
+    svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", -20)
+        .attr("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "600")
+        .style("fill", "#495057")
+        .text("ML-DSA-65 Signing Timing Variance (Rejection Sampling Analysis)");
+
+    // Metrics to display as grouped bars: mean, P50, P95, P99, max
+    const timingMetrics = [
+        {key: 'ml_dsa_65_sign_min_ms', label: 'Min', color: '#40c057'},
+        {key: 'ml_dsa_65_sign_p50_ms', label: 'P50 (Median)', color: '#228be6'},
+        {key: 'ml_dsa_65_sign_mean_ms', label: 'Mean', color: '#7950f2'},
+        {key: 'ml_dsa_65_sign_p95_ms', label: 'P95', color: '#fd7e14'},
+        {key: 'ml_dsa_65_sign_p99_ms', label: 'P99', color: '#fa5252'},
+        {key: 'ml_dsa_65_sign_p999_ms', label: 'P99.9', color: '#be4bdb'},
+        {key: 'ml_dsa_65_sign_p9999_ms', label: 'P99.99', color: '#c92a2a'},
+        {key: 'ml_dsa_65_sign_max_ms', label: 'Max', color: '#e64980'}
+    ];
+
+    const x0 = d3.scaleBand().domain(mldsaData.map(d => d.config.version)).rangeRound([0, width]).paddingInner(0.2);
+    const x1 = d3.scaleBand().domain(timingMetrics.map(m => m.key)).rangeRound([0, x0.bandwidth()]).padding(0.05);
+    
+    const maxVal = d3.max(mldsaData, d => d3.max(timingMetrics, m => d.metrics[m.key] || 0));
+    const y = d3.scaleLinear().domain([0, maxVal * 1.2]).rangeRound([height, 0]);
+
+    // Grid
+    svg.append("g").attr("class", "grid")
+        .call(d3.axisLeft(y).tickSize(-width).tickFormat(""));
+
+    // Axes
+    svg.append("g").attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x0))
+        .selectAll("text")
+        .style("font-size", "13px")
+        .style("font-weight", "500");
+    
+    svg.append("g").call(d3.axisLeft(y).tickFormat(d => d.toFixed(2) + ' ms'));
+    
+    // Y-axis label
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -60)
+        .attr("x", -height / 2)
+        .attr("text-anchor", "middle")
+        .style("font-size", "13px")
+        .style("font-weight", "600")
+        .style("fill", "#495057")
+        .text("Signing Time (ms) - Lower is Better");
+
+    // Grouped bars
+    const versionGroups = svg.selectAll(".g").data(mldsaData).enter().append("g")
+        .attr("transform", d => `translate(${x0(d.config.version)},0)`);
+
+    versionGroups.selectAll("rect").data(d => timingMetrics.map(m => ({
+        key: m.key,
+        label: m.label,
+        color: m.color,
+        value: d.metrics[m.key] || 0,
+        version: d.config.version
+    }))).enter().append("rect")
+        .attr("x", d => x1(d.key))
+        .attr("y", d => d.value > 0 ? y(d.value) : y(0))
+        .attr("width", x1.bandwidth())
+        .attr("height", d => d.value > 0 ? height - y(d.value) : 0)
+        .attr("fill", d => d.color)
+        .attr("opacity", 0.9)
+        .attr("rx", 2)
+        .on("mouseover", function(e, d) {
+            d3.select(this).attr("opacity", 1).attr("stroke", "#333").attr("stroke-width", 2);
+            showTooltip(e, `<strong>${d.label}</strong>: ${d.value.toFixed(4)} ms`);
+        })
+        .on("mouseout", function() {
+            d3.select(this).attr("opacity", 0.9).attr("stroke", "none");
+            hideTooltip();
+        });
+
+    // Legend
+    const legend = svg.append("g").attr("transform", `translate(${width + 20}, 0)`);
+    timingMetrics.forEach((m, i) => {
+        const g = legend.append("g").attr("transform", `translate(0, ${i * 22})`);
+        g.append("rect").attr("width", 15).attr("height", 15).attr("fill", m.color).attr("rx", 2);
+        g.append("text").attr("x", 20).attr("y", 12).text(m.label).style("font-size", "11px").style("fill", "#495057");
+    });
+
+    // Build stats table
+    let statsHtml = `
+        <h3 style="color: #495057; margin-bottom: 15px;">Rejection Sampling Statistics</h3>
+        <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 900px;">
+            <thead style="background: #f8f9fa;">
+                <tr>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Version</th>
+                    <th style="padding: 12px; text-align: right; border-bottom: 2px solid #dee2e6;">Sign ops/sec</th>
+                    <th style="padding: 12px; text-align: right; border-bottom: 2px solid #dee2e6;">CV%</th>
+                    <th style="padding: 12px; text-align: right; border-bottom: 2px solid #dee2e6;">P99</th>
+                    <th style="padding: 12px; text-align: right; border-bottom: 2px solid #dee2e6;">P99.9</th>
+                    <th style="padding: 12px; text-align: right; border-bottom: 2px solid #dee2e6;">P99.99</th>
+                    <th style="padding: 12px; text-align: right; border-bottom: 2px solid #dee2e6;">Outliers</th>
+                    <th style="padding: 12px; text-align: right; border-bottom: 2px solid #dee2e6;">Max/Min</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Analysis</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    mldsaData.forEach((d, idx) => {
+        const cv = d.metrics.ml_dsa_65_sign_cv_percent || 0;
+        const outlierPct = d.metrics.ml_dsa_65_sign_outlier_percent || 0;
+        const minMs = d.metrics.ml_dsa_65_sign_min_ms || 0.001;
+        const maxMs = d.metrics.ml_dsa_65_sign_max_ms || 0;
+        const p99 = d.metrics.ml_dsa_65_sign_p99_ms || 0;
+        const p999 = d.metrics.ml_dsa_65_sign_p999_ms || 0;
+        const p9999 = d.metrics.ml_dsa_65_sign_p9999_ms || 0;
+        const ratio = minMs > 0 ? (maxMs / minMs).toFixed(1) : 'N/A';
+        const signOps = d.metrics.ml_dsa_65_sign_ops_sec || 0;
+        
+        let analysis = '';
+        let analysisColor = '#40c057';
+        if (cv > 20 || outlierPct > 10) {
+            analysis = '⚠️ High variance';
+            analysisColor = '#fa5252';
+        } else if (cv > 10 || outlierPct > 5) {
+            analysis = '🔶 Moderate';
+            analysisColor = '#fd7e14';
+        } else {
+            analysis = '✓ Stable';
+        }
+        
+        const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8f9fa';
+        
+        statsHtml += `
+            <tr style="background: ${bgColor};">
+                <td style="padding: 10px; border-bottom: 1px solid #e9ecef; font-weight: 600;">${d.config.version}</td>
+                <td style="padding: 10px; text-align: right; border-bottom: 1px solid #e9ecef;">${signOps.toLocaleString()}</td>
+                <td style="padding: 10px; text-align: right; border-bottom: 1px solid #e9ecef; font-weight: 600; color: ${cv > 10 ? '#fa5252' : '#495057'};">${cv.toFixed(1)}%</td>
+                <td style="padding: 10px; text-align: right; border-bottom: 1px solid #e9ecef;">${p99.toFixed(3)}ms</td>
+                <td style="padding: 10px; text-align: right; border-bottom: 1px solid #e9ecef; color: ${p999 > p99 * 2 ? '#fa5252' : '#495057'};">${p999.toFixed(3)}ms</td>
+                <td style="padding: 10px; text-align: right; border-bottom: 1px solid #e9ecef; color: ${p9999 > p99 * 3 ? '#c92a2a' : '#495057'};">${p9999.toFixed(3)}ms</td>
+                <td style="padding: 10px; text-align: right; border-bottom: 1px solid #e9ecef;">${outlierPct.toFixed(1)}%</td>
+                <td style="padding: 10px; text-align: right; border-bottom: 1px solid #e9ecef;">${ratio}x</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e9ecef; color: ${analysisColor};">${analysis}</td>
+            </tr>
+        `;
+    });
+    
+    statsHtml += '</tbody></table></div>';
+    statsContainer.html(statsHtml);
+}
+
 function renderPqcChart() {
     const pqcData = data.filter(d => d.metrics.ml_kem_768_ops_sec > 0);
     const container = d3.select("#pqc-chart");
@@ -1168,7 +1504,7 @@ function renderPqcChart() {
             <div style="padding:60px 40px; text-align:center; background: #fff3bf; border-radius: 8px; border: 2px dashed #fab005;">
                 <h3 style="color: #f08c00; margin-top: 0;">No Post-Quantum Data Available</h3>
                 <p style="color: #495057; line-height: 1.6;">ML-KEM-768 benchmarks require <strong>OpenSSL 3.5.0 or later</strong>.</p>
-                <p style="color: #495057; margin-top: 10px;">Post-quantum cryptography support was added in OpenSSL 3.5.0 (September 2024).</p>
+                <p style="color: #495057; margin-top: 10px;">Post-quantum cryptography support was added in OpenSSL 3.5.0 (April 2025).</p>
                 <p style="margin-top: 20px;"><a href="https://www.openssl.org/source/" style="color: #228be6; text-decoration: none; font-weight: 600;">Download OpenSSL 3.5+ →</a></p>
             </div>
         `);
@@ -1307,8 +1643,12 @@ function renderPqcChart() {
 }
 
 renderPqcChart();
+renderMldsaChart();
 
-window.addEventListener('resize', renderPqcChart);
+window.addEventListener('resize', () => {
+    renderPqcChart();
+    renderMldsaChart();
+});
 </script>
 
 
@@ -1328,7 +1668,7 @@ window.addEventListener('resize', renderPqcChart);
             <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
         </div>
         <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
-            Licensed under Apache 2.0 • Community-driven development
+            Licensed under Apache 2.0 • Community-driven development • v1.0.15-dev.0
         </div>
     </div>
 </div>

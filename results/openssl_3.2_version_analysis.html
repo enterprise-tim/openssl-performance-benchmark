@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What Changed in OpenSSL 3.2 from 3.1? - Performance Analysis</title>
+    <style>
+body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; color: #333; line-height: 1.6; }
+
+/* Header */
+.header { background: white; padding: 20px 40px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { margin: 0; font-size: 1.5rem; }
+.header .nav-links { display: flex; gap: 15px; }
+.header .nav-links a { color: #228be6; text-decoration: none; font-weight: 500; }
+.header .nav-links a:hover { text-decoration: underline; }
+
+/* Container */
+.container { max-width: 1000px; margin: 0 auto; padding: 30px; }
+
+/* Cards */
+.card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 30px; }
+.card h2 { margin-top: 0; font-size: 1.3rem; color: #495057; border-bottom: 1px solid #f1f3f5; padding-bottom: 15px; margin-bottom: 20px; }
+.card h3 { margin-top: 25px; margin-bottom: 15px; font-size: 1.1rem; color: #495057; }
+
+/* Breadcrumb */
+.breadcrumb { background: white; padding: 15px 40px; border-bottom: 1px solid #e9ecef; font-size: 0.9rem; }
+.breadcrumb a { color: #228be6; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { color: #868e96; margin: 0 8px; }
+
+/* Impact box */
+.impact-box { background: #fff3bf; border-left: 4px solid #fab005; padding: 15px 20px; margin: 20px 0; border-radius: 4px; }
+.impact-box.critical { background: #ffe3e3; border-color: #fa5252; }
+.impact-box.positive { background: #d3f9d8; border-color: #40c057; }
+.impact-box.info { background: #e7f5ff; border-color: #228be6; }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
+.stat-item { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; }
+.stat-item .number { font-size: 2rem; font-weight: bold; color: #40c057; }
+.stat-item .number.blue { color: #228be6; }
+.stat-item .label { font-size: 0.85rem; color: #868e96; margin-top: 5px; }
+
+/* Change categories */
+.change-category { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0; }
+.change-category h4 { margin: 0 0 10px 0; color: #495057; }
+.change-category ul { margin: 0; padding-left: 20px; }
+.change-category li { margin: 8px 0; }
+
+/* GitHub link */
+.github-link { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #24292f; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem; transition: background 0.2s; }
+.github-link:hover { background: #32383f; }
+.github-link svg { fill: currentColor; }
+
+/* Code */
+code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 0.9em; }
+
+/* Table */
+.comparison-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+.comparison-table th, .comparison-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e9ecef; }
+.comparison-table th { background: #f8f9fa; font-weight: 600; color: #495057; }
+.comparison-table tr:hover { background: #f8f9fa; }
+.delta-negative { color: #fa5252; font-weight: 600; }
+.delta-positive { color: #40c057; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="breadcrumb">
+    <a href="index.html">Home</a>
+    <span>›</span>
+    <a href="overview.html">Overview</a>
+    <span>›</span>
+    <span>What Changed in 3.2 from 3.1?</span>
+</div>
+<div class="header">
+    <h1>OpenSSL 3.2 vs 3.1: Performance Analysis</h1>
+    <div class="nav-links">
+        <a href="index.html">Dashboard</a>
+        <a href="openssl_version_analysis.html">3.5/3.6 PQC Analysis</a>
+        <a href="schmatz.html">Crypto Operations</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>About This Analysis</h2>
+        <p>This page explains the <strong>technical reasons</strong> behind the performance differences observed in OpenSSL version 3.2 compared to 3.1. Understanding these changes helps system administrators and developers make informed decisions about which OpenSSL version to deploy.</p>
+        
+        <div class="impact-box info">
+            <strong>How to Use This Page:</strong> Start with the Executive Summary for key takeaways, then dive into the technical details if you want to understand the root causes. The benchmark data table shows actual measurements from our test environment.
+        </div>
+        
+        <h3 style="margin-top: 25px;">Version Analysis Series</h3>
+        <p>This is part of a series analyzing performance changes across OpenSSL versions:</p>
+        <ul>
+            <li><strong>This page:</strong> OpenSSL 3.2 vs 3.1 — The performance recovery story</li>
+            <li><a href="openssl_version_analysis.html">OpenSSL 3.5/3.6 vs 3.4</a> — Post-quantum cryptography impact</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>Executive Summary</h2>
+        <p>OpenSSL 3.2.0 (released November 23, 2023) delivered significant performance improvements over the 3.1.x series, marking a turning point in recovering the performance lost during the 3.0 architecture transition. This analysis examines the key code changes that enabled <strong>2-2.5× improvement</strong> in TLS handshake performance.</p>
+        
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="number">~2,500</div>
+                <div class="label">Commits between 3.1.0 and 3.2.0</div>
+            </div>
+            <div class="stat-item">
+                <div class="number">+100-150%</div>
+                <div class="label">TLS handshake improvement</div>
+            </div>
+            <div class="stat-item">
+                <div class="number blue">Nov 2023</div>
+                <div class="label">OpenSSL 3.2.0 Release</div>
+            </div>
+        </div>
+        
+        <div class="impact-box positive">
+            <strong>Key Finding:</strong> The dramatic performance improvement comes from <strong>provider architecture optimizations</strong> that reduced per-operation overhead. OpenSSL 3.0/3.1 introduced significant dispatch overhead with the provider model; version 3.2 addressed the most critical bottlenecks.
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>The Primary Cause: Provider Architecture Optimization</h2>
+        
+        <p>OpenSSL 3.0 introduced a new "provider" architecture that added flexibility but also introduced significant per-operation overhead. The 3.2 release included focused optimizations to reduce this overhead.</p>
+        
+        <div class="impact-box positive">
+            <strong>The Core Improvement:</strong> Reduced per-operation provider dispatch overhead through better caching, algorithm fetching optimization, and streamlined context management.
+        </div>
+
+        <h3>What Was Slow in OpenSSL 3.0/3.1</h3>
+        
+        <div class="change-category" style="background: #fff5f5; border-left: 4px solid #fa5252;">
+            <h4>The Provider Overhead Problem</h4>
+            <ul>
+                <li><strong>Algorithm Fetching:</strong> Every cryptographic operation required looking up the algorithm implementation through the provider framework</li>
+                <li><strong>Context Creation:</strong> Creating EVP contexts had significant overhead due to provider dispatch</li>
+                <li><strong>Property Queries:</strong> The property-based algorithm selection system added string parsing overhead</li>
+                <li><strong>Lock Contention:</strong> Provider operations required locking that hurt multi-threaded performance</li>
+            </ul>
+        </div>
+        
+        <div class="change-category" style="background: #d3f9d8; border-left: 4px solid #40c057;">
+            <h4>What OpenSSL 3.2 Fixed</h4>
+            <ul>
+                <li><strong>Improved Algorithm Caching:</strong> Better caching of fetched algorithm implementations</li>
+                <li><strong>Reduced Context Overhead:</strong> Streamlined EVP context creation paths</li>
+                <li><strong>Property Query Optimization:</strong> Faster property string parsing and matching</li>
+                <li><strong>Lock Optimization:</strong> Reduced lock contention in hot paths</li>
+            </ul>
+        </div>
+
+        <h3>Understanding the 3.x Performance Journey</h3>
+        
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>Performance vs 1.1.1w</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>1.1.1w</strong></td>
+                    <td>Baseline (100%)</td>
+                    <td>Direct API, no provider overhead</td>
+                </tr>
+                <tr>
+                    <td><strong>3.0.x</strong></td>
+                    <td class="delta-negative">~70-80%</td>
+                    <td>Provider architecture introduced, significant overhead</td>
+                </tr>
+                <tr>
+                    <td><strong>3.1.x</strong></td>
+                    <td class="delta-negative">~75-85%</td>
+                    <td>Minor improvements, still significant overhead</td>
+                </tr>
+                <tr>
+                    <td><strong>3.2.x</strong></td>
+                    <td class="delta-positive">~95-105%</td>
+                    <td>Major optimization effort, approaching 1.1.1w levels</td>
+                </tr>
+                <tr>
+                    <td><strong>3.4.x</strong></td>
+                    <td class="delta-positive">~100-110%</td>
+                    <td>Continued optimization, often exceeds 1.1.1w</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="impact-box info">
+            <strong>Key Insight:</strong> The ~2.5× improvement from 3.1 to 3.2 is primarily due to the accumulation of performance fixes addressing the provider overhead introduced in 3.0. This was a focused effort by the OpenSSL team in response to community performance concerns.
+        </div>
+
+        <h3>GitHub Reference</h3>
+        <p>View the changes between these versions:</p>
+        <a href="https://github.com/openssl/openssl/compare/openssl-3.1.0...openssl-3.2.0" target="_blank" class="github-link" style="margin-right: 10px;">
+            <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            Compare 3.1.0...3.2.0
+        </a>
+        <a href="https://github.com/openssl/openssl/releases/tag/openssl-3.2.0" target="_blank" class="github-link">
+            <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            View 3.2.0 Release
+        </a>
+    </div>
+
+    <div class="card">
+        <h2>Benchmark Performance Comparison</h2>
+        
+        <div class="impact-box info" style="margin-bottom: 20px;">
+            <strong>Data Source:</strong> These results are from our local benchmark runs comparing the 3.1.x and 3.2.x series.
+        </div>
+        
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>OpenSSL 3.1.x</th>
+                    <th>OpenSSL 3.2.x</th>
+                    <th>Change</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>TLS 1.3 RSA Handshakes/sec</td>
+                    <td>~2,500</td>
+                    <td>~6,200</td>
+                    <td class="delta-positive">+148%</td>
+                </tr>
+                <tr>
+                    <td>TLS 1.3 ECDSA Handshakes/sec</td>
+                    <td>~7,500</td>
+                    <td>~11,500</td>
+                    <td class="delta-positive">+53%</td>
+                </tr>
+                <tr>
+                    <td>TLS 1.2 RSA Handshakes/sec</td>
+                    <td>~2,600</td>
+                    <td>~6,600</td>
+                    <td class="delta-positive">+154%</td>
+                </tr>
+                <tr>
+                    <td>TLS 1.2 ECDSA Handshakes/sec</td>
+                    <td>~7,600</td>
+                    <td>~11,300</td>
+                    <td class="delta-positive">+49%</td>
+                </tr>
+                <tr>
+                    <td>RSA-2048 Sign/sec</td>
+                    <td>~8,250</td>
+                    <td>~8,350</td>
+                    <td class="delta-positive">+1.2%</td>
+                </tr>
+                <tr>
+                    <td>ECDSA P-256 Sign/sec</td>
+                    <td>~43,000</td>
+                    <td>~43,500</td>
+                    <td class="delta-positive">+1.2%</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="impact-box positive">
+            <strong>Analysis:</strong> The handshake performance improvements are dramatic (50-150%), while raw cryptographic operations (RSA/ECDSA signing) show minimal change. This confirms the improvement is in the <strong>TLS stack and provider dispatch overhead</strong>, not in the underlying crypto primitives.
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Major Feature Changes in OpenSSL 3.2</h2>
+        
+        <p>Beyond performance, OpenSSL 3.2 introduced several significant features:</p>
+        
+        <div class="change-category">
+            <h4>Client-Side QUIC Support (RFC 9000)</h4>
+            <ul>
+                <li>Full client-side QUIC implementation with multiple streams</li>
+                <li>New APIs for QUIC connection and stream management</li>
+                <li>Foundation for future server-side QUIC (added in 3.5)</li>
+            </ul>
+            <a href="https://github.com/openssl/openssl/blob/openssl-3.2.0/README-QUIC.md" target="_blank" class="github-link" style="margin-top: 10px;">
+                <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                View QUIC Documentation
+            </a>
+        </div>
+        
+        <div class="change-category">
+            <h4>TLS Certificate Compression (RFC 8879)</h4>
+            <ul>
+                <li>Support for compressing certificate chains during TLS handshake</li>
+                <li>Reduces bandwidth and speeds up connection establishment</li>
+                <li>Supports zlib, Brotli, and Zstandard compression algorithms</li>
+            </ul>
+        </div>
+        
+        <div class="change-category">
+            <h4>Hybrid Public Key Encryption - HPKE (RFC 9180)</h4>
+            <ul>
+                <li>New high-level API for authenticated encryption with public keys</li>
+                <li>Foundation for Encrypted Client Hello (ECH) support</li>
+                <li>Combines KEM, KDF, and AEAD in a single, secure construction</li>
+            </ul>
+        </div>
+        
+        <div class="change-category">
+            <h4>Deterministic ECDSA Signatures (RFC 6979)</h4>
+            <ul>
+                <li>ECDSA signatures no longer require random nonces</li>
+                <li>Eliminates class of attacks related to poor RNG</li>
+                <li>Provides consistent, reproducible signatures</li>
+            </ul>
+        </div>
+        
+        <div class="change-category">
+            <h4>New Cryptographic Algorithms</h4>
+            <ul>
+                <li><strong>Ed25519ctx, Ed25519ph, Ed448ph</strong> - Extended EdDSA variants (RFC 8032)</li>
+                <li><strong>AES-GCM-SIV</strong> - Nonce-misuse resistant authenticated encryption (RFC 8452)</li>
+                <li><strong>Argon2</strong> - Memory-hard password hashing (RFC 9106)</li>
+                <li><strong>X9.42 KDF</strong> - Key derivation for Diffie-Hellman</li>
+                <li><strong>KMAC-256/512</strong> - SHAKE-based message authentication</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card" id="quic-section">
+        <h2>🚀 Understanding QUIC in OpenSSL 3.2</h2>
+        
+        <div class="impact-box info">
+            <strong>New in 3.2:</strong> OpenSSL 3.2 introduced <strong>client-side QUIC support</strong> (RFC 9000), marking the beginning of OpenSSL's QUIC journey. Server-side QUIC was later added in OpenSSL 3.5.
+        </div>
+
+        <h3>What is QUIC?</h3>
+        
+        <p><strong>QUIC (Quick UDP Internet Connections)</strong> is a transport layer protocol originally designed by Google and standardized by the IETF as RFC 9000. It fundamentally reimagines how secure connections work by combining the transport layer (like TCP) with the encryption layer (like TLS) into a single, optimized protocol.</p>
+        
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="number" style="font-size: 1.5rem;">0-RTT</div>
+                <div class="label">Connection resumption</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" style="font-size: 1.5rem;">1-RTT</div>
+                <div class="label">New connections</div>
+            </div>
+            <div class="stat-item">
+                <div class="number blue">UDP</div>
+                <div class="label">Based transport</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" style="color: #7950f2;">HTTP/3</div>
+                <div class="label">Primary use case</div>
+            </div>
+        </div>
+
+        <h3>Why QUIC Matters for Performance</h3>
+        
+        <div class="change-category" style="background: #e7f5ff; border-left: 4px solid #228be6;">
+            <h4>Traditional TLS over TCP (HTTP/2)</h4>
+            <ul>
+                <li><strong>TCP 3-way handshake:</strong> 1 round-trip (SYN → SYN-ACK → ACK)</li>
+                <li><strong>TLS 1.3 handshake:</strong> 1 round-trip (ClientHello → ServerHello + data)</li>
+                <li><strong>Total minimum latency:</strong> 2 round-trips before application data flows</li>
+                <li><strong>Head-of-line blocking:</strong> One lost packet blocks ALL streams</li>
+            </ul>
+        </div>
+        
+        <div class="change-category" style="background: #d3f9d8; border-left: 4px solid #40c057;">
+            <h4>QUIC (HTTP/3)</h4>
+            <ul>
+                <li><strong>Combined handshake:</strong> Transport + crypto negotiation in parallel</li>
+                <li><strong>New connection:</strong> 1 round-trip total (50% faster than TCP+TLS)</li>
+                <li><strong>Resumed connection (0-RTT):</strong> Application data in first packet!</li>
+                <li><strong>No head-of-line blocking:</strong> Independent streams don't block each other</li>
+            </ul>
+        </div>
+
+        <h3>QUIC vs Traditional TLS: Connection Latency Comparison</h3>
+        
+        <p>The chart below illustrates the round-trip time (RTT) savings when using QUIC compared to traditional TCP+TLS connections:</p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 0.9rem; color: #868e96; margin-bottom: 10px;">TCP + TLS 1.3 (New Connection)</div>
+                <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+                    <div style="background: #228be6; color: white; padding: 10px 20px; border-radius: 4px; width: 80%;">TCP Handshake: 1 RTT</div>
+                    <div style="background: #fab005; color: white; padding: 10px 20px; border-radius: 4px; width: 80%;">TLS 1.3 Handshake: 1 RTT</div>
+                    <div style="background: #495057; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;">Total: 2 RTTs</div>
+                </div>
+            </div>
+            <div style="background: #d3f9d8; padding: 20px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 0.9rem; color: #868e96; margin-bottom: 10px;">QUIC (New Connection)</div>
+                <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+                    <div style="background: #40c057; color: white; padding: 10px 20px; border-radius: 4px; width: 80%;">Combined QUIC+TLS: 1 RTT</div>
+                    <div style="height: 44px;"></div>
+                    <div style="background: #40c057; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;">Total: 1 RTT (50% faster!)</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 0.9rem; color: #868e96; margin-bottom: 10px;">TCP + TLS 1.3 (Session Resumption)</div>
+                <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+                    <div style="background: #228be6; color: white; padding: 10px 20px; border-radius: 4px; width: 80%;">TCP Handshake: 1 RTT</div>
+                    <div style="background: #fab005; color: white; padding: 10px 20px; border-radius: 4px; width: 80%;">TLS 1.3 Resume: 1 RTT</div>
+                    <div style="background: #495057; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;">Total: 2 RTTs</div>
+                </div>
+            </div>
+            <div style="background: #d3f9d8; padding: 20px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 0.9rem; color: #868e96; margin-bottom: 10px;">QUIC (0-RTT Resumption)</div>
+                <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+                    <div style="background: #40c057; color: white; padding: 10px 20px; border-radius: 4px; width: 80%;">Application data in first packet!</div>
+                    <div style="height: 44px;"></div>
+                    <div style="background: #40c057; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold;">Total: 0 RTT (instant!)</div>
+                </div>
+            </div>
+        </div>
+
+        <h3>Real-World Performance Impact</h3>
+        
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>TCP + TLS 1.3</th>
+                    <th>QUIC</th>
+                    <th>Improvement</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Connection establishment (50ms RTT)</td>
+                    <td>100ms minimum</td>
+                    <td>50ms</td>
+                    <td class="delta-positive">50% faster</td>
+                </tr>
+                <tr>
+                    <td>Session resumption (50ms RTT)</td>
+                    <td>100ms minimum</td>
+                    <td>0ms (0-RTT)</td>
+                    <td class="delta-positive">100% faster</td>
+                </tr>
+                <tr>
+                    <td>Mobile network handoff</td>
+                    <td>Full reconnection needed</td>
+                    <td>Connection ID survives</td>
+                    <td class="delta-positive">Seamless</td>
+                </tr>
+                <tr>
+                    <td>Packet loss impact</td>
+                    <td>All streams blocked</td>
+                    <td>Only affected stream</td>
+                    <td class="delta-positive">Independent streams</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>How OpenSSL Implements QUIC</h3>
+        
+        <p>Unlike traditional TLS which handles everything internally, OpenSSL's QUIC implementation uses a <strong>hybrid approach</strong>:</p>
+        
+        <div class="change-category">
+            <h4>OpenSSL QUIC Architecture</h4>
+            <ul>
+                <li><strong>TLS 1.3 Handshake:</strong> OpenSSL handles the cryptographic handshake (certificates, key exchange)</li>
+                <li><strong>QUIC Record Layer:</strong> OpenSSL provides QUIC-specific packet protection and encryption</li>
+                <li><strong>Connection Management:</strong> OpenSSL manages QUIC connection state and stream multiplexing</li>
+                <li><strong>Integration APIs:</strong> New <code>OSSL_QUIC_*</code> functions for applications to use QUIC directly</li>
+            </ul>
+        </div>
+
+        <div class="impact-box positive">
+            <strong>Why QUIC is Important:</strong>
+            <ul style="margin: 10px 0 0 0;">
+                <li><strong>HTTP/3 adoption:</strong> Major websites (Google, Cloudflare, Facebook) already use QUIC for 25%+ of traffic</li>
+                <li><strong>Mobile performance:</strong> QUIC's connection migration is crucial for mobile users switching networks</li>
+                <li><strong>CDN efficiency:</strong> Reduced connection overhead means faster content delivery</li>
+                <li><strong>Future-proofing:</strong> QUIC is becoming the dominant transport for modern web applications</li>
+            </ul>
+        </div>
+
+        <h3>OpenSSL QUIC Timeline</h3>
+        
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>QUIC Support</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>OpenSSL 3.2</strong></td>
+                    <td>Client-side QUIC (RFC 9000)</td>
+                    <td class="delta-positive">First release</td>
+                </tr>
+                <tr>
+                    <td><strong>OpenSSL 3.3</strong></td>
+                    <td>Client improvements, QLOG support</td>
+                    <td class="delta-positive">Enhanced</td>
+                </tr>
+                <tr>
+                    <td><strong>OpenSSL 3.4</strong></td>
+                    <td>Stability and performance fixes</td>
+                    <td class="delta-positive">Matured</td>
+                </tr>
+                <tr>
+                    <td><strong>OpenSSL 3.5</strong></td>
+                    <td>Server-side QUIC + 0-RTT</td>
+                    <td class="delta-positive">Full support</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Client-Side vs Server-Side QUIC: What's the Difference?</h3>
+        
+        <p>OpenSSL implemented QUIC in two phases. Understanding the difference is crucial for deployment planning:</p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+            <div class="change-category" style="background: #e7f5ff; border-left: 4px solid #228be6;">
+                <h4>🖥️ Client-Side QUIC (OpenSSL 3.2+)</h4>
+                <p><strong>What it means:</strong> Your application can <em>connect to</em> QUIC-enabled servers.</p>
+                <ul>
+                    <li><strong>Initiates connections:</strong> Sends ClientHello, negotiates parameters</li>
+                    <li><strong>Use cases:</strong> Web browsers, HTTP clients, mobile apps</li>
+                    <li><strong>Responsibility:</strong> Generates key shares, validates server certificates</li>
+                    <li><strong>Examples:</strong> curl with HTTP/3, custom QUIC clients</li>
+                </ul>
+                <p style="margin-top: 15px; font-size: 0.9rem; color: #495057;"><strong>API:</strong> Use <code>SSL_new_stream()</code> to create streams, <code>SSL_connect()</code> to initiate</p>
+            </div>
+            <div class="change-category" style="background: #d3f9d8; border-left: 4px solid #40c057;">
+                <h4>Server-Side QUIC (OpenSSL 3.5+)</h4>
+                <p><strong>What it means:</strong> Your application can <em>accept</em> QUIC connections from clients.</p>
+                <ul>
+                    <li><strong>Accepts connections:</strong> Listens on UDP, handles ClientHello</li>
+                    <li><strong>Use cases:</strong> Web servers, API gateways, load balancers</li>
+                    <li><strong>Responsibility:</strong> Presents certificates, manages multiple clients</li>
+                    <li><strong>Examples:</strong> nginx (with quic module), custom QUIC servers</li>
+                </ul>
+                <p style="margin-top: 15px; font-size: 0.9rem; color: #495057;"><strong>API:</strong> Use <code>SSL_accept_stream()</code>, <code>SSL_get_accept_stream_queue_len()</code></p>
+            </div>
+        </div>
+        
+        <div class="impact-box">
+            <strong>Why the phased approach?</strong> Server-side QUIC is significantly more complex:
+            <ul style="margin: 10px 0 0 0;">
+                <li><strong>Connection multiplexing:</strong> Servers must handle thousands of concurrent connections</li>
+                <li><strong>Address validation:</strong> Servers need to prevent IP spoofing attacks (Retry tokens)</li>
+                <li><strong>0-RTT anti-replay:</strong> Servers must track 0-RTT tickets to prevent replay attacks</li>
+                <li><strong>Migration handling:</strong> Servers must gracefully handle clients changing IP addresses</li>
+            </ul>
+        </div>
+
+        <h3>What is QLOG?</h3>
+        
+        <div class="impact-box info" style="margin-bottom: 20px;">
+            <strong>Added in OpenSSL 3.3:</strong> QLOG support enables deep protocol inspection and debugging for QUIC connections.
+        </div>
+        
+        <p><strong>QLOG</strong> (QUIC Logging) is a standardized JSON-based logging format specifically designed for QUIC and HTTP/3. It captures detailed protocol events that are essential for debugging, performance analysis, and interoperability testing.</p>
+        
+        <div class="change-category">
+            <h4>What QLOG Captures</h4>
+            <ul>
+                <li><strong>Connection events:</strong> Handshake start/completion, connection close, migration</li>
+                <li><strong>Packet information:</strong> Packet numbers, types, sizes, timing</li>
+                <li><strong>Frame details:</strong> Stream frames, ACK frames, crypto frames</li>
+                <li><strong>Recovery events:</strong> Packet loss detection, retransmissions, RTT measurements</li>
+                <li><strong>Flow control:</strong> Window updates, blocked streams, data limits</li>
+            </ul>
+        </div>
+        
+        <div class="change-category">
+            <h4>Why QLOG Matters</h4>
+            <ul>
+                <li><strong>Debugging:</strong> Identify handshake failures, packet loss patterns, congestion issues</li>
+                <li><strong>Performance tuning:</strong> Analyze RTT, loss rates, and stream prioritization</li>
+                <li><strong>Interoperability:</strong> Compare behavior between different QUIC implementations</li>
+                <li><strong>Visualization:</strong> Tools like <a href="https://qvis.quictools.info/" target="_blank" style="color: #228be6;">qvis</a> render QLOG files as interactive diagrams</li>
+            </ul>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 4px; margin: 20px 0;">
+            <strong>Example: Enabling QLOG in OpenSSL</strong>
+            <pre style="margin: 10px 0 0 0; background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto;"><code># Set environment variable to enable QLOG output
+export QLOGDIR=/tmp/qlogs
+
+# Run OpenSSL with QUIC (QLOG files written automatically)
+openssl s_client -quic -connect example.com:443
+
+# View the generated QLOG file
+cat /tmp/qlogs/*.qlog | jq .</code></pre>
+        </div>
+        
+        <a href="https://datatracker.ietf.org/doc/draft-ietf-quic-qlog-main-schema/" target="_blank" class="github-link" style="margin-right: 10px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h6v6h6v10H6z"/></svg>
+            QLOG IETF Draft
+        </a>
+        <a href="https://qvis.quictools.info/" target="_blank" class="github-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            qvis Visualizer
+        </a>
+
+        <h3 id="quic-pqc-challenge">⚠️ The QUIC + Post-Quantum Challenge: MTU and Large Keys</h3>
+        
+        <div class="impact-box critical">
+            <strong>Critical Issue:</strong> Post-quantum cryptography creates significant complications for QUIC due to UDP packet size constraints. This is an active area of research and concern in the cryptographic community.
+        </div>
+        
+        <p>QUIC was designed with specific assumptions about key sizes that post-quantum cryptography fundamentally challenges:</p>
+        
+        <h4>The Problem: Key Size Explosion</h4>
+        
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Algorithm</th>
+                    <th>Public Key Size</th>
+                    <th>Ciphertext Size</th>
+                    <th>Total Key Share</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>X25519</strong> (classical)</td>
+                    <td>32 bytes</td>
+                    <td>32 bytes</td>
+                    <td class="delta-positive">64 bytes</td>
+                </tr>
+                <tr>
+                    <td><strong>P-256</strong> (classical)</td>
+                    <td>65 bytes</td>
+                    <td>65 bytes</td>
+                    <td class="delta-positive">130 bytes</td>
+                </tr>
+                <tr>
+                    <td><strong>ML-KEM-768</strong> (PQC)</td>
+                    <td>1,184 bytes</td>
+                    <td>1,088 bytes</td>
+                    <td class="delta-negative">2,272 bytes</td>
+                </tr>
+                <tr>
+                    <td><strong>X25519MLKEM768</strong> (hybrid)</td>
+                    <td>1,216 bytes</td>
+                    <td>1,120 bytes</td>
+                    <td class="delta-negative">2,336 bytes</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="change-category" style="background: #fff5f5; border-left: 4px solid #fa5252;">
+            <h4>QUIC's MTU Constraint</h4>
+            <ul>
+                <li><strong>QUIC Initial packets:</strong> Must fit within ~1,200 bytes (minimum QUIC MTU per RFC 9000)</li>
+                <li><strong>Typical UDP MTU:</strong> ~1,472 bytes on most networks (1500 - 28 header bytes)</li>
+                <li><strong>Problem:</strong> A hybrid key share (2,336 bytes) <strong>exceeds the entire packet!</strong></li>
+                <li><strong>Impact:</strong> ClientHello may require fragmentation or multiple round trips</li>
+            </ul>
+        </div>
+        
+        <h4>Why This Matters for Performance</h4>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                <div style="font-weight: bold; color: #495057; margin-bottom: 10px;">Classical QUIC Handshake</div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="background: #40c057; color: white; padding: 8px; border-radius: 4px; text-align: center;">ClientHello + X25519 key share (~300 bytes)</div>
+                    <div style="text-align: center; color: #868e96;">↓ Fits in 1 packet ✓</div>
+                    <div style="background: #228be6; color: white; padding: 8px; border-radius: 4px; text-align: center;">1 RTT handshake</div>
+                </div>
+            </div>
+            <div style="background: #fff5f5; padding: 20px; border-radius: 8px;">
+                <div style="font-weight: bold; color: #495057; margin-bottom: 10px;">PQC QUIC Handshake (Challenge)</div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="background: #fa5252; color: white; padding: 8px; border-radius: 4px; text-align: center;">ClientHello + ML-KEM key share (~2,500+ bytes)</div>
+                    <div style="text-align: center; color: #868e96;">↓ Exceeds MTU! Multiple packets needed</div>
+                    <div style="background: #fd7e14; color: white; padding: 8px; border-radius: 4px; text-align: center;">Potential fragmentation overhead</div>
+                </div>
+            </div>
+        </div>
+        
+        <h4>Current Solutions and Research</h4>
+        
+        <div class="change-category">
+            <h4>Approaches Being Explored</h4>
+            <ul>
+                <li><strong>QUIC coalescing:</strong> Multiple QUIC packets in a single UDP datagram</li>
+                <li><strong>Deferred key exchange:</strong> Send PQC key share in a subsequent packet</li>
+                <li><strong>Smaller PQC algorithms:</strong> ML-KEM-512 is smaller but provides less security</li>
+                <li><strong>Path MTU discovery:</strong> Negotiate larger MTU when available</li>
+                <li><strong>Compression techniques:</strong> Research into compressible key formats</li>
+            </ul>
+        </div>
+        
+        <div class="impact-box positive">
+            <strong>OpenSSL's Approach (3.5+):</strong> OpenSSL handles this by allowing multiple key shares and supporting HelloRetryRequest (HRR) fallback. If the initial key share doesn't work, the server can request a different one. However, this adds latency—potentially negating QUIC's speed benefits.
+            <p style="margin-top: 10px;"><a href="openssl_version_analysis.html" style="color: #2f9e44; font-weight: bold;">→ See our OpenSSL 3.5/3.6 Analysis</a> for details on how ML-KEM default keyshares impact performance.</p>
+        </div>
+        
+        <div class="change-category">
+            <h4>Real-World Implications</h4>
+            <ul>
+                <li><strong>HTTP/3 adoption:</strong> May be slowed until PQC MTU issues are resolved</li>
+                <li><strong>Mobile networks:</strong> Often have smaller MTUs, exacerbating the problem</li>
+                <li><strong>Middleboxes:</strong> Some firewalls/NATs fragment or drop oversized UDP packets</li>
+                <li><strong>Performance regression:</strong> QUIC's latency benefits may be partially lost with PQC</li>
+            </ul>
+        </div>
+        
+        <h4>Further Reading</h4>
+        <ul>
+            <li><a href="https://datatracker.ietf.org/doc/draft-ietf-tls-hybrid-design/" target="_blank">IETF: Hybrid Key Exchange in TLS 1.3</a> — Design considerations for hybrid PQC</li>
+            <li><a href="https://blog.cloudflare.com/post-quantum-to-origins/" target="_blank">Cloudflare: Post-Quantum TLS Experiments</a> — Real-world PQC deployment challenges</li>
+            <li><a href="openssl_version_analysis.html">OpenSSL 3.5/3.6 Performance Analysis</a> — Our analysis of ML-KEM's ~13% handshake overhead</li>
+        </ul>
+
+        <div class="impact-box info">
+            <strong>Testing QUIC:</strong> OpenSSL provides QUIC testing capabilities through its <code>s_server</code> and <code>s_client</code> tools with the <code>-quic</code> flag. For benchmarking, we measure the cryptographic operations that underpin QUIC connections (key exchange, packet protection) rather than network-dependent metrics.
+        </div>
+
+        <h3>QUIC Code References</h3>
+        <p>Explore the QUIC implementation in OpenSSL:</p>
+        <a href="https://github.com/openssl/openssl/blob/openssl-3.2.0/README-QUIC.md" target="_blank" class="github-link" style="margin-right: 10px; margin-bottom: 10px;">
+            <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            QUIC README
+        </a>
+        <a href="https://github.com/openssl/openssl/tree/openssl-3.2.0/ssl/quic" target="_blank" class="github-link" style="margin-right: 10px; margin-bottom: 10px;">
+            <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            QUIC Source Code
+        </a>
+        <a href="https://datatracker.ietf.org/doc/html/rfc9000" target="_blank" class="github-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h6v6h6v10H6z"/></svg>
+            RFC 9000 Spec
+        </a>
+    </div>
+
+    <div class="card">
+        <h2>Key Code Areas</h2>
+        
+        <h3>Performance-Critical Files</h3>
+        <ul>
+            <li><a href="https://github.com/openssl/openssl/blob/openssl-3.2.0/crypto/evp/evp_fetch.c" target="_blank"><code>crypto/evp/evp_fetch.c</code></a> - Algorithm fetching and caching (major optimization target)</li>
+            <li><a href="https://github.com/openssl/openssl/blob/openssl-3.2.0/crypto/evp/evp_lib.c" target="_blank"><code>crypto/evp/evp_lib.c</code></a> - EVP library core functions</li>
+            <li><a href="https://github.com/openssl/openssl/blob/openssl-3.2.0/crypto/property/property.c" target="_blank"><code>crypto/property/property.c</code></a> - Property query optimization</li>
+            <li><a href="https://github.com/openssl/openssl/blob/openssl-3.2.0/ssl/statem/statem_clnt.c" target="_blank"><code>ssl/statem/statem_clnt.c</code></a> - TLS client state machine</li>
+            <li><a href="https://github.com/openssl/openssl/blob/openssl-3.2.0/ssl/statem/statem_srvr.c" target="_blank"><code>ssl/statem/statem_srvr.c</code></a> - TLS server state machine</li>
+        </ul>
+        
+        <h3>Release Tags</h3>
+        <ul>
+            <li><a href="https://github.com/openssl/openssl/releases/tag/openssl-3.2.0" target="_blank">OpenSSL 3.2.0</a> - Performance breakthrough release (Nov 2023)</li>
+            <li><a href="https://github.com/openssl/openssl/releases/tag/openssl-3.1.0" target="_blank">OpenSSL 3.1.0</a> - Previous series baseline</li>
+            <li><a href="https://github.com/openssl/openssl/compare/openssl-3.1.0...openssl-3.2.0" target="_blank">Full Comparison</a> - All changes between versions</li>
+        </ul>
+        
+        <h3>Changelog & Documentation</h3>
+        <ul>
+            <li><a href="https://github.com/openssl/openssl/blob/openssl-3.2.0/NEWS.md" target="_blank">NEWS.md</a> - High-level release notes</li>
+            <li><a href="https://github.com/openssl/openssl/blob/openssl-3.2.0/CHANGES.md" target="_blank">CHANGES.md</a> - Detailed changelog</li>
+            <li><a href="https://openssl-library.org/news/openssl-3.2-notes/" target="_blank">OpenSSL 3.2 Release Notes</a> - Official announcement</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>The Bigger Picture: OpenSSL 3.x Performance Recovery</h2>
+        
+        <p>The OpenSSL 3.2 release represents a critical milestone in the OpenSSL 3.x performance story:</p>
+        
+        <div class="change-category">
+            <h4>The Challenge (2021-2023)</h4>
+            <ul>
+                <li>OpenSSL 3.0 (Sept 2021) introduced provider architecture for modularity</li>
+                <li>This caused 20-40% performance regression vs 1.1.1w</li>
+                <li>Community raised concerns about production performance</li>
+                <li>OpenSSL team prioritized performance work</li>
+            </ul>
+        </div>
+        
+        <div class="change-category">
+            <h4>The Recovery (2023-2024)</h4>
+            <ul>
+                <li>OpenSSL 3.2 (Nov 2023) delivered major optimizations</li>
+                <li>OpenSSL 3.3 (Apr 2024) continued refinements</li>
+                <li>OpenSSL 3.4 (Oct 2024) achieved/exceeded 1.1.1w performance</li>
+                <li>Provider architecture overhead largely mitigated</li>
+            </ul>
+        </div>
+        
+        <div class="impact-box positive">
+            <strong>Recommendation:</strong> For production systems requiring maximum performance, OpenSSL 3.2+ provides the best balance of modern features and performance. Organizations still on 3.0.x or 3.1.x should prioritize upgrading to capture these gains.
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Why This Matters for Your Deployment</h2>
+        
+        <p>Understanding the performance changes between OpenSSL versions helps you make informed decisions:</p>
+        
+        <div class="change-category">
+            <h4>If You're Running OpenSSL 3.0.x or 3.1.x</h4>
+            <ul>
+                <li><strong>Strong recommendation to upgrade:</strong> OpenSSL 3.2+ provides 50-150% better handshake performance</li>
+                <li>The upgrade is straightforward with minimal API changes</li>
+                <li>You'll get improved security features (QUIC, HPKE, RFC 6979) as a bonus</li>
+            </ul>
+        </div>
+        
+        <div class="change-category">
+            <h4>If You're Evaluating OpenSSL Versions</h4>
+            <ul>
+                <li><strong>OpenSSL 3.2-3.4:</strong> Best performance for traditional TLS workloads</li>
+                <li><strong>OpenSSL 3.5+:</strong> Adds post-quantum cryptography but with ~13% handshake overhead (<a href="openssl_version_analysis.html">see analysis</a>)</li>
+                <li>Consider your security requirements vs performance needs</li>
+            </ul>
+        </div>
+        
+        <div class="change-category">
+            <h4>Understanding the OpenSSL 3.x Performance Journey</h4>
+            <p>This page documents one chapter in a larger story:</p>
+            <ul>
+                <li><strong>3.0 (Sept 2021):</strong> Provider architecture caused 20-40% regression</li>
+                <li><strong>3.2 (Nov 2023):</strong> Major optimization effort recovered most performance — <em>this page</em></li>
+                <li><strong>3.5 (Apr 2025):</strong> Post-quantum defaults add ~13% overhead — <a href="openssl_version_analysis.html">see analysis</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Related Analysis & External Resources</h2>
+        
+        <h3>Benchmark Reports</h3>
+        <ul>
+            <li><a href="openssl_version_analysis.html"><strong>OpenSSL 3.5/3.6 vs 3.4 Analysis</strong></a> — Understanding the ML-KEM/PQC performance impact</li>
+            <li><a href="bellingrath.html">Bellingrath Handshake Benchmarks</a> — TLS handshake performance across all versions</li>
+            <li><a href="schmatz.html">Schmatz Algorithm Benchmarks</a> — Cryptographic operation comparisons</li>
+            <li><a href="overview.html">Overview Scatter Plot</a> — Compare all versions at a glance</li>
+        </ul>
+        
+        <h3>Official OpenSSL Resources</h3>
+        <ul>
+            <li><a href="https://openssl-library.org/news/openssl-3.2-notes/" target="_blank">OpenSSL 3.2 Release Notes</a> — Official announcement and feature list</li>
+            <li><a href="https://github.com/openssl/openssl/blob/openssl-3.2.0/CHANGES.md" target="_blank">CHANGES.md</a> — Detailed changelog for 3.2</li>
+            <li><a href="https://github.com/openssl/openssl/wiki/Performance-Improvements" target="_blank">OpenSSL Performance Wiki</a> — Community-maintained performance notes</li>
+            <li><a href="https://www.openssl.org/docs/man3.2/" target="_blank">OpenSSL 3.2 Documentation</a> — Official API documentation</li>
+        </ul>
+        
+        <h3>Further Reading</h3>
+        <ul>
+            <li><a href="faq.html">Benchmark FAQ</a> — Common questions about these benchmarks</li>
+            <li><a href="pqc.html">Post-Quantum Cryptography Benchmarks</a> — ML-KEM and ML-DSA performance</li>
+        </ul>
+    </div>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="overview.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500; margin-right: 10px;">
+            Back to Overview
+        </a>
+        <a href="bellingrath.html" style="padding: 12px 24px; background: #40c057; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            View Handshake Benchmarks
+        </a>
+    </div>
+</div>
+
+<div style="border-top: 1px solid #e9ecef; padding: 30px 0; margin-top: 50px; text-align: center; background: #f8f9fa;">
+    <div style="max-width: 800px; margin: 0 auto; padding: 0 20px;">
+        <div style="margin-bottom: 15px;">
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark" target="_blank" rel="noopener" class="github-link">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                View on GitHub
+            </a>
+        </div>
+        <div style="font-size: 0.85rem; color: #868e96; line-height: 1.6;">
+            <strong style="color: #495057;">Open Source Benchmark</strong><br>
+            Found a problem? Have an improvement?<br>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
+        </div>
+        <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
+            Licensed under Apache 2.0 • Community-driven development
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+

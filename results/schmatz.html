@@ -51,6 +51,10 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
 <body>
 
 
+<div style="background: linear-gradient(90deg, #fff3bf 0%, #ffe066 100%); padding: 10px 40px; border-bottom: 2px solid #fab005; text-align: center;">
+    <strong style="color: #e67700;">PRELIMINARY RESULT</strong>
+    <span style="color: #495057; margin-left: 15px; font-size: 0.85rem;">Benchmark Suite v1.0.15-dev.0 - Results subject to change</span>
+</div>
 <div class="breadcrumb">
     <a href="index.html">Home</a>
     <span>›</span>
@@ -97,6 +101,27 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
                 <h3>ECDSA Verify Performance</h3>
                 <div id="ecdsa-verify-chart" style="height: 350px;"></div>
             </div>
+        </div>
+    </div>
+    
+    <div class="card" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9f5ff 100%); border-left: 4px solid #228be6;">
+        <h2>🔬 Post-Quantum: ML-DSA (Dilithium) Considerations</h2>
+        <div class="card-desc">
+            <p>In his presentation, <strong>Martin Schmatz</strong> raised important concerns about <strong>Dilithium's (ML-DSA) k-values</strong> and the <strong>rejection sampling retry mechanism</strong>. This is a critical consideration for stress testing post-quantum signature algorithms.</p>
+            
+            <div style="background: #fff3bf; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #fab005;">
+                <h4 style="margin-top: 0; color: #e67700;">⚠️ Schmatz's Concern: Variable Signing Latency</h4>
+                <p style="margin-bottom: 0;">Unlike classical algorithms (RSA, ECDSA) where signing time is deterministic, <strong>Dilithium uses rejection sampling</strong> that may require multiple internal retries. This creates <strong>timing variance</strong> that could impact systems under high load, particularly for latency-sensitive applications.</p>
+            </div>
+            
+            <p><strong>We've implemented dedicated testing for this:</strong> See the <a href="pqc.html" style="color: #228be6; font-weight: 600;">Post-Quantum Cryptography page</a> for detailed ML-DSA rejection sampling analysis, including:</p>
+            <ul style="margin: 10px 0; padding-left: 25px;">
+                <li><strong>Coefficient of Variation (CV%)</strong> - Measures signing time variance</li>
+                <li><strong>P99, P99.9, P99.99 latencies</strong> - Tail latency analysis for capacity planning</li>
+                <li><strong>Outlier detection</strong> - Operations taking &gt;2× the mean time (indicating many retries)</li>
+            </ul>
+            
+            <p style="margin-bottom: 0;"><em>The benchmark runs for 90 seconds to collect ~108,000 samples for statistically robust P99.99 measurements.</em></p>
         </div>
     </div>
     
@@ -841,8 +866,8 @@ data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, 
 
 // Shared D3 utilities
 const colorScale = d3.scaleOrdinal()
-    .domain(['1.1.1', '3.0', '3.1', '3.2', '3.3', '3.4', '3.5'])
-    .range(['#228be6', '#fa5252', '#fd7e14', '#fab005', '#40c057', '#15aabf', '#7950f2']);
+    .domain(['1.1.1', '3.0', '3.1', '3.2', '3.3', '3.4', '3.5', '3.6'])
+    .range(['#228be6', '#fa5252', '#fd7e14', '#fab005', '#40c057', '#15aabf', '#7950f2', '#e64980']);
 
 const getSeries = (ver) => {
     if (ver.startsWith('1.1.1')) return '1.1.1';
@@ -962,7 +987,7 @@ function renderBlockSizeChart() {
             .attr("stroke-width", 2)
             .attr("d", line);
 
-        svg.selectAll(`.dot-${version.config.version}`)
+        svg.selectAll(null)
             .data(blockData)
             .enter().append("circle")
             .attr("cx", (d, i) => x(blockLabels[i]))
@@ -1104,7 +1129,7 @@ window.addEventListener('resize', () => {
             <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
         </div>
         <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
-            Licensed under Apache 2.0 • Community-driven development
+            Licensed under Apache 2.0 • Community-driven development • v1.0.15-dev.0
         </div>
     </div>
 </div>

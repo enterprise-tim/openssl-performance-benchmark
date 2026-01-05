@@ -52,6 +52,10 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
 <body>
 
 
+<div style="background: linear-gradient(90deg, #fff3bf 0%, #ffe066 100%); padding: 10px 40px; border-bottom: 2px solid #fab005; text-align: center;">
+    <strong style="color: #e67700;">PRELIMINARY RESULT</strong>
+    <span style="color: #495057; margin-left: 15px; font-size: 0.85rem;">Benchmark Suite v1.0.15-dev.0 - Results subject to change</span>
+</div>
 <div class="breadcrumb">
     <a href="index.html">Home</a>
     <span>›</span>
@@ -90,6 +94,10 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
                 <h3 style="margin: 0 0 10px 0; color: #868e96;">5. Mráz Optimization</h3>
                 <p style="margin: 0; font-size: 0.9rem; color: #868e96;">Not available - run benchmarks with OpenSSL 3.x and optimized config</p>
             </div>
+            <a href="hw-accel.html" style="display: block; padding: 20px; background: #fff9db; border-radius: 8px; text-decoration: none; color: #5c5f00; border: 2px solid #ffe066;">
+                <h3 style="margin: 0 0 10px 0;">6. Hardware Acceleration</h3>
+                <p style="margin: 0; font-size: 0.9rem; color: #495057;">AVX/NEON impact on crypto performance (with vs without)</p>
+            </a>
             <a href="pqc.html" style="display: block; padding: 20px; background: #f0f9ff; border-radius: 8px; text-decoration: none; color: #0c8599; border: 2px solid #99e9f2;">
                 <h3 style="margin: 0 0 10px 0;">7. Post-Quantum (PQC)</h3>
                 <p style="margin: 0; font-size: 0.9rem; color: #495057;">ML-KEM-768 vs Classical ECDH comparison (OpenSSL 3.5+)</p>
@@ -147,14 +155,14 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
     <div class="card">
         <h2>About This Benchmark</h2>
         <p>
-            This benchmark suite tests OpenSSL performance across versions 1.1.1w through 3.6.0.
+            This benchmark suite tests OpenSSL performance across versions 1.1.1w through 3.5.3.
             
         </p>
         <p>
             <strong>Test Environment:</strong> Debian Bookworm containers, compiled from source, isolated execution.
         </p>
         <p>
-            <strong>Generated:</strong> 2026-01-04
+            <strong>Generated:</strong> 2026-01-05
         </p>
     </div>
 </div>
@@ -176,7 +184,7 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
             <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
         </div>
         <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
-            Licensed under Apache 2.0 • Community-driven development
+            Licensed under Apache 2.0 • Community-driven development • v1.0.15-dev.0
         </div>
     </div>
 </div>

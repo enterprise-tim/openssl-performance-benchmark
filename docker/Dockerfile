@@ -53,8 +53,23 @@ RUN if echo "${OPENSSL_VERSION}" | grep -q "^3\."; then \
         echo "Skipping ML-KEM benchmark (requires OpenSSL 3.x, found ${OPENSSL_VERSION})"; \
     fi
 
+# Compile ML-DSA (Dilithium) benchmark tool with rejection sampling analysis (OpenSSL 3.5+)
+COPY src/mldsa_bench.c .
+RUN if echo "${OPENSSL_VERSION}" | grep -q "^3\.[5-9]\|^3\.[1-9][0-9]"; then \
+        echo "Compiling ML-DSA benchmark for OpenSSL 3.5+ (${OPENSSL_VERSION})" && \
+        gcc -o mldsa_bench mldsa_bench.c \
+            -I/opt/openssl/include \
+            -L/opt/openssl/lib64 -L/opt/openssl/lib \
+            -lcrypto -lm -Wl,-rpath,/opt/openssl/lib64 -Wl,-rpath,/opt/openssl/lib \
+            && chmod +x mldsa_bench; \
+    else \
+        echo "Skipping ML-DSA benchmark (requires OpenSSL 3.5+, found ${OPENSSL_VERSION})"; \
+    fi
+
 COPY src/benchmark.sh .
-RUN chmod +x benchmark.sh
+COPY src/avx_benchmark.sh .
+COPY src/measure_memory.sh .
+RUN chmod +x benchmark.sh avx_benchmark.sh measure_memory.sh
 
 # Copy optimized OpenSSL configuration (for Mráz optimization tests)
 COPY config/openssl-optimized.cnf /opt/openssl/openssl-optimized.cnf
