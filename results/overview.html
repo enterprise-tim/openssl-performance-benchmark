@@ -51,6 +51,10 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
 <body>
 
 
+<div style="background: linear-gradient(90deg, #fff3bf 0%, #ffe066 100%); padding: 10px 40px; border-bottom: 2px solid #fab005; text-align: center;">
+    <strong style="color: #e67700;">PRELIMINARY RESULT</strong>
+    <span style="color: #495057; margin-left: 15px; font-size: 0.85rem;">Benchmark Suite v1.0.15-dev.0 - Results subject to change</span>
+</div>
 <div class="breadcrumb">
     <a href="index.html">Home</a>
     <span>›</span>
@@ -71,16 +75,6 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
         <div id="chart-container" style="min-height: 400px;"></div>
     </div>
     
-    <div class="card">
-        <h2>Deep Dive: Version Analysis</h2>
-        <div class="card-desc">Detailed analysis of what changed between major OpenSSL versions.</div>
-        <div style="margin-top: 15px;">
-            <a href="openssl_version_analysis.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #7950f2; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">
-                What changed in 3.5/3.6 from 3.4?
-            </a>
-        </div>
-    </div>
-
     <div style="text-align: center; margin: 30px 0;">
         <a href="index.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
             ← Back to Overview
@@ -800,8 +794,8 @@ body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Ari
 
 // Shared D3 utilities
 const colorScale = d3.scaleOrdinal()
-    .domain(['1.1.1', '3.0', '3.1', '3.2', '3.3', '3.4', '3.5'])
-    .range(['#228be6', '#fa5252', '#fd7e14', '#fab005', '#40c057', '#15aabf', '#7950f2']);
+    .domain(['1.1.1', '3.0', '3.1', '3.2', '3.3', '3.4', '3.5', '3.6'])
+    .range(['#228be6', '#fa5252', '#fd7e14', '#fab005', '#40c057', '#15aabf', '#7950f2', '#e64980']);
 
 const getSeries = (ver) => {
     if (ver.startsWith('1.1.1')) return '1.1.1';
@@ -954,7 +948,7 @@ function renderChart() {
             <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
         </div>
         <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
-            Licensed under Apache 2.0 • Community-driven development
+            Licensed under Apache 2.0 • Community-driven development • v1.0.15-dev.0
         </div>
     </div>
 </div>

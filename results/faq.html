@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ - OpenSSL Performance Benchmark</title>
+    <style>
+body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; color: #333; line-height: 1.6; }
+
+/* Header */
+.header { background: white; padding: 20px 40px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { margin: 0; font-size: 1.5rem; }
+.header .nav-links { display: flex; gap: 15px; }
+.header .nav-links a { color: #228be6; text-decoration: none; font-weight: 500; }
+.header .nav-links a:hover { text-decoration: underline; }
+
+/* Container */
+.container { max-width: 900px; margin: 0 auto; padding: 30px; }
+
+/* Breadcrumb */
+.breadcrumb { background: white; padding: 15px 40px; border-bottom: 1px solid #e9ecef; font-size: 0.9rem; }
+.breadcrumb a { color: #228be6; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { color: #868e96; margin: 0 8px; }
+
+/* Cards */
+.card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 30px; }
+.card h2 { margin-top: 0; font-size: 1.3rem; color: #228be6; border-bottom: 1px solid #f1f3f5; padding-bottom: 15px; margin-bottom: 20px; }
+
+/* FAQ Styling */
+.faq-section { margin-bottom: 40px; }
+.faq-section h2 { color: #495057; font-size: 1.4rem; border-bottom: 2px solid #228be6; padding-bottom: 10px; margin-bottom: 25px; }
+
+.faq-item { margin-bottom: 25px; padding-bottom: 25px; border-bottom: 1px solid #f1f3f5; }
+.faq-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+.faq-question { font-weight: 600; color: #212529; font-size: 1.05rem; margin-bottom: 12px; cursor: pointer; }
+.faq-question:before { content: "Q: "; color: #228be6; font-weight: 700; }
+
+.faq-answer { color: #495057; margin-left: 0; }
+.faq-answer strong { color: #212529; }
+
+/* Code */
+code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 0.9em; }
+pre { background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 0.85rem; border: 1px solid #e9ecef; }
+pre code { background: none; padding: 0; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9rem; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e9ecef; }
+th { background: #f8f9fa; font-weight: 600; color: #495057; }
+tr:hover { background: #f8f9fa; }
+
+/* Lists */
+ul, ol { margin: 10px 0; padding-left: 25px; }
+li { margin: 8px 0; }
+
+/* Info boxes */
+.info-box { background: #e7f5ff; border-left: 4px solid #228be6; padding: 15px 20px; margin: 15px 0; border-radius: 4px; }
+.warning-box { background: #fff3bf; border-left: 4px solid #fab005; padding: 15px 20px; margin: 15px 0; border-radius: 4px; }
+
+/* TOC */
+.toc { background: #f8f9fa; padding: 20px 25px; border-radius: 8px; margin-bottom: 30px; }
+.toc h3 { margin-top: 0; color: #495057; font-size: 1rem; }
+.toc ul { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 8px 0; }
+.toc a { color: #228be6; text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+
+/* GitHub link */
+.github-link { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #24292f; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem; transition: background 0.2s; }
+.github-link:hover { background: #32383f; }
+    </style>
+</head>
+<body>
+
+<div class="breadcrumb">
+    <a href="index.html">Home</a>
+    <span>›</span>
+    <span>FAQ</span>
+</div>
+<div class="header">
+    <h1>Frequently Asked Questions</h1>
+    <div class="nav-links">
+        <a href="index.html">Dashboard</a>
+        <a href="overview.html">Overview</a>
+        <a href="schmatz.html">Crypto Operations</a>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Table of Contents -->
+    <div class="toc">
+        <h3>📑 Quick Navigation</h3>
+        <ul>
+            <li><a href="#methodology">Benchmark Methodology</a></li>
+            <li><a href="#block-sizes">Block Sizes Explained</a></li>
+            <li><a href="#iterations">Statistical Iterations</a></li>
+            <li><a href="#avx">AVX Impact Testing</a></li>
+            <li><a href="#interpreting">Interpreting Results</a></li>
+            <li><a href="#technical">Technical Details</a></li>
+        </ul>
+    </div>
+
+    <!-- Benchmark Methodology -->
+    <div class="faq-section" id="methodology">
+        <h2>Benchmark Methodology</h2>
+        
+        <div class="faq-item">
+            <div class="faq-question">Are synthetic benchmarks representative of real-world performance?</div>
+            <div class="faq-answer">
+                <p><strong>No, but that's intentional.</strong> This benchmark measures the <strong>library overhead ceiling</strong>. Tools like <code>openssl speed</code> isolate cryptographic performance.</p>
+                <p>Real applications (Nginx, Node.js) spend time on HTTP parsing, TCP management, and logging. A 15% OpenSSL regression might only cause a 1-2% application slowdown.</p>
+                <p>We're measuring the engine, not the whole car. If the library is slower, the application cannot be faster, but other factors will dilute the impact.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">Why test on localhost instead of over a real network?</div>
+            <div class="faq-answer">
+                <p><strong>To eliminate network jitter.</strong> The <code>s_time</code> handshake test connects to <code>s_server</code> on localhost to measure CPU cost, not network latency.</p>
+                <p>In production, network RTT often dominates connection time. A 0.5ms CPU regression might be invisible against 50ms of network latency. Testing on localhost isolates the CPU efficiency we're trying to measure.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">Why compile from source instead of using distro packages?</div>
+            <div class="faq-answer">
+                <p><strong>To compare codebases, not packagers' optimization skills.</strong></p>
+                <p>Linux distributions apply heavy patching and compiler flags (<code>-O3</code>, <code>-march=native</code>). Using upstream defaults ensures we're comparing OpenSSL 1.1 vs 3.x code changes, not Debian's vs RHEL's build process.</p>
+                <p>Absolute numbers may differ from <code>apt-get install openssl</code>, but relative regressions between versions remain valid.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">Doesn't Docker add overhead?</div>
+            <div class="faq-answer">
+                <p><strong>On Linux, Docker overhead is negligible</strong> (syscall isolation). On macOS/Windows, there is virtualization overhead.</p>
+                <p>However, since every version runs in the same Docker environment, the overhead cancels out. We're measuring trends across versions, not absolute hardware limits.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Block Sizes Explained -->
+    <div class="faq-section" id="block-sizes">
+        <h2>Block Sizes Explained</h2>
+        
+        <div class="faq-item">
+            <div class="faq-question">What is a "block size" in cryptographic benchmarks?</div>
+            <div class="faq-answer">
+                <p>In cryptographic benchmarks, "block size" refers to the <strong>size of data chunks</strong> being encrypted or hashed in a single operation—NOT the underlying cipher's internal block size.</p>
+                
+                <div class="info-box">
+                    <strong>Understanding the terminology:</strong>
+                    <ol>
+                        <li><strong>Cipher block size (fixed):</strong> AES always operates on 128-bit (16-byte) internal blocks. This is a property of the algorithm itself and cannot be changed.</li>
+                        <li><strong>Benchmark block size (variable):</strong> The amount of data passed to the encryption function in one call. When we test "8KB blocks," we're encrypting 8,192 bytes in a single <code>EVP_EncryptUpdate()</code> call.</li>
+                    </ol>
+                </div>
+                
+                <p><strong>Why block size matters for performance:</strong></p>
+                <p>Every encryption operation has overhead:</p>
+                <ul>
+                    <li><strong>Context initialization:</strong> Setting up the cipher context</li>
+                    <li><strong>Key schedule:</strong> Preparing round keys</li>
+                    <li><strong>Provider lookup (OpenSSL 3.x):</strong> Finding the algorithm implementation</li>
+                    <li><strong>Function call overhead:</strong> Entry/exit costs</li>
+                </ul>
+                
+                <p><strong>Example comparison:</strong></p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Scenario</th>
+                            <th>Data Size</th>
+                            <th>Block Size</th>
+                            <th>Overhead Impact</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>IoT sensor</td>
+                            <td>64 bytes</td>
+                            <td>64B</td>
+                            <td><strong>High</strong> - 100% overhead per message</td>
+                        </tr>
+                        <tr>
+                            <td>Database field</td>
+                            <td>256 bytes</td>
+                            <td>256B</td>
+                            <td><strong>Medium</strong> - overhead still significant</td>
+                        </tr>
+                        <tr>
+                            <td>File encryption</td>
+                            <td>1 MB</td>
+                            <td>8KB</td>
+                            <td><strong>Low</strong> - overhead amortized</td>
+                        </tr>
+                        <tr>
+                            <td>TLS record</td>
+                            <td>16KB</td>
+                            <td>16KB</td>
+                            <td><strong>Minimal</strong> - bulk throughput</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <p><strong>Real-world implications:</strong></p>
+                <ul>
+                    <li><strong>Chat applications</strong> encrypting 100-byte messages see lower throughput than the "8KB" benchmark numbers suggest</li>
+                    <li><strong>Bulk file encryption</strong> achieves near-maximum throughput shown in benchmarks</li>
+                    <li><strong>Database encryption</strong> (per-field) falls somewhere in between</li>
+                </ul>
+                
+                <p>This is why we test multiple block sizes: to help you understand performance across different use cases.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">What block sizes are tested in this benchmark?</div>
+            <div class="faq-answer">
+                <p><strong>16B, 64B, 256B, 1KB, and 8KB.</strong></p>
+                <ul>
+                    <li>Small blocks (16-64B) stress initialization overhead</li>
+                    <li>Large blocks (8KB) show maximum throughput</li>
+                    <li>The gap reveals Provider architecture overhead in OpenSSL 3.x</li>
+                </ul>
+                
+                <div class="warning-box">
+                    <strong>Note:</strong> Currently, only 1KB and 8KB block size data is captured in the benchmark results. Smaller block sizes (16B, 64B, 256B) require additional benchmark runs to collect.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistical Iterations -->
+    <div class="faq-section" id="iterations">
+        <h2>Statistical Iterations</h2>
+        
+        <div class="faq-item">
+            <div class="faq-question">Why run each version multiple times?</div>
+            <div class="faq-answer">
+                <p><strong>To eliminate measurement noise and provide statistical confidence.</strong> A single run might be affected by temporary system conditions. Multiple iterations reveal whether performance is consistent or variable.</p>
+                <p>Results include mean ± standard deviation. Low stddev indicates reliable measurement; high stddev suggests investigating system interference.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">How many iterations should I use?</div>
+            <div class="faq-answer">
+                <p>Depends on your needs:</p>
+                <ul>
+                    <li><strong>2 iterations:</strong> Minimal statistics, fast</li>
+                    <li><strong>3 iterations:</strong> Recommended default</li>
+                    <li><strong>10 iterations:</strong> Publication quality</li>
+                    <li><strong>20 iterations:</strong> Maximum confidence</li>
+                </ul>
+                <p>Each iteration runs in a fresh Docker container. GitHub Actions runs all in parallel, so wall-clock time stays the same (~30 minutes), but CI minutes scale linearly.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">What if I see high standard deviation (>5%)?</div>
+            <div class="faq-answer">
+                <p><strong>High variance indicates performance instability.</strong> Possible causes:</p>
+                <ul>
+                    <li>System load during test</li>
+                    <li>Thermal throttling</li>
+                    <li>Resource contention</li>
+                </ul>
+                <p>Solutions:</p>
+                <ul>
+                    <li>Increase iterations to 10+</li>
+                    <li>Review <code>detailed-iterations.json</code> for outliers</li>
+                    <li>Check CI runner specifications</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- AVX Impact Testing -->
+    <div class="faq-section" id="avx">
+        <h2>AVX Impact Testing</h2>
+        
+        <div class="faq-item">
+            <div class="faq-question">What are AVX and AVX2?</div>
+            <div class="faq-answer">
+                <p><strong>Advanced Vector Extensions (AVX/AVX2)</strong> are CPU instruction set extensions that enable SIMD (Single Instruction Multiple Data) operations. They allow processing multiple data elements simultaneously, significantly accelerating cryptographic operations.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">Does the benchmark test AVX impact?</div>
+            <div class="faq-answer">
+                <p><strong>Yes.</strong> The benchmark automatically runs with and without AVX enabled to measure the performance difference. This is controlled using the <code>OPENSSL_ia32cap</code> environment variable, which tells OpenSSL which CPU features to use at runtime.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">Why is AVX particularly important for ML-KEM?</div>
+            <div class="faq-answer">
+                <p><strong>ML-KEM (Kyber)</strong> is a lattice-based post-quantum algorithm that involves many matrix and polynomial operations. These operations map extremely well to SIMD instructions:</p>
+                <ul>
+                    <li><strong>Vector additions/multiplications:</strong> Core of lattice operations</li>
+                    <li><strong>Parallel NTT (Number Theoretic Transform):</strong> AVX2 accelerates by 4-8x</li>
+                    <li><strong>Packing/unpacking:</strong> Vectorized bit manipulation</li>
+                </ul>
+                <p>You'll often see 50-100%+ improvement with AVX enabled for ML-KEM vs disabled.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">How do I run the AVX impact test locally?</div>
+            <div class="faq-answer">
+                <p>Use the standalone test script:</p>
+                <pre><code>./scripts/test-avx-impact.sh 3.5.4</code></pre>
+                <p>Or run inside a Docker container:</p>
+                <pre><code>docker run --rm openssl-bench:3.5.4 ./avx_benchmark.sh</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interpreting Results -->
+    <div class="faq-section" id="interpreting">
+        <h2>Interpreting Results</h2>
+        
+        <div class="faq-item">
+            <div class="faq-question">Why does throughput improve but handshakes slow down in OpenSSL 3.x?</div>
+            <div class="faq-answer">
+                <p>Different architectural components:</p>
+                <p><strong>Throughput increase:</strong> Updated assembly optimizations, better pipelining for bulk operations.</p>
+                <p><strong>Handshake decrease:</strong> Provider model introduces abstraction layers. Handshakes involve many small operations (RNG, hashing, signing), and per-operation overhead accumulates.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">Why is TLS 1.2 session resumption faster than TLS 1.3?</div>
+            <div class="faq-answer">
+                <p><strong>TLS 1.2 session resumption</strong> completely bypasses asymmetric crypto. TLS 1.3 PSK resumption still performs HKDF key derivation and potentially ephemeral DH for enhanced forward secrecy.</p>
+                <ul>
+                    <li>TLS 1.2 resumption: 30-40K+ CPS</li>
+                    <li>TLS 1.3 resumption: 6-7K CPS</li>
+                </ul>
+                <p>TLS 1.3 provides better security properties, but TLS 1.2 resumption remains faster in pure throughput.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">How do I know if results are reliable?</div>
+            <div class="faq-answer">
+                <p>Check the standard deviation:</p>
+                <ul>
+                    <li><strong>&lt;1%:</strong> Excellent consistency</li>
+                    <li><strong>1-5%:</strong> Acceptable</li>
+                    <li><strong>&gt;5%:</strong> Investigate</li>
+                </ul>
+                <p>Also review <code>detailed-iterations.json</code> for outliers or patterns.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">Why does OpenSSL 3.5.x show lower AES-GCM 1KB performance?</div>
+            <div class="faq-answer">
+                <div class="info-box">
+                    <strong>This is NOT a performance regression—it's a benchmark methodology change.</strong>
+                </div>
+                <p><a href="https://github.com/openssl/openssl/commit/607a46d003f472d4bce646f3df6e85725094d68a" target="_blank">Commit 607a46d</a> fixed the <code>openssl speed</code> command to properly test AEAD ciphers by computing and validating authentication tags. Previous versions were testing an unrealistic scenario that didn't include tag operations.</p>
+                <p>OpenSSL 3.5.x benchmark numbers are more realistic but not directly comparable to 3.4.x and earlier. The actual encryption performance hasn't regressed—the measurement is now more accurate.</p>
+                <p>👉 <a href="openssl_version_analysis.html#aes-gcm-methodology">See full explanation in the Version Analysis</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technical Details -->
+    <div class="faq-section" id="technical">
+        <h2>Technical Details</h2>
+        
+        <div class="faq-item">
+            <div class="faq-question">What tools are used for each metric?</div>
+            <div class="faq-answer">
+                <ul>
+                    <li><strong>Throughput:</strong> <code>openssl speed -evp [algo]</code> (uses hardware acceleration)</li>
+                    <li><strong>Handshakes:</strong> <code>openssl s_time</code> + <code>openssl s_server</code></li>
+                    <li><strong>Asymmetric ops:</strong> <code>openssl speed [algo]</code> (RSA, ECDSA, ECDH)</li>
+                    <li><strong>PQC:</strong> <code>openssl speed ml-kem-768</code> (OpenSSL 3.5+ only)</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">Why use the -evp flag?</div>
+            <div class="faq-answer">
+                <p>The EVP (Envelope) interface allows hardware acceleration (AES-NI). Testing without <code>-evp</code> measures software-only implementation, which is irrelevant for production use.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Dashboard -->
+    <div style="text-align: center; margin: 40px 0;">
+        <a href="index.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500; margin-right: 10px;">
+            ← Back to Dashboard
+        </a>
+        <a href="schmatz.html" style="padding: 12px 24px; background: #40c057; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            View Crypto Benchmarks
+        </a>
+    </div>
+</div>
+
+<div style="border-top: 1px solid #e9ecef; padding: 30px 0; margin-top: 50px; text-align: center; background: #f8f9fa;">
+    <div style="max-width: 800px; margin: 0 auto; padding: 0 20px;">
+        <div style="margin-bottom: 15px;">
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark" target="_blank" rel="noopener" class="github-link">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                View on GitHub
+            </a>
+        </div>
+        <div style="font-size: 0.85rem; color: #868e96; line-height: 1.6;">
+            <strong style="color: #495057;">Open Source Benchmark</strong><br>
+            Found a problem? Have an improvement?<br>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
+        </div>
+        <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
+            Licensed under Apache 2.0 • Community-driven development
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+

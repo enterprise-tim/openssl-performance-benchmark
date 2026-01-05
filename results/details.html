@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark Details - OpenSSL Performance Benchmark</title>
+    <style>
+body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; color: #333; }
+
+/* Header */
+.header { background: white; padding: 20px 40px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { margin: 0; font-size: 1.5rem; }
+.header .nav-links { display: flex; gap: 15px; }
+.header .nav-links a { color: #228be6; text-decoration: none; font-weight: 500; }
+.header .nav-links a:hover { text-decoration: underline; }
+
+/* Container */
+.container { max-width: 1400px; margin: 0 auto; padding: 30px; }
+
+/* Cards */
+.card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 30px; }
+.card h2 { margin-top: 0; font-size: 1.2rem; color: #495057; border-bottom: 1px solid #f1f3f5; padding-bottom: 15px; margin-bottom: 20px; }
+.card-desc { font-size: 0.9rem; color: #868e96; margin-bottom: 20px; line-height: 1.6; }
+
+/* Breadcrumb */
+.breadcrumb { background: white; padding: 15px 40px; border-bottom: 1px solid #e9ecef; font-size: 0.9rem; }
+.breadcrumb a { color: #228be6; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { color: #868e96; margin: 0 8px; }
+
+/* Summary stats */
+.summary-stats { display: flex; gap: 30px; flex-wrap: wrap; margin-bottom: 30px; }
+.stat-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 30px; border-radius: 10px; min-width: 150px; text-align: center; }
+.stat-box .number { font-size: 2.5rem; font-weight: 700; line-height: 1; }
+.stat-box .label { font-size: 0.9rem; opacity: 0.9; margin-top: 5px; }
+
+/* Version table */
+.version-table { width: 100%; border-collapse: collapse; }
+.version-table th { text-align: left; padding: 12px 15px; background: #f8f9fa; border-bottom: 2px solid #dee2e6; font-weight: 600; color: #495057; }
+.version-table td { padding: 12px 15px; border-bottom: 1px solid #e9ecef; }
+.version-table tr:hover { background: #f8f9fa; }
+.version-badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; }
+.series-1-1-1 { background: #e7f5ff; color: #1971c2; }
+.series-3-0 { background: #fff0f6; color: #c2255c; }
+.series-3-1 { background: #fff4e6; color: #d9480f; }
+.series-3-2 { background: #fff9db; color: #e67700; }
+.series-3-3 { background: #ebfbee; color: #2f9e44; }
+.series-3-4 { background: #e3fafc; color: #0c8599; }
+.series-3-5 { background: #f3f0ff; color: #7048e8; }
+.series-3-6 { background: #fff0f6; color: #e64980; }
+
+/* Iteration details */
+.iteration-card { background: #f8f9fa; border-radius: 8px; padding: 15px 20px; margin-top: 10px; }
+.iteration-card .iteration-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.iteration-card .iteration-number { font-weight: 600; color: #495057; }
+.iteration-card .iteration-timestamp { font-size: 0.85rem; color: #868e96; }
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.metric-item { font-size: 0.85rem; }
+.metric-item .metric-label { color: #868e96; }
+.metric-item .metric-value { color: #495057; font-weight: 500; font-family: 'Monaco', 'Courier New', monospace; }
+    </style>
+</head>
+<body>
+
+<div class="breadcrumb">
+    <a href="index.html">Home</a>
+    <span>›</span>
+    <span>Benchmark Details</span>
+</div>
+<div class="header">
+    <h1>OpenSSL Performance Benchmark</h1>
+    <div class="nav-links">
+        <a href="index.html">← Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Benchmark Summary</h2>
+        <div class="summary-stats" id="summary-stats">
+            <!-- Dynamically populated -->
+        </div>
+        <div class="card-desc">
+            This page provides detailed information about all benchmark runs, including each OpenSSL version tested and the number of iterations performed for statistical reliability.
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>Versions Tested</h2>
+        <table class="version-table">
+            <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>Series</th>
+                    <th>Iterations</th>
+                    <th>Source</th>
+                    <th>Last Run</th>
+                </tr>
+            </thead>
+            <tbody id="versions-table-body">
+                <!-- Dynamically populated -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="card">
+        <h2>Iteration Details</h2>
+        <div class="card-desc">
+            Each version was run multiple times to ensure statistical reliability. Below are the raw iteration results for each version.
+        </div>
+        <div id="iteration-details">
+            <!-- Dynamically populated -->
+        </div>
+    </div>
+</div>
+
+<script>
+const data = [
+  {
+    "version": "OpenSSL 1.1.1w  11 Sep 2023",
+    "config": {
+      "version": "1.1.1w",
+      "url": "https://www.openssl.org/source/openssl-1.1.1w.tar.gz",
+      "series": "1.1.1",
+      "iterations_count": 1
+    },
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 5901582.13,
+      "aes_256_gcm_8k_kbs": 5856720.49,
+      "sha256_1k_kbs": 2788660.02,
+      "sha256_8k_kbs": 3332688.28,
+      "handshakes_new_per_sec": 19557,
+      "handshakes_resume_per_sec": 20580,
+      "rsa_2048_sign_per_sec": 9200,
+      "rsa_2048_verify_per_sec": 295000
+    },
+    "timestamp": "2026-01-04T16:40:06.707Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:39:23.109Z",
+        "metrics": {
+          "aes_256_gcm_1k_kbs": 5901582.13,
+          "aes_256_gcm_8k_kbs": 5856720.49,
+          "sha256_1k_kbs": 2788660.02,
+          "sha256_8k_kbs": 3332688.28,
+          "handshakes_new_per_sec": 19557,
+          "handshakes_resume_per_sec": 20580
+        }
+      }
+    ]
+  },
+  {
+    "version": "OpenSSL 3.0.15 3 Sep 2024",
+    "config": {
+      "version": "3.0.15",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.0.15/openssl-3.0.15.tar.gz",
+      "series": "3.0",
+      "iterations_count": 1
+    },
+    "metrics": {
+      "aes_256_gcm_1k_kbs": 7604872.4,
+      "aes_256_gcm_8k_kbs": 8336787.05,
+      "sha256_1k_kbs": 2775479.5,
+      "sha256_8k_kbs": 3352901.22,
+      "handshakes_new_per_sec": 16719,
+      "handshakes_resume_per_sec": 17178
+    },
+    "timestamp": "2026-01-04T16:40:06.708Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:41:48.107Z",
+        "metrics": {}
+      }
+    ]
+  },
+  {
+    "version": "OpenSSL 3.1.7 3 Sep 2024",
+    "config": {
+      "version": "3.1.7",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.1.7/openssl-3.1.7.tar.gz",
+      "series": "3.1",
+      "iterations_count": 1
+    },
+    "metrics": {},
+    "timestamp": "2026-01-04T16:40:06.708Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:44:13.122Z",
+        "metrics": {}
+      }
+    ]
+  },
+  {
+    "version": "OpenSSL 3.2.3 3 Sep 2024",
+    "config": {
+      "version": "3.2.3",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.2.3/openssl-3.2.3.tar.gz",
+      "series": "3.2",
+      "iterations_count": 1
+    },
+    "metrics": {},
+    "timestamp": "2026-01-04T16:40:06.708Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:46:38.101Z",
+        "metrics": {}
+      }
+    ]
+  },
+  {
+    "version": "OpenSSL 3.3.2 3 Sep 2024",
+    "config": {
+      "version": "3.3.2",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.3.2/openssl-3.3.2.tar.gz",
+      "series": "3.3",
+      "iterations_count": 1
+    },
+    "metrics": {},
+    "timestamp": "2026-01-04T16:40:06.708Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:49:03.096Z",
+        "metrics": {}
+      }
+    ]
+  },
+  {
+    "version": "OpenSSL 3.4.0 22 Oct 2024",
+    "config": {
+      "version": "3.4.0",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.4.0/openssl-3.4.0.tar.gz",
+      "series": "3.4",
+      "iterations_count": 1
+    },
+    "metrics": {},
+    "timestamp": "2026-01-04T16:40:06.708Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:51:28.100Z",
+        "metrics": {}
+      }
+    ]
+  },
+  {
+    "version": "OpenSSL 3.5.3 16 Sep 2025",
+    "config": {
+      "version": "3.5.3",
+      "url": "https://github.com/openssl/openssl/releases/download/openssl-3.5.3/openssl-3.5.3.tar.gz",
+      "series": "3.5",
+      "iterations_count": 1
+    },
+    "metrics": {},
+    "timestamp": "2026-01-04T16:40:06.708Z",
+    "raw_iterations": [
+      {
+        "iteration": 1,
+        "timestamp": "2025-12-30T21:53:53.108Z",
+        "metrics": {}
+      }
+    ]
+  }
+];
+
+// Sort by version
+data.sort((a, b) => a.config.version.localeCompare(b.config.version, undefined, { numeric: true }));
+
+// Calculate summary stats
+const totalVersions = data.length;
+const totalIterations = data.reduce((sum, d) => sum + (d.config.iterations_count || 1), 0);
+const lastRunDate = data.length > 0 ? new Date(data[0].timestamp).toLocaleDateString() : 'N/A';
+
+// Render summary stats
+document.getElementById('summary-stats').innerHTML = `
+    <div class="stat-box">
+        <div class="number">${totalVersions}</div>
+        <div class="label">Versions Tested</div>
+    </div>
+    <div class="stat-box">
+        <div class="number">${totalIterations}</div>
+        <div class="label">Total Iterations</div>
+    </div>
+    <div class="stat-box">
+        <div class="number">${lastRunDate}</div>
+        <div class="label">Last Run</div>
+    </div>
+`;
+
+// Get series class
+function getSeriesClass(series) {
+    return 'series-' + series.replace(/\./g, '-');
+}
+
+// Format timestamp
+function formatTimestamp(ts) {
+    if (!ts) return 'N/A';
+    const date = new Date(ts);
+    return date.toLocaleString();
+}
+
+// Render versions table
+const tableBody = document.getElementById('versions-table-body');
+tableBody.innerHTML = data.map(d => `
+    <tr>
+        <td>
+            <span class="version-badge ${getSeriesClass(d.config.series)}">${d.config.version}</span>
+        </td>
+        <td>${d.config.series}</td>
+        <td>${d.config.iterations_count || 1}x</td>
+        <td><a href="${d.config.url}" target="_blank" style="color: #228be6; text-decoration: none;">Download</a></td>
+        <td>${formatTimestamp(d.timestamp)}</td>
+    </tr>
+`).join('');
+
+// Render iteration details
+const iterationDetails = document.getElementById('iteration-details');
+iterationDetails.innerHTML = data.map(d => {
+    const iterations = d.raw_iterations || [{ iteration: 1, timestamp: d.timestamp, metrics: d.metrics }];
+    
+    return `
+        <div style="margin-bottom: 25px;">
+            <h3 style="margin: 0 0 10px 0; color: #495057;">
+                <span class="version-badge ${getSeriesClass(d.config.series)}">${d.config.version}</span>
+                <span style="font-weight: normal; font-size: 0.9rem; color: #868e96; margin-left: 10px;">${d.version}</span>
+            </h3>
+            ${iterations.map(iter => `
+                <div class="iteration-card">
+                    <div class="iteration-header">
+                        <span class="iteration-number">Iteration ${iter.iteration || 1}</span>
+                        <span class="iteration-timestamp">${formatTimestamp(iter.timestamp)}</span>
+                    </div>
+                    <div class="metric-grid">
+                        ${iter.metrics && iter.metrics.handshakes_new_per_sec ? `
+                            <div class="metric-item">
+                                <span class="metric-label">New Handshakes:</span>
+                                <span class="metric-value">${iter.metrics.handshakes_new_per_sec?.toLocaleString() || 'N/A'}/sec</span>
+                            </div>
+                        ` : ''}
+                        ${iter.metrics && iter.metrics.handshakes_resume_per_sec ? `
+                            <div class="metric-item">
+                                <span class="metric-label">Resumed Handshakes:</span>
+                                <span class="metric-value">${iter.metrics.handshakes_resume_per_sec?.toLocaleString() || 'N/A'}/sec</span>
+                            </div>
+                        ` : ''}
+                        ${iter.metrics && iter.metrics.aes_256_gcm_8k_kbs ? `
+                            <div class="metric-item">
+                                <span class="metric-label">AES-256-GCM (8K):</span>
+                                <span class="metric-value">${(iter.metrics.aes_256_gcm_8k_kbs / 1024 / 1024).toFixed(2)} GB/s</span>
+                            </div>
+                        ` : ''}
+                        ${iter.metrics && iter.metrics.sha256_8k_kbs ? `
+                            <div class="metric-item">
+                                <span class="metric-label">SHA-256 (8K):</span>
+                                <span class="metric-value">${(iter.metrics.sha256_8k_kbs / 1024 / 1024).toFixed(2)} GB/s</span>
+                            </div>
+                        ` : ''}
+                        ${!iter.metrics || Object.keys(iter.metrics).length === 0 ? `
+                            <div class="metric-item">
+                                <span class="metric-label" style="color: #adb5bd;">Metrics available in summary data</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}).join('');
+</script>
+
+<div style="border-top: 1px solid #e9ecef; padding: 30px 0; margin-top: 50px; text-align: center; background: #f8f9fa;">
+    <div style="max-width: 800px; margin: 0 auto; padding: 0 20px;">
+        <div style="margin-bottom: 15px;">
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #24292f; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; transition: background 0.2s;">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                View on GitHub
+            </a>
+        </div>
+        <div style="font-size: 0.85rem; color: #868e96; line-height: 1.6;">
+            <strong style="color: #495057;">Open Source Benchmark</strong><br>
+            Found a problem? Have an improvement?<br>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
+        </div>
+        <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
+            Licensed under Apache 2.0 • Community-driven development
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+

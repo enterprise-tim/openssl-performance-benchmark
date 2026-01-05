@@ -8,75 +8,91 @@ const ROOT_DIR = path.join(__dirname, '..');
 const RESULTS_DIR = path.join(ROOT_DIR, 'results');
 
 // Version metadata (dates and features)
+// seriesInitialRelease: Month/year when the .0 version of this series was first released
+// date: Release date of this specific patch version
 const VERSION_INFO = {
   '1.1.1w': {
     date: '2023-09-11',
     series: '1.1.1',
+    seriesInitialRelease: 'Sept 2018',
     features: 'Final release of the 1.1.1 LTS series (EOL Sept 2023). Support for TLS 1.3, SHA-3, X448/Ed448. The performance baseline.'
   },
   '3.0.15': {
     date: '2024-09-03',
     series: '3.0',
+    seriesInitialRelease: 'Sept 2021',
     features: 'LTS release. Introduced the Provider architecture (FIPS 140-2). Major architectural overhaul often cited as the cause of performance regressions.'
   },
   '3.0.18': {
     date: '2025-09-30',
     series: '3.0',
-    features: 'Security patch release. CVE-2025-9230, CVE-2025-9232 fixes.'
+    seriesInitialRelease: 'Sept 2021',
+    features: 'LTS release. Introduced the Provider architecture (FIPS 140-2). Major architectural overhaul often cited as the cause of performance regressions.'
   },
   '3.1.7': {
     date: '2024-09-03',
     series: '3.1',
+    seriesInitialRelease: 'Mar 2023',
     features: 'FIPS 140-3 compliance. Focused on performance improvements over 3.0 and addressing initial regressions.'
   },
   '3.1.8': {
     date: '2025-02-11',
     series: '3.1',
-    features: 'Security patch release. CVE-2024-13176, CVE-2024-9143 fixes.'
+    seriesInitialRelease: 'Mar 2023',
+    features: 'FIPS 140-3 compliance. Focused on performance improvements over 3.0 and addressing initial regressions.'
   },
   '3.2.3': {
     date: '2024-09-03',
     series: '3.2',
+    seriesInitialRelease: 'Nov 2023',
     features: 'Client-side QUIC support. TLS certificate compression (RFC 8879). Deterministic ECDSA (RFC 6979).'
   },
   '3.2.6': {
     date: '2025-09-30',
     series: '3.2',
-    features: 'Security patch release. CVE-2025-9230, CVE-2025-9231, CVE-2025-9232 fixes.'
+    seriesInitialRelease: 'Nov 2023',
+    features: 'Client-side QUIC support. TLS certificate compression (RFC 8879). Deterministic ECDSA (RFC 6979).'
   },
   '3.3.2': {
     date: '2024-09-03',
     series: '3.3',
+    seriesInitialRelease: 'Apr 2024',
     features: 'QUIC trace and polling improvements. New EVP_DigestSqueeze API. Further performance tuning.'
   },
   '3.3.5': {
     date: '2025-09-30',
     series: '3.3',
-    features: 'Security patch release. CVE-2025-9230, CVE-2025-9231, CVE-2025-9232 fixes.'
+    seriesInitialRelease: 'Apr 2024',
+    features: 'QUIC trace and polling improvements. New EVP_DigestSqueeze API. Further performance tuning.'
   },
   '3.4.0': {
     date: '2024-10-22',
     series: '3.4',
+    seriesInitialRelease: 'Oct 2024',
     features: 'FIPS indicators. Composite signature algorithms. PBMAC1 support. New integrity checks.'
   },
   '3.4.3': {
     date: '2025-09-30',
     series: '3.4',
-    features: 'Security patch release. CVE-2025-9230, CVE-2025-9231, CVE-2025-9232 fixes.'
+    seriesInitialRelease: 'Oct 2024',
+    features: 'FIPS indicators. Composite signature algorithms. PBMAC1 support. New integrity checks.'
   },
   '3.5.3': {
     date: '2025-09-16',
     series: '3.5',
+    seriesInitialRelease: 'Apr 2025',
     features: 'Post-Quantum Cryptography (ML-KEM, ML-DSA). QUIC server support.'
   },
   '3.5.4': {
     date: '2025-09-30',
     series: '3.5',
-    features: 'Security patch release. CVE-2025-9230, CVE-2025-9231, CVE-2025-9232 fixes.'
+    seriesInitialRelease: 'Apr 2025',
+    features: 'Post-Quantum Cryptography (ML-KEM, ML-DSA). QUIC server support.'
   },
   '3.6.0': {
     date: '2025-10-01',
     series: '3.6',
+    seriesInitialRelease: 'Oct 2025',
     features: 'EVP_SKEY opaque symmetric keys. LMS signature verification. FIPS 186-5 deterministic ECDSA. C-99 required.'
   }
 };
@@ -404,9 +420,15 @@ async function generateMarkdownReport(results) {
   const baseline = results.find(r => r.config.version === '1.1.1w');
   const baselineNew = baseline && baseline.metrics.handshakes_new_per_sec > 0 ? baseline.metrics.handshakes_new_per_sec : 1;
   const sysInfo = getSystemInfo();
+  
+  // Extract version range from the actual results for dynamic display
+  const sortedVersions = results.map(r => r.config.version)
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const firstVersion = sortedVersions[0];
+  const lastVersion = sortedVersions[sortedVersions.length - 1];
 
   let md = `# OpenSSL Performance Benchmark Results\n\n`;
-  md += `Analysis of OpenSSL performance regressions and improvements across versions 1.1.1 through 3.6.0.\n\n`;
+  md += `Analysis of OpenSSL performance regressions and improvements across versions ${firstVersion} through ${lastVersion}.\n\n`;
   
   // Get iteration count from first result
   const iterationCount = results[0]?.config?.iterations_count || 1;
@@ -422,18 +444,69 @@ async function generateMarkdownReport(results) {
   }
   
   md += `All tests were conducted in isolated Docker containers (Debian Bookworm) to ensure environment consistency. Each version was compiled from source.\n\n`;
-  md += `**System Specification:**\n`;
-  md += `- **CPU:** ${sysInfo.cpuModel} (${sysInfo.cpuCores} cores)\n`;
-  md += `- **Memory:** ${sysInfo.totalMem}\n`;
-  md += `- **OS:** ${sysInfo.platform} ${sysInfo.release}\n`;
-  md += `- **Container OS:** ${meta.os_distribution || 'Unknown'}\n`;
-  md += `- **Kernel:** ${meta.kernel_version || 'Unknown'}\n`;
-  md += `- **Docker:** Engine v24+\n\n`;
+  
+  // CPU Information Section
+  md += `### CPU Information\n\n`;
+  const cpuModel = meta.cpu_model || 'Unknown CPU';
+  const cpuArch = meta.cpu_architecture || meta.platform?.split('-')[1] || 'Unknown';
+  const cpuCores = meta.cpu_cores || 'N/A';
+  
+  md += `| Property | Value |\n`;
+  md += `|----------|-------|\n`;
+  md += `| **Model** | ${cpuModel} |\n`;
+  md += `| **Architecture** | ${cpuArch} |\n`;
+  md += `| **Cores** | ${cpuCores} |\n`;
+  
+  // CPU Features
+  const cpuFeatures = meta.cpu_features || {};
+  const featureList = [];
+  if (cpuFeatures.aes_ni) featureList.push('AES-NI');
+  if (cpuFeatures.avx) featureList.push('AVX');
+  if (cpuFeatures.avx2) featureList.push('AVX2');
+  if (cpuFeatures.avx512) featureList.push('AVX-512');
+  if (cpuFeatures.sse4) featureList.push('SSE4');
+  if (cpuFeatures.sha_ni) featureList.push('SHA-NI');
+  
+  // For ARM, check different features
+  if (cpuArch === 'aarch64') {
+    // ARM features from flags
+    const flags = meta.cpu_flags || '';
+    if (flags.includes('aes')) featureList.push('AES');
+    if (flags.includes('pmull')) featureList.push('PMULL');
+    if (flags.includes('sha')) featureList.push('SHA');
+    if (flags.includes('asimd') || flags.includes('neon')) featureList.push('NEON/ASIMD');
+    if (flags.includes('sve')) featureList.push('SVE');
+  }
+  
+  const featuresStr = featureList.length > 0 ? featureList.join(', ') : 'Unknown';
+  md += `| **Hardware Acceleration** | ${featuresStr} |\n`;
+  md += `\n`;
+  
+  // Check for AVX and highlight its importance
+  if (cpuArch === 'x86_64') {
+    if (cpuFeatures.avx && cpuFeatures.avx2) {
+      md += `> ✅ **AVX/AVX2 Available:** This CPU supports Advanced Vector Extensions, enabling SIMD acceleration for cryptographic operations including ML-KEM.\n\n`;
+    } else if (!cpuFeatures.avx) {
+      md += `> ⚠️ **No AVX Support:** This CPU lacks AVX support. Cryptographic performance, especially for post-quantum algorithms like ML-KEM, may be significantly reduced.\n\n`;
+    }
+  } else if (cpuArch === 'aarch64') {
+    md += `> ℹ️ **ARM64 Architecture:** This is an ARM processor. ARM uses NEON/ASIMD and optional SVE for vectorized operations instead of AVX.\n\n`;
+  }
+  
+  md += `### Operating System & Environment\n\n`;
+  md += `| Property | Value |\n`;
+  md += `|----------|-------|\n`;
+  md += `| **Container OS** | ${meta.os_distribution || 'Unknown'} |\n`;
+  md += `| **Kernel** | ${meta.kernel_version || 'Unknown'} |\n`;
+  md += `| **Container** | ${meta.container || 'Docker/Debian'} |\n`;
+  md += `| **Platform** | ${meta.platform || 'N/A'} |\n`;
+  md += `\n`;
 
-  md += `**OpenSSL Configuration:**\n`;
-  md += `Benchmarks run using source-compiled binaries. \n`;
-  md += `- **Platform:** \`${meta.platform || 'N/A'}\`\n`;
-  md += `- **Compiler Flags:** \`${meta.compiler_flags || 'Default'}\`\n\n`;
+  md += `### OpenSSL Build Configuration\n\n`;
+  md += `All versions compiled from upstream source with consistent settings:\n\n`;
+  md += `\`\`\`\n`;
+  md += `${meta.compiler_flags || 'Default compiler flags'}\n`;
+  md += `\`\`\`\n\n`;
 
   md += `**Test Definitions:**\n`;
   md += `- **Algorithm Throughput:** Measured using \`openssl speed -evp [algo]\`. This uses the high-level Envelope interface, which utilizes hardware acceleration (like AES-NI) where available. It represents raw encryption speed for bulk data transfer.\n`;
@@ -447,13 +520,13 @@ async function generateMarkdownReport(results) {
 
   // Version Overview Section
   md += `## Version Overview\n\n`;
-  md += `| Version | Release Date | Series Features |\n`;
-  md += `|---------|--------------|-----------------|\n`;
+  md += `| Version | Release Date | Series Introduced | Series Features |\n`;
+  md += `|---------|--------------|-------------------|-----------------|\n`;
   
   results.forEach(r => {
     const v = r.config.version;
-    const info = VERSION_INFO[v] || { date: 'Unknown', features: 'N/A' };
-    md += `| **${v}** | ${info.date} | ${info.features} |\n`;
+    const info = VERSION_INFO[v] || { date: 'Unknown', seriesInitialRelease: 'Unknown', features: 'N/A' };
+    md += `| **${v}** | ${info.date} | ${info.seriesInitialRelease} | ${info.features} |\n`;
   });
   
   // Determine if we should show standard deviations
@@ -616,6 +689,71 @@ async function generateMarkdownReport(results) {
     md += `| **${r.config.version}** | ${formatNum(m.aes_256_gcm_16b_kbs)} | ${formatNum(m.aes_256_gcm_64b_kbs)} | ${formatNum(m.aes_256_gcm_256b_kbs)} | ${formatNum(m.aes_256_gcm_1k_kbs)} | ${formatNum(m.aes_256_gcm_8k_kbs)} |\n`;
   });
 
+  // Hardware Acceleration Impact Section (AVX on x86, NEON on ARM)
+  const hwAccelResults = results.filter(r => r.metrics.avx_available === true || r.avx_tests?.hw_accel_available === true);
+  if (hwAccelResults.length > 0) {
+    // Determine architecture from first result
+    const arch = meta.cpu_architecture || 'x86_64';
+    const isARM = arch === 'aarch64';
+    const accelName = isARM ? 'NEON/Crypto Extensions' : 'AVX (Advanced Vector Extensions)';
+    const accelShort = isARM ? 'HW Accel' : 'AVX';
+    
+    md += `\n## ${accelName} Impact\n\n`;
+    
+    if (isARM) {
+      md += `> **What is NEON?** NEON (also called ASIMD) is ARM's SIMD instruction set, similar to Intel's AVX. `;
+      md += `ARMv8 also includes cryptographic extensions for AES, SHA, and polynomial multiplication.\n\n`;
+      md += `> **Testing Methodology:** Each benchmark was run twice - once with hardware crypto enabled (default) and once with it disabled using \`OPENSSL_armcap\` environment variable.\n\n`;
+    } else {
+      md += `> **What is AVX?** AVX and AVX2 are CPU instruction set extensions that enable SIMD (Single Instruction Multiple Data) operations. `;
+      md += `Cryptographic operations, especially ML-KEM (post-quantum), benefit significantly from AVX2 vectorization.\n\n`;
+      md += `> **Testing Methodology:** Each benchmark was run twice - once with AVX enabled (default) and once with AVX disabled using \`OPENSSL_ia32cap\` environment variable.\n\n`;
+    }
+    
+    md += `### ${accelShort} Impact on Symmetric Cryptography\n\n`;
+    md += `| Version | AES-256-GCM (${accelShort}) | AES-256-GCM (No ${accelShort}) | Improvement | SHA256 (${accelShort}) | SHA256 (No ${accelShort}) | Improvement |\n`;
+    md += `|---------|------------------:|---------------------:|------------:|-------------:|----------------:|------------:|\n`;
+    
+    hwAccelResults.forEach(r => {
+      const m = r.metrics;
+      const aesImprove = m.aes_256_gcm_avx_improvement_percent || 0;
+      const shaImprove = m.sha256_avx_improvement_percent || 0;
+      const aesImproveStr = typeof aesImprove === 'number' ? `+${aesImprove.toFixed(1)}%` : 'N/A';
+      const shaImproveStr = typeof shaImprove === 'number' ? `+${shaImprove.toFixed(1)}%` : 'N/A';
+      md += `| **${r.config.version}** | ${formatNum(m.aes_256_gcm_with_avx_kbs)} | ${formatNum(m.aes_256_gcm_without_avx_kbs)} | ${aesImproveStr} | ${formatNum(m.sha256_with_avx_kbs)} | ${formatNum(m.sha256_without_avx_kbs)} | ${shaImproveStr} |\n`;
+    });
+    
+    // ML-KEM hardware acceleration impact (only for versions with ML-KEM support)
+    const mlkemHwResults = hwAccelResults.filter(r => r.metrics.ml_kem_768_with_avx_ops > 0);
+    if (mlkemHwResults.length > 0) {
+      md += `\n### ${accelShort} Impact on ML-KEM-768 (Post-Quantum)\n\n`;
+      if (isARM) {
+        md += `> **Key Finding:** ML-KEM implementations benefit significantly from ARM's NEON vectorization. The lattice-based cryptography in ML-KEM involves many parallel operations that map well to SIMD instructions.\n\n`;
+      } else {
+        md += `> **Key Finding:** ML-KEM implementations heavily benefit from AVX2 vectorization. The lattice-based cryptography in ML-KEM involves many parallel operations that map well to SIMD instructions.\n\n`;
+      }
+      md += `| Version | ML-KEM-768 (${accelShort}) | ML-KEM-768 (No ${accelShort}) | Improvement |\n`;
+      md += `|---------|----------------:|--------------------:|----------------:|\n`;
+      
+      mlkemHwResults.forEach(r => {
+        const m = r.metrics;
+        const improvement = m.ml_kem_768_avx_improvement_percent || 0;
+        const improveStr = typeof improvement === 'number' ? `**+${improvement.toFixed(1)}%**` : 'N/A';
+        md += `| **${r.config.version}** | ${formatNum(m.ml_kem_768_with_avx_ops)} ops/s | ${formatNum(m.ml_kem_768_without_avx_ops)} ops/s | ${improveStr} |\n`;
+      });
+      
+      md += `\n**Implications:**\n\n`;
+      md += `- Post-quantum cryptography performance is heavily dependent on hardware acceleration\n`;
+      if (isARM) {
+        md += `- ARM processors without crypto extensions may see reduced PQC performance\n`;
+        md += `- Modern ARMv8+ processors (Apple Silicon, AWS Graviton, Ampere) have excellent crypto acceleration\n\n`;
+      } else {
+        md += `- Servers without AVX2 support may see significantly degraded PQC performance\n`;
+        md += `- Cloud instances should be selected with AVX2 capability for optimal post-quantum TLS performance\n\n`;
+      }
+    }
+  }
+
   // Mráz Optimization Section
   const optimizedResults = results.filter(r => r.metrics.optimized_tls1_3_rsa_new_cps > 0);
   if (optimizedResults.length > 0) {
@@ -656,6 +794,184 @@ async function generateMarkdownReport(results) {
   const outputPath = path.join(RESULTS_DIR, 'REPORT.md');
   await fs.writeFile(outputPath, md);
   console.log(`📝 Markdown report generated at: ${outputPath}`);
+  
+  // Also generate HTML version with inlined content
+  await generateHTMLReport(md);
+}
+
+async function generateHTMLReport(markdownContent) {
+  // Escape the markdown content for embedding in HTML
+  const escapedMarkdown = markdownContent
+    .replace(/\\/g, '\\\\')
+    .replace(/`/g, '\\`')
+    .replace(/\$/g, '\\$');
+  
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report - OpenSSL Performance Benchmark</title>
+    <!-- marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script>
+    <style>
+body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; color: #333; line-height: 1.6; }
+
+/* Header */
+.header { background: white; padding: 20px 40px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { margin: 0; font-size: 1.5rem; }
+.header .nav-links { display: flex; gap: 15px; }
+.header .nav-links a { color: #228be6; text-decoration: none; font-weight: 500; }
+.header .nav-links a:hover { text-decoration: underline; }
+
+/* Container */
+.container { max-width: 1000px; margin: 0 auto; padding: 30px; }
+
+/* Breadcrumb */
+.breadcrumb { background: white; padding: 15px 40px; border-bottom: 1px solid #e9ecef; font-size: 0.9rem; }
+.breadcrumb a { color: #228be6; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { color: #868e96; margin: 0 8px; }
+
+/* Content card */
+.content-card { background: white; padding: 40px 50px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 30px; }
+
+/* Markdown content styling */
+.markdown-content h1 { color: #212529; font-size: 2rem; border-bottom: 2px solid #228be6; padding-bottom: 15px; margin-top: 0; }
+.markdown-content h2 { color: #495057; font-size: 1.5rem; border-bottom: 1px solid #e9ecef; padding-bottom: 10px; margin-top: 40px; }
+.markdown-content h3 { color: #495057; font-size: 1.2rem; margin-top: 30px; }
+.markdown-content h4 { color: #868e96; font-size: 1rem; margin-top: 25px; }
+
+.markdown-content p { margin: 15px 0; }
+.markdown-content strong { color: #212529; }
+
+/* Code */
+.markdown-content code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 0.9em; }
+.markdown-content pre { background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 0.85rem; border: 1px solid #e9ecef; }
+.markdown-content pre code { background: none; padding: 0; }
+
+/* Tables */
+.markdown-content table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.9rem; }
+.markdown-content th, .markdown-content td { padding: 10px 12px; text-align: left; border: 1px solid #e9ecef; }
+.markdown-content th { background: #f8f9fa; font-weight: 600; color: #495057; }
+.markdown-content tr:hover { background: #f8f9fa; }
+.markdown-content td:first-child { font-weight: 500; }
+
+/* Lists */
+.markdown-content ul, .markdown-content ol { margin: 15px 0; padding-left: 25px; }
+.markdown-content li { margin: 8px 0; }
+
+/* Blockquotes (used for "Why this matters" sections) */
+.markdown-content blockquote { 
+    background: #e7f5ff; 
+    border-left: 4px solid #228be6; 
+    padding: 15px 20px; 
+    margin: 20px 0; 
+    border-radius: 4px;
+    font-style: normal;
+}
+.markdown-content blockquote p { margin: 0; }
+.markdown-content blockquote strong { color: #1971c2; }
+
+/* Links */
+.markdown-content a { color: #228be6; text-decoration: none; }
+.markdown-content a:hover { text-decoration: underline; }
+
+/* Horizontal rules */
+.markdown-content hr { border: none; border-top: 1px solid #e9ecef; margin: 30px 0; }
+
+/* GitHub link */
+.github-link { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #24292f; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem; transition: background 0.2s; }
+.github-link:hover { background: #32383f; }
+
+/* Download button */
+.download-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #e9ecef; }
+.download-btn { padding: 8px 16px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+.download-btn:hover { background: #1c7ed6; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="breadcrumb">
+    <a href="index.html">Home</a>
+    <span>›</span>
+    <span>Performance Report</span>
+</div>
+<div class="header">
+    <h1>Performance Report</h1>
+    <div class="nav-links">
+        <a href="index.html">Dashboard</a>
+        <a href="faq.html">FAQ</a>
+        <a href="metrics.html">Metrics Guide</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="content-card">
+        <div class="download-bar">
+            <span style="color: #868e96; font-size: 0.9rem;">Generated from benchmark results</span>
+            <a href="REPORT.md" download class="download-btn">Download Markdown</a>
+        </div>
+        <div id="markdown-content" class="markdown-content"></div>
+    </div>
+
+    <!-- Back to Dashboard -->
+    <div style="text-align: center; margin: 40px 0;">
+        <a href="index.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500; margin-right: 10px;">
+            ← Back to Dashboard
+        </a>
+        <a href="summary.json" download style="padding: 12px 24px; background: #40c057; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            Download JSON Data
+        </a>
+    </div>
+</div>
+
+<div style="border-top: 1px solid #e9ecef; padding: 30px 0; margin-top: 50px; text-align: center; background: #f8f9fa;">
+    <div style="max-width: 800px; margin: 0 auto; padding: 0 20px;">
+        <div style="margin-bottom: 15px;">
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark" target="_blank" rel="noopener" class="github-link">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                View on GitHub
+            </a>
+        </div>
+        <div style="font-size: 0.85rem; color: #868e96; line-height: 1.6;">
+            <strong style="color: #495057;">Open Source Benchmark</strong><br>
+            Found a problem? Have an improvement?<br>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
+        </div>
+        <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
+            Licensed under Apache 2.0 • Community-driven development
+        </div>
+    </div>
+</div>
+
+<script>
+// Inlined markdown content (generated at build time)
+const markdownContent = \`${escapedMarkdown}\`;
+
+// Render when marked.js loads
+if (typeof marked !== 'undefined') {
+    document.getElementById('markdown-content').innerHTML = marked.parse(markdownContent);
+} else {
+    // Fallback: wait for marked to load
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof marked !== 'undefined') {
+            document.getElementById('markdown-content').innerHTML = marked.parse(markdownContent);
+        } else {
+            document.getElementById('markdown-content').innerHTML = '<p>Unable to render report. <a href="REPORT.md">Download the markdown file</a> instead.</p>';
+        }
+    });
+}
+<\/script>
+
+</body>
+</html>`;
+
+  const htmlOutputPath = path.join(RESULTS_DIR, 'report.html');
+  await fs.writeFile(htmlOutputPath, html);
+  console.log(`📝 HTML report generated at: ${htmlOutputPath}`);
 }
 
 main();

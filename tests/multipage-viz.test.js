@@ -62,13 +62,13 @@ describe('Multi-Page Visualizations - Navigation', () => {
   it('should have breadcrumb navigation', () => {
     const breadcrumb = `
 <div class="breadcrumb">
-    <a href="index.html">🏠 Home</a>
+    <a href="index.html">Home</a>
     <span>›</span>
     <span>Current Page</span>
 </div>`;
     
     expect(breadcrumb).toContain('index.html');
-    expect(breadcrumb).toContain('🏠 Home');
+    expect(breadcrumb).toContain('Home');
   });
 
   it('should generate proper relative URLs', () => {

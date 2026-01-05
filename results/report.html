@@ -1,4 +1,147 @@
-# OpenSSL Performance Benchmark Results
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report - OpenSSL Performance Benchmark</title>
+    <!-- marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; color: #333; line-height: 1.6; }
+
+/* Header */
+.header { background: white; padding: 20px 40px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { margin: 0; font-size: 1.5rem; }
+.header .nav-links { display: flex; gap: 15px; }
+.header .nav-links a { color: #228be6; text-decoration: none; font-weight: 500; }
+.header .nav-links a:hover { text-decoration: underline; }
+
+/* Container */
+.container { max-width: 1000px; margin: 0 auto; padding: 30px; }
+
+/* Breadcrumb */
+.breadcrumb { background: white; padding: 15px 40px; border-bottom: 1px solid #e9ecef; font-size: 0.9rem; }
+.breadcrumb a { color: #228be6; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { color: #868e96; margin: 0 8px; }
+
+/* Content card */
+.content-card { background: white; padding: 40px 50px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 30px; }
+
+/* Markdown content styling */
+.markdown-content h1 { color: #212529; font-size: 2rem; border-bottom: 2px solid #228be6; padding-bottom: 15px; margin-top: 0; }
+.markdown-content h2 { color: #495057; font-size: 1.5rem; border-bottom: 1px solid #e9ecef; padding-bottom: 10px; margin-top: 40px; }
+.markdown-content h3 { color: #495057; font-size: 1.2rem; margin-top: 30px; }
+.markdown-content h4 { color: #868e96; font-size: 1rem; margin-top: 25px; }
+
+.markdown-content p { margin: 15px 0; }
+.markdown-content strong { color: #212529; }
+
+/* Code */
+.markdown-content code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 0.9em; }
+.markdown-content pre { background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 0.85rem; border: 1px solid #e9ecef; }
+.markdown-content pre code { background: none; padding: 0; }
+
+/* Tables */
+.markdown-content table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.9rem; }
+.markdown-content th, .markdown-content td { padding: 10px 12px; text-align: left; border: 1px solid #e9ecef; }
+.markdown-content th { background: #f8f9fa; font-weight: 600; color: #495057; }
+.markdown-content tr:hover { background: #f8f9fa; }
+.markdown-content td:first-child { font-weight: 500; }
+
+/* Lists */
+.markdown-content ul, .markdown-content ol { margin: 15px 0; padding-left: 25px; }
+.markdown-content li { margin: 8px 0; }
+
+/* Blockquotes (used for "Why this matters" sections) */
+.markdown-content blockquote { 
+    background: #e7f5ff; 
+    border-left: 4px solid #228be6; 
+    padding: 15px 20px; 
+    margin: 20px 0; 
+    border-radius: 4px;
+    font-style: normal;
+}
+.markdown-content blockquote p { margin: 0; }
+.markdown-content blockquote strong { color: #1971c2; }
+
+/* Links */
+.markdown-content a { color: #228be6; text-decoration: none; }
+.markdown-content a:hover { text-decoration: underline; }
+
+/* Horizontal rules */
+.markdown-content hr { border: none; border-top: 1px solid #e9ecef; margin: 30px 0; }
+
+/* GitHub link */
+.github-link { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #24292f; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem; transition: background 0.2s; }
+.github-link:hover { background: #32383f; }
+
+/* Download button */
+.download-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #e9ecef; }
+.download-btn { padding: 8px 16px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+.download-btn:hover { background: #1c7ed6; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="breadcrumb">
+    <a href="index.html">Home</a>
+    <span>›</span>
+    <span>Performance Report</span>
+</div>
+<div class="header">
+    <h1>Performance Report</h1>
+    <div class="nav-links">
+        <a href="index.html">Dashboard</a>
+        <a href="faq.html">FAQ</a>
+        <a href="metrics.html">Metrics Guide</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="content-card">
+        <div class="download-bar">
+            <span style="color: #868e96; font-size: 0.9rem;">Generated from benchmark results</span>
+            <a href="REPORT.md" download class="download-btn">Download Markdown</a>
+        </div>
+        <div id="markdown-content" class="markdown-content"></div>
+    </div>
+
+    <!-- Back to Dashboard -->
+    <div style="text-align: center; margin: 40px 0;">
+        <a href="index.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500; margin-right: 10px;">
+            ← Back to Dashboard
+        </a>
+        <a href="summary.json" download style="padding: 12px 24px; background: #40c057; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            Download JSON Data
+        </a>
+    </div>
+</div>
+
+<div style="border-top: 1px solid #e9ecef; padding: 30px 0; margin-top: 50px; text-align: center; background: #f8f9fa;">
+    <div style="max-width: 800px; margin: 0 auto; padding: 0 20px;">
+        <div style="margin-bottom: 15px;">
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark" target="_blank" rel="noopener" class="github-link">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                View on GitHub
+            </a>
+        </div>
+        <div style="font-size: 0.85rem; color: #868e96; line-height: 1.6;">
+            <strong style="color: #495057;">Open Source Benchmark</strong><br>
+            Found a problem? Have an improvement?<br>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
+        </div>
+        <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
+            Licensed under Apache 2.0 • Community-driven development
+        </div>
+    </div>
+</div>
+
+<script>
+// Inlined markdown content (generated at build time)
+const markdownContent = `# OpenSSL Performance Benchmark Results
 
 Analysis of OpenSSL performance regressions and improvements across versions 1.1.1w through 3.5.3.
 
@@ -28,13 +171,13 @@ All tests were conducted in isolated Docker containers (Debian Bookworm) to ensu
 
 All versions compiled from upstream source with consistent settings:
 
-```
+\`\`\`
 Default compiler flags
-```
+\`\`\`
 
 **Test Definitions:**
-- **Algorithm Throughput:** Measured using `openssl speed -evp [algo]`. This uses the high-level Envelope interface, which utilizes hardware acceleration (like AES-NI) where available. It represents raw encryption speed for bulk data transfer.
-- **TLS Handshake:** Measured using `openssl s_time -new`. This creates repeated new TLS connections to a local `openssl s_server`. It stresses the CPU-intensive parts of the protocol (key exchange, certificate parsing, signature verification) rather than network I/O.
+- **Algorithm Throughput:** Measured using \`openssl speed -evp [algo]\`. This uses the high-level Envelope interface, which utilizes hardware acceleration (like AES-NI) where available. It represents raw encryption speed for bulk data transfer.
+- **TLS Handshake:** Measured using \`openssl s_time -new\`. This creates repeated new TLS connections to a local \`openssl s_server\`. It stresses the CPU-intensive parts of the protocol (key exchange, certificate parsing, signature verification) rather than network I/O.
 
 ## Performance Analysis
 
@@ -216,3 +359,22 @@ TLS 1.2 session resumption consistently achieves significantly higher performanc
 | **3.3.2** | 0 | 0 | 0 | 7,488,583 | 8,296,687 |
 | **3.4.0** | 0 | 0 | 0 | 7,578,336 | 8,235,014 |
 | **3.5.3** | 0 | 0 | 0 | 3,975,862 | 7,414,005 |
+`;
+
+// Render when marked.js loads
+if (typeof marked !== 'undefined') {
+    document.getElementById('markdown-content').innerHTML = marked.parse(markdownContent);
+} else {
+    // Fallback: wait for marked to load
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof marked !== 'undefined') {
+            document.getElementById('markdown-content').innerHTML = marked.parse(markdownContent);
+        } else {
+            document.getElementById('markdown-content').innerHTML = '<p>Unable to render report. <a href="REPORT.md">Download the markdown file</a> instead.</p>';
+        }
+    });
+}
+</script>
+
+</body>
+</html>

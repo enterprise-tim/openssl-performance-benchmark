@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metrics Guide - OpenSSL Performance Benchmark</title>
+    <style>
+body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; color: #333; line-height: 1.6; }
+
+/* Header */
+.header { background: white; padding: 20px 40px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { margin: 0; font-size: 1.5rem; }
+.header .nav-links { display: flex; gap: 15px; }
+.header .nav-links a { color: #228be6; text-decoration: none; font-weight: 500; }
+.header .nav-links a:hover { text-decoration: underline; }
+
+/* Container */
+.container { max-width: 900px; margin: 0 auto; padding: 30px; }
+
+/* Breadcrumb */
+.breadcrumb { background: white; padding: 15px 40px; border-bottom: 1px solid #e9ecef; font-size: 0.9rem; }
+.breadcrumb a { color: #228be6; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb span { color: #868e96; margin: 0 8px; }
+
+/* Cards */
+.card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 30px; }
+.card h2 { margin-top: 0; font-size: 1.3rem; color: #228be6; border-bottom: 1px solid #f1f3f5; padding-bottom: 15px; margin-bottom: 20px; }
+
+/* Section Styling */
+.section { margin-bottom: 40px; }
+.section h2 { color: #495057; font-size: 1.4rem; border-bottom: 2px solid #228be6; padding-bottom: 10px; margin-bottom: 25px; }
+.section h3 { color: #495057; font-size: 1.1rem; margin-top: 25px; margin-bottom: 15px; }
+
+/* Code */
+code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 0.9em; }
+pre { background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 0.85rem; border: 1px solid #e9ecef; }
+pre code { background: none; padding: 0; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9rem; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e9ecef; }
+th { background: #f8f9fa; font-weight: 600; color: #495057; }
+tr:hover { background: #f8f9fa; }
+
+/* Lists */
+ul, ol { margin: 10px 0; padding-left: 25px; }
+li { margin: 8px 0; }
+
+/* Info boxes */
+.info-box { background: #e7f5ff; border-left: 4px solid #228be6; padding: 15px 20px; margin: 15px 0; border-radius: 4px; }
+.success-box { background: #d3f9d8; border-left: 4px solid #40c057; padding: 15px 20px; margin: 15px 0; border-radius: 4px; }
+.warning-box { background: #fff3bf; border-left: 4px solid #fab005; padding: 15px 20px; margin: 15px 0; border-radius: 4px; }
+
+/* TOC */
+.toc { background: #f8f9fa; padding: 20px 25px; border-radius: 8px; margin-bottom: 30px; }
+.toc h3 { margin-top: 0; color: #495057; font-size: 1rem; }
+.toc ul { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 8px 0; }
+.toc a { color: #228be6; text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+
+/* GitHub link */
+.github-link { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #24292f; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem; transition: background 0.2s; }
+.github-link:hover { background: #32383f; }
+    </style>
+</head>
+<body>
+
+<div class="breadcrumb">
+    <a href="index.html">Home</a>
+    <span>›</span>
+    <span>Metrics Guide</span>
+</div>
+<div class="header">
+    <h1>Performance Metrics Guide</h1>
+    <div class="nav-links">
+        <a href="index.html">Dashboard</a>
+        <a href="faq.html">FAQ</a>
+        <a href="schmatz.html">Crypto Operations</a>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Table of Contents -->
+    <div class="toc">
+        <h3>Quick Navigation</h3>
+        <ul>
+            <li><a href="#statistical">Statistical Reporting</a></li>
+            <li><a href="#throughput">Algorithm Throughput</a></li>
+            <li><a href="#handshake">TLS Handshake Performance</a></li>
+            <li><a href="#asymmetric">Asymmetric Primitives (Schmatz)</a></li>
+            <li><a href="#pqc">Post-Quantum Cryptography</a></li>
+            <li><a href="#multithreaded">Multi-threaded Scalability</a></li>
+            <li><a href="#reliability">Metric Reliability</a></li>
+        </ul>
+    </div>
+
+    <!-- Statistical Reporting -->
+    <div class="section" id="statistical">
+        <h2>Statistical Reporting</h2>
+        
+        <p>All metrics are now reported with <strong>statistical confidence</strong> when multiple iterations are run (default: 3).</p>
+        
+        <h3>Metric Structure</h3>
+        <p>Each metric includes:</p>
+        <ul>
+            <li><strong>Mean value:</strong> Average across all iterations</li>
+            <li><strong>Standard deviation:</strong> Measure of variance</li>
+            <li><strong>Minimum:</strong> Lowest value observed</li>
+            <li><strong>Maximum:</strong> Highest value observed</li>
+        </ul>
+        
+        <h3>Example JSON</h3>
+        <pre><code>{
+  "metrics": {
+    "aes_256_gcm_8k_kbs": 2950000,           // Mean
+    "aes_256_gcm_8k_kbs_stddev": 4082,       // Std Dev
+    "aes_256_gcm_8k_kbs_min": 2945000,       // Min
+    "aes_256_gcm_8k_kbs_max": 2955000        // Max
+  }
+}</code></pre>
+        
+        <h3>Display Format</h3>
+        <div class="info-box">
+            <strong>Reports show:</strong> <code>6,465 ± 12 conn/sec</code>
+            <ul style="margin-bottom: 0;">
+                <li><code>6,465</code> = Mean value (average of iterations)</li>
+                <li><code>± 12</code> = Standard deviation (measurement confidence)</li>
+            </ul>
+        </div>
+        
+        <h3>Interpreting Standard Deviation</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Stddev %</th>
+                    <th>Interpretation</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>&lt; 1%</td>
+                    <td>Excellent consistency</td>
+                    <td>Reliable measurement</td>
+                </tr>
+                <tr>
+                    <td>1-5%</td>
+                    <td>Acceptable variance</td>
+                    <td>⚠️ Consider more iterations if publishing</td>
+                </tr>
+                <tr>
+                    <td>&gt; 5%</td>
+                    <td>High variance</td>
+                    <td>❌ Investigate system interference</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <p><strong>Examples:</strong></p>
+        <ul>
+            <li><code>6,465 ± 12</code> = 0.19% variance → Excellent!</li>
+            <li><code>6,465 ± 323</code> = 5% variance → Acceptable</li>
+            <li><code>6,465 ± 646</code> = 10% variance → Investigate!</li>
+        </ul>
+    </div>
+
+    <!-- Algorithm Throughput -->
+    <div class="section" id="throughput">
+        <h2>1. Algorithm Throughput</h2>
+        
+        <p>Measured using <code>openssl speed -evp [algorithm]</code>. These tests measure the raw speed of cryptographic primitives using the high-level Envelope (EVP) interface, which allows OpenSSL to utilize hardware acceleration (like AES-NI) where available.</p>
+        
+        <h3>Metrics Collected</h3>
+        
+        <div class="card">
+            <h2>AES-256-GCM</h2>
+            <p>Authenticated encryption. Measured at multiple block sizes (16B, 64B, 256B, 1KB, 8KB).</p>
+            <p><strong>Why it matters:</strong> This is the standard cipher for modern TLS. Large block performance indicates bulk transfer speed. Small block performance can reveal overhead in the OpenSSL "Provider" architecture (v3.0+).</p>
+            <ul>
+                <li><strong>Typical values:</strong> 500 MB/s - 5 GB/s depending on CPU and OpenSSL version</li>
+                <li><strong>Statistical variance:</strong> Usually &lt; 1% (hardware acceleration is very consistent)</li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h2>SHA256</h2>
+            <p>Hashing algorithm.</p>
+            <p><strong>Why it matters:</strong> Ubiquitous for digital signatures and data integrity.</p>
+            <ul>
+                <li><strong>Typical values:</strong> 200 MB/s - 2 GB/s</li>
+                <li><strong>Statistical variance:</strong> Usually &lt; 1%</li>
+            </ul>
+        </div>
+        
+        <h3>Statistical Properties</h3>
+        <p><strong>Throughput metrics</strong> typically show <strong>low variance</strong> (&lt; 1%) because:</p>
+        <ul>
+            <li>Hardware acceleration (AES-NI) is deterministic</li>
+            <li>CPU-bound operations are consistent</li>
+            <li>Minimal external dependencies</li>
+        </ul>
+        
+        <div class="success-box">
+            <strong>Example statistical output:</strong><br>
+            <code>AES-256-GCM (8K): 2,950,000 ± 4,082 KB/s</code><br>
+            Mean: 2,950,000 | Stddev: 4,082 (0.14% - excellent!)
+        </div>
+        
+        <h3>Metric Keys</h3>
+        <p>All throughput metrics include:</p>
+        <ul>
+            <li><code>[metric]</code>: Mean value</li>
+            <li><code>[metric]_stddev</code>: Standard deviation</li>
+            <li><code>[metric]_min</code>: Minimum across iterations</li>
+            <li><code>[metric]_max</code>: Maximum across iterations</li>
+        </ul>
+        <p>Example: <code>aes_256_gcm_8k_kbs</code>, <code>aes_256_gcm_8k_kbs_stddev</code>, etc.</p>
+    </div>
+
+    <!-- TLS Handshake Performance -->
+    <div class="section" id="handshake">
+        <h2>2. TLS Handshake Performance</h2>
+        
+        <p>Measured using <code>openssl s_time</code>. This test spins up a local <code>openssl s_server</code> and runs a client that performs repeated handshakes for a fixed duration (10 seconds).</p>
+        
+        <p><strong>Metric:</strong> Connections Per Second (CPS).</p>
+        
+        <h3>Test Matrix (Bellingrath Alignment)</h3>
+        <p>We follow the test matrix proposed by William Bellingrath (Juniper Networks) to isolate variables:</p>
+        <ul>
+            <li><strong>Protocol:</strong> TLS 1.2 vs TLS 1.3</li>
+            <li><strong>Certificate Type:</strong> RSA-2048 vs ECDSA P-256</li>
+            <li><strong>Session State:</strong> New Connection vs Session Resumption</li>
+        </ul>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric Key</th>
+                    <th>Description</th>
+                    <th>Typical Range</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>tls1_3_rsa_new_cps</code></td>
+                    <td>TLS 1.3 handshake with RSA-2048 cert (New)</td>
+                    <td>6,000-7,000</td>
+                </tr>
+                <tr>
+                    <td><code>tls1_3_rsa_resume_cps</code></td>
+                    <td>TLS 1.3 handshake with RSA-2048 cert (Resumed)</td>
+                    <td>30,000-40,000</td>
+                </tr>
+                <tr>
+                    <td><code>tls1_3_ecdsa_new_cps</code></td>
+                    <td>TLS 1.3 handshake with ECDSA P-256 cert (New)</td>
+                    <td>6,000-7,000</td>
+                </tr>
+                <tr>
+                    <td><code>tls1_2_ecdhe_rsa_aes128gcm_cps</code></td>
+                    <td>TLS 1.2, ECDHE Key Exchange, RSA Cert</td>
+                    <td>6,000-7,000</td>
+                </tr>
+                <tr>
+                    <td><code>tls1_2_ecdhe_ecdsa_aes128gcm_cps</code></td>
+                    <td>TLS 1.2, ECDHE Key Exchange, ECDSA Cert</td>
+                    <td>6,000-7,000</td>
+                </tr>
+                <tr>
+                    <td><code>tls1_2_rsa_resume_cps</code></td>
+                    <td>TLS 1.2 session resumption</td>
+                    <td>30,000-50,000</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="info-box">
+            <strong>Note:</strong> Handshake performance is typically CPU-bound by asymmetric crypto operations (signing/verifying).
+        </div>
+        
+        <h3>Statistical Properties</h3>
+        <p><strong>Handshake metrics</strong> typically show <strong>moderate variance</strong> (1-3%) because:</p>
+        <ul>
+            <li>Many small operations accumulate variance</li>
+            <li>CPU scheduling affects timing</li>
+            <li>Memory allocations vary slightly</li>
+        </ul>
+        
+        <p><strong>Higher variance (3-5%)</strong> may indicate:</p>
+        <ul>
+            <li>System load during test</li>
+            <li>Thermal throttling</li>
+            <li>Provider architecture overhead (OpenSSL 3.x)</li>
+        </ul>
+        
+        <h3>Understanding Session Resumption Performance</h3>
+        
+        <div class="card">
+            <h2>Why TLS 1.2 Resumed Connections Are Faster</h2>
+            <p>When examining benchmark results, TLS 1.2 session resumption consistently achieves significantly higher CPS (often 30,000-40,000+) compared to TLS 1.3 (typically 6,000-7,000). Reasons:</p>
+            <ol>
+                <li><strong>Simplified Cryptographic Path:</strong> TLS 1.2 session resumption completely bypasses expensive asymmetric crypto operations.</li>
+                <li><strong>TLS 1.3 PSK Additional Overhead:</strong> TLS 1.3 uses PSK resumption with better security, but still performs HKDF operations and optional ephemeral DH.</li>
+                <li><strong>Code Maturity:</strong> TLS 1.2 has been optimized for over a decade.</li>
+                <li><strong>Provider Architecture Overhead:</strong> OpenSSL 3.x adds abstraction layers that impact many-small-operation workloads.</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Asymmetric Primitives -->
+    <div class="section" id="asymmetric">
+        <h2>3. Asymmetric Primitives (Schmatz Benchmarks)</h2>
+        
+        <p>Measured using <code>openssl speed [algorithm]</code>. These tests isolate the specific mathematical operations used during a handshake, based on Martin Schmatz's (IBM) methodology.</p>
+        
+        <p><strong>Metric:</strong> Operations Per Second (ops/sec).</p>
+        
+        <h3>Algorithms Tested</h3>
+        <ul>
+            <li><strong>RSA:</strong> Signing and Verification at 2048, 3072, and 4096 bits</li>
+            <li><strong>ECDSA:</strong> Signing and Verification on P-256, P-384, and P-521 curves</li>
+            <li><strong>ECDH:</strong> Elliptic Curve Diffie-Hellman key exchange on P-256, P-384, and P-521</li>
+        </ul>
+        
+        <p>See the <a href="schmatz.html">Schmatz Algorithms chart</a> for detailed visualizations.</p>
+    </div>
+
+    <!-- Post-Quantum Cryptography -->
+    <div class="section" id="pqc">
+        <h2>4. Post-Quantum Cryptography (PQC)</h2>
+        
+        <p>For OpenSSL 3.5+ versions that support it:</p>
+        
+        <div class="card">
+            <h2>ML-KEM-768</h2>
+            <p>Module-Lattice-Based Key Encapsulation Mechanism (FIPS 203).</p>
+            <p><strong>Metrics:</strong> KeyGen/Encap/Decap operations per second</p>
+            <p><strong>Statistical variance:</strong> 2-5% (newer code, less optimized)</p>
+        </div>
+        
+        <p>See the <a href="pqc.html">Post-Quantum (PQC) chart</a> for ML-KEM vs Classical ECDH comparison.</p>
+    </div>
+
+    <!-- Multi-threaded Scalability -->
+    <div class="section" id="multithreaded">
+        <h2>5. Multi-threaded Scalability</h2>
+        
+        <p>Runs <code>openssl speed -multi [cores] -evp aes-256-gcm</code>.</p>
+        
+        <ul>
+            <li><strong>Scalability Factor:</strong> Compares the aggregated throughput of N parallel threads against single-thread performance.</li>
+            <li><strong>Why it matters:</strong> OpenSSL 3.0 introduced global locks in the Provider architecture that significantly impacted multi-threaded performance in early versions. This metric tracks recovery.</li>
+        </ul>
+        
+        <h3>Statistical Properties</h3>
+        <p>Multi-threaded tests can show <strong>higher variance</strong> (2-5%) due to:</p>
+        <ul>
+            <li>Thread scheduling variations</li>
+            <li>Lock contention</li>
+            <li>CPU core availability</li>
+            <li>Cache effects</li>
+        </ul>
+    </div>
+
+    <!-- Statistical Metadata -->
+    <div class="section">
+        <h2>6. Statistical Metadata</h2>
+        
+        <h3>Iteration Count</h3>
+        <p>All results include <code>config.iterations_count</code> indicating how many times the version was tested.</p>
+        <pre><code>{
+  "config": {
+    "version": "3.5.3",
+    "iterations_count": 3
+  }
+}</code></pre>
+        
+        <h3>Raw Iteration Data</h3>
+        <p>The <code>detailed-iterations.json</code> file preserves all individual iteration results for analysis:</p>
+        <pre><code>{
+  "3.5.3": [
+    { "iteration": 1, "metrics": {...} },
+    { "iteration": 2, "metrics": {...} },
+    { "iteration": 3, "metrics": {...} }
+  ]
+}</code></pre>
+        
+        <p><strong>Use cases:</strong></p>
+        <ul>
+            <li>Identifying outliers</li>
+            <li>Validating aggregation</li>
+            <li>Detailed performance analysis</li>
+            <li>Debugging unusual variance</li>
+        </ul>
+        
+        <h3>Visualization Features</h3>
+        <ul>
+            <li><strong>Error bars:</strong> Charts include error bars showing ±1 standard deviation</li>
+            <li><strong>Tooltips:</strong> Interactive tooltips show version, mean, stddev, and min/max</li>
+            <li><strong>Iteration badge:</strong> All visualizations display iteration count confirmation</li>
+        </ul>
+    </div>
+
+    <!-- Metric Reliability -->
+    <div class="section" id="reliability">
+        <h2>Metric Reliability</h2>
+        
+        <h3>Expected Variance by Category</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric Category</th>
+                    <th>Expected Stddev</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Throughput (AES, SHA)</strong></td>
+                    <td>&lt; 1%</td>
+                    <td>Hardware acceleration is consistent</td>
+                </tr>
+                <tr>
+                    <td><strong>New Handshakes</strong></td>
+                    <td>1-3%</td>
+                    <td>Many operations, some variance expected</td>
+                </tr>
+                <tr>
+                    <td><strong>Resumed Handshakes</strong></td>
+                    <td>2-5%</td>
+                    <td>Less crypto, but more system-dependent</td>
+                </tr>
+                <tr>
+                    <td><strong>RSA Operations</strong></td>
+                    <td>1-2%</td>
+                    <td>CPU-bound, relatively consistent</td>
+                </tr>
+                <tr>
+                    <td><strong>ECDSA Operations</strong></td>
+                    <td>1-3%</td>
+                    <td>Slightly more variable than RSA</td>
+                </tr>
+                <tr>
+                    <td><strong>PQC (ML-KEM)</strong></td>
+                    <td>2-5%</td>
+                    <td>New code, less optimized</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <h3>When to Re-run Benchmarks</h3>
+        <div class="warning-box">
+            <strong>Re-run if you see:</strong>
+            <ul style="margin-bottom: 0;">
+                <li><strong>Stddev &gt; 5%:</strong> High variance indicates issues</li>
+                <li><strong>Unexpected changes:</strong> Large diff from previous run</li>
+                <li><strong>Outliers:</strong> One iteration dramatically different</li>
+                <li><strong>After system changes:</strong> New hardware, OS updates, etc.</li>
+            </ul>
+        </div>
+        <p><strong>Solution:</strong> Increase iterations to 10+ for better confidence.</p>
+    </div>
+
+    <!-- Back to Dashboard -->
+    <div style="text-align: center; margin: 40px 0;">
+        <a href="index.html" style="padding: 12px 24px; background: #228be6; color: white; border-radius: 6px; text-decoration: none; font-weight: 500; margin-right: 10px;">
+            ← Back to Dashboard
+        </a>
+        <a href="faq.html" style="padding: 12px 24px; background: #40c057; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
+            View FAQ
+        </a>
+    </div>
+</div>
+
+<div style="border-top: 1px solid #e9ecef; padding: 30px 0; margin-top: 50px; text-align: center; background: #f8f9fa;">
+    <div style="max-width: 800px; margin: 0 auto; padding: 0 20px;">
+        <div style="margin-bottom: 15px;">
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark" target="_blank" rel="noopener" class="github-link">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                View on GitHub
+            </a>
+        </div>
+        <div style="font-size: 0.85rem; color: #868e96; line-height: 1.6;">
+            <strong style="color: #495057;">Open Source Benchmark</strong><br>
+            Found a problem? Have an improvement?<br>
+            <a href="https://github.com/enterprise-tim/openssl-performance-benchmark/fork" target="_blank" rel="noopener" style="color: #228be6; text-decoration: none; font-weight: 500;">Fork the repository</a> and submit a pull request!
+        </div>
+        <div style="margin-top: 15px; font-size: 0.75rem; color: #adb5bd;">
+            Licensed under Apache 2.0 • Community-driven development
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+
