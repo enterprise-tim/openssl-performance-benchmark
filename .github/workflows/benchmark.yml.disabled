@@ -1,12 +1,9 @@
 ---
+# DEACTIVATED: automatic triggers removed to stop GitHub Actions spend.
+# Re-enable by restoring push/schedule triggers below. Manual runs only for now.
 name: OpenSSL Performance Benchmark
 
 on:
-  push:
-    branches: [main]
-  schedule:
-    # Run weekly on Sundays at 3 AM UTC
-    - cron: '0 3 * * 0'
   workflow_dispatch:
 
 permissions:
@@ -28,12 +25,12 @@ jobs:
     - name: Generate version matrix with iterations
       id: set-matrix
       run: |
-        echo "🔍 Reading OpenSSL versions and iteration config..."
+        echo "Reading OpenSSL versions and iteration config..."
 
         # Read iterations count (default to 3 if not specified)
         ITERATIONS=$(jq -r '.iterations // 3' config/versions.json)
         echo "iterations=$ITERATIONS" >> $GITHUB_OUTPUT
-        echo "📊 Running $ITERATIONS iterations per version"
+        echo "Running $ITERATIONS iterations per version"
 
         # Generate matrix with version x iteration combinations
         # Output format: { "include": [{"version": "1.1.1w", "url": "...", "series": "...", "iteration": 1}, ...] }
@@ -48,7 +45,7 @@ jobs:
         ' config/versions.json)
 
         echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
-        echo "🎯 Generated matrix with $(echo $MATRIX_JSON | jq '.include | length') total jobs"
+        echo "Generated matrix with $(echo $MATRIX_JSON | jq '.include | length') total jobs"
         echo "$MATRIX_JSON" | jq '.'
 
   benchmark:
@@ -67,7 +64,7 @@ jobs:
 
     - name: Build Benchmark Image
       run: |
-        echo "📦 Building image for OpenSSL ${{ matrix.version }}"
+        echo "Building image for OpenSSL ${{ matrix.version }}"
         echo "   Iteration ${{ matrix.iteration }}/${{ needs.generate-matrix.outputs.iterations }}"
         docker build -t openssl-bench:${{ matrix.version }}-iter${{ matrix.iteration }} \
           --build-arg OPENSSL_VERSION=${{ matrix.version }} \
@@ -77,7 +74,7 @@ jobs:
     - name: Run Benchmark (Iteration ${{ matrix.iteration }})
       id: run_bench
       run: |
-        echo "🏃 Running benchmark iteration ${{ matrix.iteration }} for OpenSSL ${{ matrix.version }}..."
+        echo "Running benchmark iteration ${{ matrix.iteration }} for OpenSSL ${{ matrix.version }}..."
         mkdir -p results
 
         # Run docker and capture output (fresh container each time)
@@ -89,9 +86,9 @@ jobs:
 
         # Validate JSON
         if jq -e . "$RESULT_FILE" >/dev/null 2>&1; then
-          echo "✅ JSON result is valid"
+          echo "JSON result is valid"
         else
-          echo "❌ Invalid JSON output:"
+          echo "Invalid JSON output:"
           echo "$OUTPUT"
           exit 1
         fi
@@ -105,7 +102,7 @@ jobs:
            "$RESULT_FILE" > "$TMP_FILE"
         mv "$TMP_FILE" "$RESULT_FILE"
 
-        echo "✅ Saved results for ${{ matrix.version }} iteration ${{ matrix.iteration }}"
+        echo "Saved results for ${{ matrix.version }} iteration ${{ matrix.iteration }}"
 
     - name: Upload Benchmark Result
       uses: actions/upload-artifact@v4
@@ -141,7 +138,7 @@ jobs:
 
     - name: Aggregate Results with Statistics
       run: |
-        echo "📊 Aggregating results from multiple iterations..."
+        echo "Aggregating results from multiple iterations..."
         echo "   Total result files: $(ls downloaded-results/result-*.json 2>/dev/null | wc -l)"
         echo "   Iterations per version: ${{ needs.generate-matrix.outputs.iterations }}"
 
@@ -149,19 +146,19 @@ jobs:
         node scripts/aggregate-results.js downloaded-results results
 
         echo ""
-        echo "✅ Statistical aggregation complete"
-        echo "📄 Summary file:"
+        echo "Statistical aggregation complete"
+        echo "Summary file:"
         ls -lh results/summary.json
         echo ""
-        echo "📊 Preview of aggregated data:"
+        echo "Preview of aggregated data:"
         jq -r '.[] | "\(.config.version): \(.config.iterations_count) iterations"' results/summary.json
 
     - name: Generate Reports
       run: |
-        echo "📊 Generating Markdown Report..."
+        echo "Generating Markdown Report..."
         npm run generate-report
 
-        echo "📈 Generating Visualizations..."
+        echo "Generating Visualizations..."
         npm run generate-viz
 
     - name: Prepare Release Artifacts
@@ -232,13 +229,13 @@ jobs:
 
     - name: Create GitHub Pages structure
       run: |
-        echo "📄 Setting up GitHub Pages structure..."
+        echo "Setting up GitHub Pages structure..."
         cd gh-pages
 
         # The multipage generator creates index.html, but verify it exists
         if [ ! -f index.html ]; then
-          echo "⚠️  Warning: index.html not found! The multipage generator should create it."
-          echo "📋 Creating fallback index.html..."
+          echo "Warning: index.html not found! The multipage generator should create it."
+          echo "Creating fallback index.html..."
           cat > index.html << 'EOF'
         <!DOCTYPE html>
         <html lang="en">
@@ -266,14 +263,14 @@ jobs:
         </html>
         EOF
         else
-          echo "✅ index.html exists (created by multipage generator)"
+          echo "index.html exists (created by multipage generator)"
         fi
 
         echo ""
-        echo "📁 GitHub Pages content:"
+        echo "GitHub Pages content:"
         ls -la
         echo ""
-        echo "📊 HTML files:"
+        echo "HTML files:"
         ls -1 *.html 2>/dev/null || echo "No HTML files found!"
 
     - name: Upload Pages Artifact
