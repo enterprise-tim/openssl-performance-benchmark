@@ -1,4 +1,6 @@
 ---
+# DEACTIVATED from automatic use: already workflow_dispatch-only.
+# Left manual-only to avoid accidental Actions spend from the UI habit path.
 name: Regenerate Reports Only
 
 on:
@@ -34,7 +36,7 @@ jobs:
 
     - name: Download Benchmark Results
       run: |
-        echo "📥 Downloading benchmark results..."
+        echo "Downloading benchmark results..."
 
         if [ -n "${{ inputs.run_id }}" ]; then
           RUN_ID="${{ inputs.run_id }}"
@@ -51,7 +53,7 @@ jobs:
         fi
 
         if [ -z "$RUN_ID" ]; then
-          echo "❌ No benchmark results found"
+          echo "No benchmark results found"
           echo "Please run the benchmark workflow first"
           exit 1
         fi
@@ -61,10 +63,10 @@ jobs:
 
         # Count downloaded files
         FILE_COUNT=$(find downloaded-results -name "*.json" | wc -l | tr -d ' ')
-        echo "✅ Downloaded $FILE_COUNT result files"
+        echo "Downloaded $FILE_COUNT result files"
 
         if [ "$FILE_COUNT" -eq 0 ]; then
-          echo "❌ No result files found in artifacts"
+          echo "No result files found in artifacts"
           exit 1
         fi
       env:
@@ -72,7 +74,7 @@ jobs:
 
     - name: Aggregate Results
       run: |
-        echo "📊 Aggregating results..."
+        echo "Aggregating results..."
 
         # Find all result JSON files (they might be in subdirectories)
         find downloaded-results -name "result-*.json" -exec cp {} downloaded-results/ \;
@@ -80,18 +82,18 @@ jobs:
         # Run aggregation
         node scripts/aggregate-results.js downloaded-results results
 
-        echo "✅ Aggregation complete"
+        echo "Aggregation complete"
         ls -lh results/summary.json
 
     - name: Generate Reports
       run: |
-        echo "📝 Generating reports..."
+        echo "Generating reports..."
         npm run generate-report
 
-        echo "📊 Generating visualizations..."
+        echo "Generating visualizations..."
         npm run generate-viz
 
-        echo "✅ Reports generated"
+        echo "Reports generated"
         ls -lh results/
 
     - name: Prepare Release Artifacts

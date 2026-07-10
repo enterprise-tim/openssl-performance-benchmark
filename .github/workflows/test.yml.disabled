@@ -1,11 +1,9 @@
 ---
+# DEACTIVATED: automatic triggers removed to stop GitHub Actions spend.
+# Re-enable by restoring push/pull_request triggers below. Manual runs only for now.
 name: Test Suite
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -40,14 +38,14 @@ jobs:
 
     - name: Validate configuration
       run: |
-        echo "📋 Validating config/versions.json..."
+        echo "Validating config/versions.json..."
         jq -e '.iterations' config/versions.json
         jq -e '.versions | length > 0' config/versions.json
-        echo "✅ Configuration valid"
+        echo "Configuration valid"
 
     - name: Test aggregation script with mock data
       run: |
-        echo "🧪 Testing aggregation with mock data..."
+        echo "Testing aggregation with mock data..."
         mkdir -p test-agg-input test-agg-output
 
         # Create 3 mock iterations
@@ -88,14 +86,14 @@ jobs:
         jq -e '.[0].config.iterations_count == 3' test-agg-output/summary.json
         jq -e '.[0].metrics.test_metric == 100' test-agg-output/summary.json
 
-        echo "✅ Aggregation test passed"
+        echo "Aggregation test passed"
 
         # Cleanup
         rm -rf test-agg-input test-agg-output
 
     - name: Test matrix generation logic
       run: |
-        echo "🧪 Testing matrix generation..."
+        echo "Testing matrix generation..."
 
         # Test that jq command produces correct matrix
         MATRIX=$(jq -c --argjson iters 3 '{include: [.versions[] as $v | range(1; $iters + 1) | $v + {iteration: .}]}' config/versions.json)
@@ -104,7 +102,7 @@ jobs:
         echo "$MATRIX" | jq -e '.include | length > 0'
         echo "$MATRIX" | jq -e '.include[0].iteration == 1'
 
-        echo "✅ Matrix generation test passed"
+        echo "Matrix generation test passed"
 
     - name: Upload test results
       if: failure()
@@ -124,16 +122,16 @@ jobs:
 
     - name: Check shell scripts
       run: |
-        echo "🔍 Checking shell scripts..."
+        echo "Checking shell scripts..."
         bash -n src/benchmark.sh
         bash -n test_jq.sh
-        echo "✅ Shell scripts valid"
+        echo "Shell scripts valid"
 
     - name: Check JSON files
       run: |
-        echo "🔍 Validating JSON files..."
+        echo "Validating JSON files..."
         jq empty config/versions.json
-        echo "✅ JSON files valid"
+        echo "JSON files valid"
 
     - name: Check YAML files
       uses: ibiqlik/action-yamllint@v3
@@ -150,19 +148,19 @@ jobs:
     steps:
     - name: Test Summary
       run: |
-        echo "## 🧪 Test Suite Results" >> $GITHUB_STEP_SUMMARY
+        echo "## Test Suite Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
 
         if [ "${{ needs.test.result }}" == "success" ]; then
-          echo "✅ **Unit Tests:** PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "**Unit Tests:** PASSED" >> $GITHUB_STEP_SUMMARY
         else
-          echo "❌ **Unit Tests:** FAILED" >> $GITHUB_STEP_SUMMARY
+          echo "**Unit Tests:** FAILED" >> $GITHUB_STEP_SUMMARY
         fi
 
         if [ "${{ needs.lint.result }}" == "success" ]; then
-          echo "✅ **Linting:** PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "**Linting:** PASSED" >> $GITHUB_STEP_SUMMARY
         else
-          echo "❌ **Linting:** FAILED" >> $GITHUB_STEP_SUMMARY
+          echo "**Linting:** FAILED" >> $GITHUB_STEP_SUMMARY
         fi
 
         echo "" >> $GITHUB_STEP_SUMMARY
